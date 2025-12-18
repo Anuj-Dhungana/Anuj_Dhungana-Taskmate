@@ -1,8 +1,12 @@
-import React from 'react'
+import { Toaster } from 'react-hot-toast';
+import Register from './pages/Register';
 
-const App = () => {
+function App() {
   return (
-    <div>App</div>
+    <>
+      <Toaster position="top-center" />
+      <Register />
+    </>
   )
 }
 

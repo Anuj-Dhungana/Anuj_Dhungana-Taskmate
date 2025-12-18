@@ -42,3 +42,40 @@ export const registerUser = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+export const loginUser = async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // 1. Check if user exists
+        const user = await User.findOne({ email });
+
+        // 2. Check password
+        if (user && (await bcrypt.compare(password, user.password))) {
+            // 3. Generate Token (Set Cookie)
+            generateToken(res, user._id);
+
+            res.json({
+                _id: user._id,
+                fullname: user.fullname,
+                email: user.email,
+                message: "Logged in successfully!"
+            });
+        } else {
+            res.status(401).json({ message: 'Invalid email or password' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+
+export const logoutUser = (req, res) => {
+    // 1. Clear the cookie
+    res.cookie('jwt', '', {
+        httpOnly: true,
+        expires: new Date(0) // Expire immediately
+    });
+
+    res.status(200).json({ message: 'Logged out successfully' });
+};

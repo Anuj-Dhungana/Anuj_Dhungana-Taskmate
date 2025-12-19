@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { setCredentials } from '../slices/authSlice';
 import { toast } from 'react-hot-toast';
+import { useNavigate, Link } from 'react-router-dom'; 
 
 const Register = () => {
   const [fullname, setFullname] = useState('');
@@ -10,15 +11,29 @@ const Register = () => {
   const [password, setPassword] = useState('');
 
   const dispatch = useDispatch();
+  const navigate = useNavigate(); 
+
+  const { userInfo } = useSelector((state) => state.auth);
+
+  
+  useEffect(() => {
+    if (userInfo) {
+      navigate('/dashboard');
+    }
+  }, [navigate, userInfo]);
 
   const submitHandler = async (e) => {
     e.preventDefault();
     try {
       const res = await axios.post('/api/auth/register', { fullname, email, password });
+      
       dispatch(setCredentials({ ...res.data }));
       toast.success('Registration successful!');
+      
+      navigate('/dashboard'); 
+      
     } catch (err) {
-      toast.error(err?.response?.data?.message || err.error);
+      toast.error(err?.response?.data?.message || err.message);
     }
   };
 
@@ -48,6 +63,11 @@ const Register = () => {
         <button className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
           Register
         </button>
+
+        <div className="mt-4 text-center">
+            <span className="text-gray-600">Already have an account? </span>
+            <Link to="/login" className="text-blue-600 hover:underline">Login</Link>
+        </div>
       </form>
     </div>
   );

@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import VerifyEmail from './pages/VerifyEmail';
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {
@@ -31,6 +32,7 @@ function App() {
         
         {/* Default Redirect */}
         <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
       </Routes>
     </>
   );

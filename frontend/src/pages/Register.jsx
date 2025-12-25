@@ -22,15 +22,15 @@ const Register = () => {
     }
   }, [navigate, userInfo]);
 
-  const submitHandler = async (e) => {
+const submitHandler = async (e) => {
     e.preventDefault();
     try {
       const res = await axios.post('/api/auth/register', { fullname, email, password });
       
-      dispatch(setCredentials({ ...res.data }));
-      toast.success('Registration successful!');
+      toast.success(res.data.message); // "Check your email"
       
-      navigate('/dashboard'); 
+      // Don't login yet. Go to verify page, passing the email.
+      navigate('/verify-email', { state: { email: email } }); 
       
     } catch (err) {
       toast.error(err?.response?.data?.message || err.message);

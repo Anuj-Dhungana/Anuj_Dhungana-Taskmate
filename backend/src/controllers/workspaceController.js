@@ -1,8 +1,5 @@
 import Workspace from '../models/Workspace.js';
 
-// @desc    Create a new workspace
-// @route   POST /api/workspaces
-// @access  Private
 export const createWorkspace = async (req, res) => {
     try {
         const { name, description } = req.body;
@@ -19,9 +16,7 @@ export const createWorkspace = async (req, res) => {
     }
 };
 
-// @desc    Get all workspaces for current user
-// @route   GET /api/workspaces
-// @access  Private
+
 export const getMyWorkspaces = async (req, res) => {
     try {
         // Find workspaces where the members array contains the user's ID

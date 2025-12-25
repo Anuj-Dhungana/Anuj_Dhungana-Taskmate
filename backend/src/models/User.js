@@ -20,14 +20,20 @@ const userSchema = new mongoose.Schema({
     },
     avatar: {
         type: String,
-        default: "" 
+        default: ""
     },
+
+    isVerified: { type: Boolean, default: false },
+    verificationCode: String,
+    verificationCodeExpires: Date,
+
+
     // Authentication Status
     isVerified: {
         type: Boolean,
-        default: false 
+        default: false
     },
-    
+
     twoFactorEnabled: {
         type: Boolean,
         default: false
@@ -41,7 +47,7 @@ const userSchema = new mongoose.Schema({
         default: null
     }
 }, {
-    timestamps: true 
+    timestamps: true
 });
 
 const User = mongoose.model('User', userSchema);

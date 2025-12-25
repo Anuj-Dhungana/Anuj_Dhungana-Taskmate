@@ -1,16 +1,16 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import { useSelector } from 'react-redux';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
+import useAuthStore from './store/useAuthStore';
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {
-  const { userInfo } = useSelector((state) => state.auth);
+  const { userInfo } = useAuthStore();
   return userInfo ? children : <Navigate to="/login" />;
 };
 

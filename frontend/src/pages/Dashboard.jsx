@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { logout } from '../slices/authSlice';
 import axios from 'axios';
 import { LogOut, PlusSquare, Briefcase } from 'lucide-react';
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
+import useAuthStore from '../store/useAuthStore';
 
 const Dashboard = () => {
-  const { userInfo } = useSelector((state) => state.auth);
-  const dispatch = useDispatch();
+  const { userInfo, logout } = useAuthStore();
   const navigate = useNavigate();
 
   const [workspaces, setWorkspaces] = useState([]);
@@ -32,7 +30,7 @@ const Dashboard = () => {
   const handleLogout = async () => {
     try {
       await axios.post('/api/auth/logout');
-      dispatch(logout());
+      logout();
       navigate('/login');
     } catch (err) {
       console.error(err);

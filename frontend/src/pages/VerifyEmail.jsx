@@ -1,15 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { useDispatch } from 'react-redux';
-import { setCredentials } from '../slices/authSlice';
 import { toast } from 'react-hot-toast';
-
+import useAuthStore from '../store/useAuthStore';
 const VerifyEmail = () => {
     const [code, setCode] = useState('');
     const navigate = useNavigate();
-    const dispatch = useDispatch();
-    
+   const { setCredentials } = useAuthStore();
+
     // Get email passed from Register page
     const { state } = useLocation();
     const email = state?.email;
@@ -18,7 +16,7 @@ const VerifyEmail = () => {
         e.preventDefault();
         try {
             const res = await axios.post('/api/auth/verify-email', { email, code });
-            dispatch(setCredentials({ ...res.data })); // Auto login
+            setCredentials({ ...res.data }); // Auto login
             toast.success('Email Verified!');
             navigate('/dashboard');
         } catch (err) {

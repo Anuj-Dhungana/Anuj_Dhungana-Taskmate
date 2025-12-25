@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import { setCredentials } from '../slices/authSlice';
 import axios from 'axios';
+import useAuthStore from '../store/useAuthStore';
 import { toast } from 'react-hot-toast';
 
 const Login = () => {
@@ -12,10 +11,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const navigate = useNavigate();
-  const dispatch = useDispatch();
-
-  const { userInfo } = useSelector((state) => state.auth);
-
+  const { userInfo, setCredentials } = useAuthStore();
+  
   // Redirect if already logged in
   useEffect(() => {
     if (userInfo) {
@@ -36,7 +33,7 @@ const Login = () => {
       // API Call
       const res = await axios.post('/api/auth/login', { email, password });
       // Save to Redux
-      dispatch(setCredentials({ ...res.data }));
+      setCredentials({ ...res.data });
       toast.success('Welcome back!');
       navigate('/dashboard');
     } catch (err) {

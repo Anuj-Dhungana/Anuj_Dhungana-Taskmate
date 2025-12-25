@@ -1,19 +1,17 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useDispatch, useSelector } from 'react-redux';
-import { setCredentials } from '../slices/authSlice';
 import { toast } from 'react-hot-toast';
 import { useNavigate, Link } from 'react-router-dom'; 
+import useAuthStore from '../store/useAuthStore';
 
 const Register = () => {
   const [fullname, setFullname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const dispatch = useDispatch();
   const navigate = useNavigate(); 
 
-  const { userInfo } = useSelector((state) => state.auth);
+  const { userInfo , setCredentials } = useAuthStore();
 
   
   useEffect(() => {
@@ -30,7 +28,7 @@ const submitHandler = async (e) => {
       toast.success(res.data.message); // "Check your email"
       
       // Don't login yet. Go to verify page, passing the email.
-      navigate('/verify-email', { state: { email: email } }); 
+      navigate('/verify-email', { state: { email } }); 
       
     } catch (err) {
       toast.error(err?.response?.data?.message || err.message);

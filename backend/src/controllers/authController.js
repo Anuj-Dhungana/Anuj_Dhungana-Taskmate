@@ -2,6 +2,7 @@ import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
 import generateToken from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
+import crypto from 'crypto';
 
 
 
@@ -57,8 +58,7 @@ export const registerUser = async (req, res) => {
     }
 };
 
-// @desc    Verify Email using OTP
-// @route   POST /api/auth/verify-email
+
 export const verifyEmail = async (req, res) => {
     try {
         const { email, code } = req.body;
@@ -135,3 +135,98 @@ export const logoutUser = (req, res) => {
 
     res.status(200).json({ message: 'Logged out successfully' });
 };
+
+
+export const forgotPassword = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // 1. Generate Token
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // 2. Hash token and save to DB (Security best practice)
+        // We hash it so even if DB is leaked, tokens are safe
+        user.resetPasswordToken = crypto
+            .createHash('sha256')
+            .update(resetToken)
+            .digest('hex');
+
+        // Expires in 10 minutes
+        user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+        await user.save();
+
+        // 3. Create Reset URL (Points to Frontend)
+        const resetUrl = `http://localhost:5173/reset-password/${resetToken}`;
+
+        const message = `
+            <h1>Password Reset Request</h1>
+            <p>Click the link below to reset your password:</p>
+            <a href="${resetUrl}" clicktracking=off>${resetUrl}</a>
+            <p>If you didn't request this, please ignore this email.</p>
+        `;
+
+        try {
+            await sendEmail({
+                to: user.email,
+                subject: 'TaskMate Password Reset',
+                text: message
+            });
+
+            res.status(200).json({ message: "Email sent" });
+        } catch (error) {
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpire = undefined;
+            await user.save();
+            return res.status(500).json({ message: "Email could not be sent" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+
+export const resetPassword = async (req, res) => {
+
+    try {
+        // 1. Get token from URL and hash it (to match DB)
+        const resetPasswordToken = crypto
+            .createHash('sha256')
+            .update(req.params.token)
+            .digest('hex');
+
+        // 2. Find user with valid token and non-expired time
+        const user = await User.findOne({
+            resetPasswordToken,
+            resetPasswordExpire: { $gt: Date.now() } // $gt means "Greater Than"
+        });
+
+        if (!user) {
+            return res.status(400).json({ message: "Invalid or expired token" });
+        }
+
+        // 3. Set new password
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(req.body.password, salt);
+
+        // 4. Clear reset fields
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        
+        await user.save();
+
+        res.status(200).json({ message: "Password updated successully! You can login now." });
+
+    } catch (error) {
+        res.status(500).json({ message: "Server Error",  error });
+    }
+};
+
+
+
+

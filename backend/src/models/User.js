@@ -27,6 +27,9 @@ const userSchema = new mongoose.Schema({
     verificationCode: String,
     verificationCodeExpires: Date,
 
+     resetPasswordToken: String,
+    resetPasswordExpire: Date,
+
 
     // Authentication Status
     isVerified: {

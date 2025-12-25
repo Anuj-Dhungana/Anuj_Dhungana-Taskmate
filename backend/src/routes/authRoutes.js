@@ -4,6 +4,8 @@ import { loginUser } from '../controllers/authcontroller.js';
 import { logoutUser } from '../controllers/authcontroller.js';
 import protect  from '../middleware/authMiddleware.js';
 import { verifyEmail } from '../controllers/authcontroller.js';
+import { forgotPassword } from '../controllers/authcontroller.js';
+import { resetPassword } from '../controllers/authcontroller.js';
 
 
 
@@ -14,6 +16,8 @@ router.post('/register', registerUser);
 router.post('/login', loginUser); 
 router.post('/logout', logoutUser);
 router.post('/verify-email', verifyEmail);
+router.post('/forgot-password', forgotPassword);
+router.put('/reset-password/:token', resetPassword);
 
 
 router.get('/profile', protect, (req, res) => {

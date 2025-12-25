@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgetPassword';
+import ResetPassword from './pages/ResetPassword';
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {
@@ -33,6 +35,9 @@ function App() {
         {/* Default Redirect */}
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
       </Routes>
     </>
   );

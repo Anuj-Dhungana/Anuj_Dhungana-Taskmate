@@ -1,14 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import { LogOut, PlusSquare, Hash, Kanban, Menu } from 'lucide-react';
+import { LogOut, PlusSquare, Hash, Kanban, Menu, Settings, UserPlus } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/userWorkspaceStore'; 
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
-import { Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
-
-
+import InviteUserModal from '../components/InviteUserModal';
 
 
 const Dashboard = () => {
@@ -18,6 +15,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // 1. Fetch List of Workspaces
   const fetchWorkspaces = async () => {
@@ -100,7 +98,22 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-         
+         {/* Inside Secondary Sidebar */}
+<div className="p-4 border-b border-slate-700">
+    <div className="flex justify-between items-center text-white">
+        <h2 className="font-bold truncate w-32">{selectedWorkspace.workspace.name}</h2>
+        <button 
+            onClick={() => setShowInviteModal(true)}
+            className="text-slate-400 hover:text-green-400"
+            title="Invite Member"
+        >
+            <UserPlus size={18} />
+        </button>
+    </div>
+    <div className="text-xs text-slate-500 mt-1">
+        {selectedWorkspace.workspace.members.length} members
+    </div>
+</div>
 
                 {/* Channels Section */}
                 <div>
@@ -166,6 +179,12 @@ const Dashboard = () => {
       {showModal && (
         <CreateWorkspaceModal onClose={() => setShowModal(false)} onCreated={fetchWorkspaces} />
       )}
+
+      <InviteUserModal 
+        isOpen={showInviteModal} 
+        onClose={() => setShowInviteModal(false)}
+        workspaceId={selectedWorkspace?.workspace._id}
+      />
     </div>
   );
 };

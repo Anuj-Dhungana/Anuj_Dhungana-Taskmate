@@ -1,5 +1,5 @@
 import express from 'express';
-import { createWorkspace, getMyWorkspaces } from '../controllers/workspaceController.js';
+import { createWorkspace, getMyWorkspaces, getWorkspaceDetails } from '../controllers/workspaceController.js';
 import protect from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -8,5 +8,6 @@ const router = express.Router();
 router.route('/')
     .post(protect, createWorkspace)
     .get(protect, getMyWorkspaces);
+router.route('/:id').get(protect, getWorkspaceDetails);
 
 export default router;

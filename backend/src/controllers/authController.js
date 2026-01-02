@@ -97,26 +97,48 @@ export const verifyEmail = async (req, res) => {
 export const loginUser = async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        // 1. Check if user exists
         const user = await User.findOne({ email });
 
-        // 2. Check password
         if (user && (await bcrypt.compare(password, user.password))) {
-
-             if (!user.isVerified) {
+            
+            if (!user.isVerified) {
                 return res.status(401).json({ message: "Please verify your email first." });
             }
-            
-            // 3. Generate Token (Set Cookie)
-            generateToken(res, user._id);
 
+         
+            if (user.twoFactorEnabled) {
+                // 1. Generate Code
+                const code = Math.floor(100000 + Math.random() * 900000).toString();
+                
+                // 2. Save to DB
+                user.twoFactorCode = code;
+                user.twoFactorExpires = Date.now() + 5 * 60 * 1000; // 5 mins
+                await user.save();
+
+                // 3. Send Email
+                await sendEmail({
+                    to: user.email,
+                    subject: 'TaskMate - 2FA Login Code',
+                    text: `<h1>Login Verification</h1><p>Your code is: <b>${code}</b></p>`
+                });
+
+                // 4. Return special status (NOT the token)
+                return res.json({
+                    status: '2fa_required',
+                    email: user.email,
+                    message: "2FA Code sent to your email"
+                });
+            }
+
+            // Normal Login (No 2FA)
+            generateToken(res, user._id);
             res.json({
                 _id: user._id,
                 fullname: user.fullname,
                 email: user.email,
                 message: "Logged in successfully!"
             });
+
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
         }
@@ -226,6 +248,85 @@ export const resetPassword = async (req, res) => {
         res.status(500).json({ message: "Server Error",  error });
     }
 };
+
+
+export const updateProfile = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.fullname = req.body.fullname || user.fullname;
+            user.email = req.body.email || user.email;
+            
+            // If password is sent, hash and update it
+            if (req.body.password) {
+                const salt = await bcrypt.genSalt(10);
+                user.password = await bcrypt.hash(req.body.password, salt);
+            }
+
+            const updatedUser = await user.save();
+
+            res.json({
+                _id: updatedUser._id,
+                fullname: updatedUser.fullname,
+                email: updatedUser.email,
+                twoFactorEnabled: updatedUser.twoFactorEnabled // Return this status
+            });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+
+export const toggle2FA = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        
+        // Flip the status
+        user.twoFactorEnabled = !user.twoFactorEnabled;
+        await user.save();
+
+        res.json({ 
+            message: `2FA is now ${user.twoFactorEnabled ? 'Enabled' : 'Disabled'}`,
+            twoFactorEnabled: user.twoFactorEnabled
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+export const verify2FALogin = async (req, res) => {
+    try {
+        const { email, code } = req.body;
+        const user = await User.findOne({ email });
+
+        if (user && user.twoFactorCode === code && user.twoFactorExpires > Date.now()) {
+            
+            // Clear code
+            user.twoFactorCode = undefined;
+            user.twoFactorExpires = undefined;
+            await user.save();
+
+            // SUCCESS! Generate Token
+            generateToken(res, user._id);
+
+            res.json({
+                _id: user._id,
+                fullname: user.fullname,
+                email: user.email,
+                message: "Logged in successfully!"
+            });
+        } else {
+            res.status(401).json({ message: "Invalid or expired 2FA code" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
 
 
 

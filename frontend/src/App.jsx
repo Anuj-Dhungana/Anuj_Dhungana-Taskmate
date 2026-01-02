@@ -7,6 +7,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
 import useAuthStore from './store/useAuthStore';
+import Profile from './pages/Profile';
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {
@@ -38,6 +39,14 @@ function App() {
 
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route 
+          path="/profile" 
+          element={
+            <PrivateRoute>
+              <Profile />
+            </PrivateRoute>
+          } 
+        />
       </Routes>
     </>
   );

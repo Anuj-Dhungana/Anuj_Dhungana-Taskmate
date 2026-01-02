@@ -9,7 +9,8 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
+const [show2FA, setShow2FA] = useState(false);
+const [otp, setOtp] = useState('');
   const navigate = useNavigate();
   const { userInfo, setCredentials } = useAuthStore();
   
@@ -22,26 +23,53 @@ const Login = () => {
 
   const submitHandler = async (e) => {
     e.preventDefault();
-    
-    if (!email || !password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      // API Call
-      const res = await axios.post('/api/auth/login', { email, password });
-      // Save to Redux
-      setCredentials({ ...res.data });
-      toast.success('Welcome back!');
-      navigate('/dashboard');
+        // Normal Login Attempt
+        const res = await axios.post('/api/auth/login', { email, password });
+
+        // CASE 1: 2FA is Required
+        if (res.data.status === '2fa_required') {
+            setShow2FA(true);
+            toast.success('2FA Code sent to your email!');
+            return; // Stop here, don't navigate yet
+        }
+
+        // CASE 2: Success
+        setCredentials(res.data);
+        navigate('/dashboard');
+
     } catch (err) {
-      toast.error(err?.response?.data?.message || err.message);
-    } finally {
-      setIsLoading(false);
+        toast.error(err?.response?.data?.message || err.message);
     }
-  };
+};
+
+const handle2FASubmit = async (e) => {
+    e.preventDefault();
+    try {
+        const res = await axios.post('/api/auth/login-2fa', { email, code: otp });
+        setCredentials(res.data);
+        toast.success('Login Successful!');
+        navigate('/dashboard');
+    } catch (err) {
+        toast.error('Invalid Code');
+    }
+}
+if (show2FA) {
+    return (
+        <div className="flex justify-center items-center h-screen bg-gray-100">
+            <form onSubmit={handle2FASubmit} className="p-8 bg-white shadow rounded w-96 text-center">
+                <h2 className="text-2xl font-bold mb-4">Two-Factor Auth</h2>
+                <p className="mb-4 text-sm text-gray-600">Enter the code sent to {email}</p>
+                <input 
+                    type="text" value={otp} onChange={(e) => setOtp(e.target.value)}
+                    className="w-full p-2 mb-4 border rounded text-center tracking-widest text-xl"
+                    placeholder="123456" autoFocus
+                />
+                <button className="w-full bg-blue-600 text-white p-2 rounded">Verify</button>
+            </form>
+        </div>
+    )
+}
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">

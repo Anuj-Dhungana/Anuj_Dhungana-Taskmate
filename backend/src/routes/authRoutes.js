@@ -6,6 +6,9 @@ import protect  from '../middleware/authMiddleware.js';
 import { verifyEmail } from '../controllers/authcontroller.js';
 import { forgotPassword } from '../controllers/authcontroller.js';
 import { resetPassword } from '../controllers/authcontroller.js';
+import { updateProfile } from '../controllers/authcontroller.js';
+import { toggle2FA } from '../controllers/authcontroller.js';
+import { verify2FALogin } from '../controllers/authcontroller.js';
 
 
 
@@ -18,7 +21,9 @@ router.post('/logout', logoutUser);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password', forgotPassword);
 router.put('/reset-password/:token', resetPassword);
-
+router.put('/profile', protect, updateProfile); 
+router.put('/2fa/toggle', protect, toggle2FA);  
+router.post('/login-2fa', verify2FALogin);    
 
 router.get('/profile', protect, (req, res) => {
     res.json(req.user);

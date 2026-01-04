@@ -15,20 +15,13 @@ const Home = () => {
       <nav className="fixed w-full bg-white/95 backdrop-blur-sm z-50 border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-lg flex items-center justify-center">
-                <Layers className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">TaskMate</span>
-            </div>
+            <span className="text-xl font-bold text-gray-900">TaskMate</span>
 
             {/* Desktop Nav Links */}
             <div className="hidden md:flex items-center space-x-8">
               <a href="#features" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Features</a>
               <a href="#solutions" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Solutions</a>
               <a href="#pricing" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Pricing</a>
-              <a href="#enterprise" className="text-gray-600 hover:text-gray-900 text-sm font-medium">Enterprise</a>
             </div>
 
             {/* CTA Buttons */}
@@ -99,27 +92,6 @@ const Home = () => {
                   Get Started — It's Free
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Link>
-                <button className="flex items-center justify-center gap-2 text-gray-700 hover:text-gray-900 px-8 py-4 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all">
-                  <Play className="w-5 h-5 fill-violet-600 text-violet-600" />
-                  Watch Demo
-                </button>
-              </div>
-
-              {/* Trust Badge */}
-              <div className="mt-10 flex items-center justify-center lg:justify-start gap-6">
-                <div className="flex -space-x-2">
-                  {[...Array(4)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className={`w-10 h-10 rounded-full border-2 border-white bg-gradient-to-br ${
-                        ['from-pink-400 to-rose-400', 'from-blue-400 to-cyan-400', 'from-green-400 to-emerald-400', 'from-orange-400 to-amber-400'][i]
-                      }`}
-                    />
-                  ))}
-                </div>
-                <div className="text-sm text-gray-600">
-                  <span className="font-semibold text-gray-900">10,000+</span> teams already using TaskMate
-                </div>
               </div>
             </div>
 
@@ -204,20 +176,6 @@ const Home = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Trusted By Section */}
-      <section className="py-16 bg-gray-50 border-y border-gray-100">
-        <div className="max-w-7xl mx-auto px-4">
-          <p className="text-center text-sm text-gray-500 mb-8">TRUSTED BY TEAMS AT</p>
-          <div className="flex flex-wrap justify-center items-center gap-x-12 gap-y-6">
-            {['Google', 'Microsoft', 'Airbnb', 'Spotify', 'Netflix', 'Uber'].map((company) => (
-              <div key={company} className="text-2xl font-bold text-gray-300 hover:text-gray-400 transition-colors">
-                {company}
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -362,55 +320,6 @@ const Home = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials - Trello Style */}
-      <section className="py-24 px-4 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center max-w-3xl mx-auto mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">Loved by teams worldwide</h2>
-            <p className="text-xl text-gray-600">See why thousands of teams choose TaskMate</p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                quote: "TaskMate transformed how our team works. We shipped 3x faster in the first month.",
-                author: "Alex Johnson",
-                role: "Engineering Lead",
-                company: "TechCorp"
-              },
-              {
-                quote: "Finally, a tool that doesn't get in the way. It's intuitive and powerful at the same time.",
-                author: "Maria Garcia",
-                role: "Product Manager",
-                company: "StartupXYZ"
-              },
-              {
-                quote: "We replaced 4 different tools with TaskMate. Our team loves the simplicity.",
-                author: "David Kim",
-                role: "CEO",
-                company: "Creative Agency"
-              }
-            ].map((testimonial, i) => (
-              <div key={i} className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <Star key={j} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-gray-700 mb-6 text-lg">"{testimonial.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-violet-400 to-indigo-400 rounded-full"></div>
-                  <div>
-                    <div className="font-semibold text-gray-900">{testimonial.author}</div>
-                    <div className="text-sm text-gray-500">{testimonial.role}, {testimonial.company}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       </section>

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -20,6 +21,7 @@ function App() {
     <>
       <Toaster position="top-right" />
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
@@ -32,8 +34,6 @@ function App() {
             </PrivateRoute>
           } 
         />
-        
-        {/* Default Redirect */}
         <Route path="/" element={<Navigate to="/login" />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
 

@@ -2,15 +2,20 @@ import express from 'express';
 import { createWorkspace, getMyWorkspaces, getWorkspaceDetails } from '../controllers/workspaceController.js';
 import protect from '../middleware/authMiddleware.js';
 import { inviteUserToWorkspace } from '../controllers/workspaceController.js';
+import { updateMemberRole } from '../controllers/workspaceController.js';
+import { removeMember } from '../controllers/workspaceController.js';
+import checkWorkspaceRole from '../middleware/roleMiddleware.js';
+
+
 
 const router = express.Router();
 
-// All workspace routes need you to be logged in
+
 router.route('/')
     .post(protect, createWorkspace)
     .get(protect, getMyWorkspaces);
 router.route('/:id').get(protect, getWorkspaceDetails);
-router.post('/:id/invite', protect, inviteUserToWorkspace);
-
-
+router.post('/:id/invite', protect, checkWorkspaceRole(['owner', 'admin']), inviteUserToWorkspace);
+router.put('/:id/role', protect, checkWorkspaceRole(['owner']), updateMemberRole);
+router.delete('/:id/members/:memberId', protect, checkWorkspaceRole(['owner', 'admin']), removeMember);
 export default router;

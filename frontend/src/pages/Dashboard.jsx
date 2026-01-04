@@ -6,6 +6,8 @@ import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/userWorkspaceStore'; 
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
 import InviteUserModal from '../components/InviteUserModal';
+import MembersModal from '../components/MembersModal';
+import { Users } from 'lucide-react'; 
 
 
 const Dashboard = () => {
@@ -16,6 +18,7 @@ const Dashboard = () => {
   const [showModal, setShowModal] = useState(false);
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showMembersModal, setShowMembersModal] = useState(false);
 
   // 1. Fetch List of Workspaces
   const fetchWorkspaces = async () => {
@@ -97,6 +100,20 @@ const Dashboard = () => {
                         ))}
                     </div>
                 </div>
+
+                <button 
+    onClick={() => setShowMembersModal(true)}
+    className="text-slate-400 hover:text-blue-400 ml-2"
+    title="Manage Members"
+>
+    <Users size={18} />
+</button>
+<MembersModal 
+    isOpen={showMembersModal} 
+    onClose={() => setShowMembersModal(false)} 
+    workspace={selectedWorkspace.workspace}
+    onUpdate={() => handleWorkspaceClick(selectedWorkspace.workspace._id)}
+/>  
 
          {/* Inside Secondary Sidebar */}
 <div className="p-4 border-b border-slate-700">

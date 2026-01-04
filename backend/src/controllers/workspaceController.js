@@ -119,3 +119,63 @@ export const inviteUserToWorkspace = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+
+
+export const updateMemberRole = async (req, res) => {
+    try {
+        const { memberId, newRole } = req.body; 
+        const workspace = req.workspace; // From middleware
+
+        // 1. Find the member in the array
+        const memberIndex = workspace.members.findIndex(
+            m => m.user.toString() === memberId
+        );
+        
+        if (memberIndex === -1) {
+            return res.status(404).json({ message: "Member not found" });
+        }
+
+        // 2. Prevent changing the Owner's role (FIXED LOGIC)
+        // We check the *current role* of the person you are trying to change
+        if (workspace.members[memberIndex].role === 'owner') {
+            return res.status(400).json({ message: "Cannot change the Owner's role" });
+        }
+
+        // 3. Update the role
+        workspace.members[memberIndex].role = newRole;
+        await workspace.save();
+
+        res.json({ message: "Role updated successfully" });
+
+    } catch (error) {
+        console.error("Update Role Error:", error); // Print error to terminal
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+
+export const removeMember = async (req, res) => {
+    try {
+        const { memberId } = req.params;
+        const workspace = req.workspace;
+
+        // Prevent removing the Owner
+        const memberToRemove = workspace.members.find(m => m.user.toString() === memberId);
+        
+        if (memberToRemove && memberToRemove.role === 'owner') {
+            return res.status(400).json({ message: "Cannot remove the Workspace Owner" });
+        }
+
+        // Filter out the member
+        workspace.members = workspace.members.filter(
+            (m) => m.user.toString() !== memberId
+        );
+
+        await workspace.save();
+        res.json({ message: "Member removed from workspace" });
+
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};

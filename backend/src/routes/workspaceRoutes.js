@@ -5,7 +5,7 @@ import { inviteUserToWorkspace } from '../controllers/workspaceController.js';
 import { updateMemberRole } from '../controllers/workspaceController.js';
 import { removeMember } from '../controllers/workspaceController.js';
 import checkWorkspaceRole from '../middleware/roleMiddleware.js';
-
+import { deleteWorkspace } from '../controllers/workspaceController.js';
 
 
 const router = express.Router();
@@ -19,3 +19,4 @@ router.post('/:id/invite', protect, checkWorkspaceRole(['owner', 'admin']), invi
 router.put('/:id/role', protect, checkWorkspaceRole(['owner']), updateMemberRole);
 router.delete('/:id/members/:memberId', protect, checkWorkspaceRole(['owner', 'admin']), removeMember);
 export default router;
+router.delete('/:id', protect, checkWorkspaceRole(['owner']), deleteWorkspace);

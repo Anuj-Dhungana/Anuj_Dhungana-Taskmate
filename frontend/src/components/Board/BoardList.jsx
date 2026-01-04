@@ -6,7 +6,7 @@ import { useState } from 'react';
 import axios from 'axios';
 
 
-const BoardList = ({ list, cards, onCardAdded }) => { // Accept onCardAdded prop
+const BoardList = ({ list, cards, onCardAdded, onCardDelete }) => { // Accept onCardAdded and onCardDelete props
   // Hook to make this list a "drop zone"
   const { setNodeRef } = useDroppable({
     id: list._id,
@@ -50,7 +50,7 @@ const BoardList = ({ list, cards, onCardAdded }) => { // Accept onCardAdded prop
             strategy={verticalListSortingStrategy}
         >
           {cards.map((card) => (
-            <TaskCard key={card._id} card={card} />
+            <TaskCard key={card._id} card={card} onDelete={onCardDelete} />
           ))}
         </SortableContext>
       </div>

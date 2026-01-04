@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LogOut, PlusSquare, Hash, Kanban, Menu, Settings, UserPlus } from 'lucide-react';
+import { LogOut, PlusSquare, Hash, Kanban, Menu, Settings, UserPlus, Trash2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/userWorkspaceStore';
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
@@ -192,7 +193,33 @@ const Dashboard = () => {
 
              {/* Case 3: Project Open (Show Board) */}
              {activeProject && (
-                 <BoardView projectId={activeProject._id} />
+                 <div className="h-full flex flex-col">
+                     <header className="px-6 py-4 bg-white border-b flex justify-between items-center">
+                         <h1 className="text-2xl font-bold text-gray-800">{activeProject.name}</h1>
+                         
+                         {/* DELETE PROJECT BUTTON */}
+                         <button 
+                             onClick={async () => {
+                                 if(!confirm(`Delete project "${activeProject.name}"?`)) return;
+                                 try {
+                                     await axios.delete(`/api/projects/${activeProject._id}`);
+                                     toast.success("Project deleted");
+                                     handleWorkspaceClick(selectedWorkspace.workspace._id); // Refresh
+                                     setActiveProject(null); // Close board
+                                 } catch(err) {
+                                     toast.error("Failed to delete project");
+                                 }
+                             }}
+                             className="text-red-500 hover:bg-red-50 p-2 rounded flex items-center gap-2 text-sm font-medium"
+                         >
+                             <Trash2 size={16} /> Delete Project
+                         </button>
+                     </header>
+                     
+                     <div className="flex-1 overflow-auto">
+                        <BoardView projectId={activeProject._id} />
+                     </div>
+                 </div>
              )}
           </main>
       </div>

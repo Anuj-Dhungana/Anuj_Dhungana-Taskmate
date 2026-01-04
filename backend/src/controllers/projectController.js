@@ -34,6 +34,7 @@ export const createProject = async (req, res) => {
 };
 
 
+
 export const deleteProject = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
@@ -42,16 +43,27 @@ export const deleteProject = async (req, res) => {
             return res.status(404).json({ message: "Project not found" });
         }
 
-        // Security: Check if user is allowed to delete (Only Creator or Workspace Admin)
-        // For simplicity in FYP we'll allow the Creator to delete it.
-        if (project.createdBy.toString() !== req.user._id.toString()) {
-             return res.status(403).json({ message: "Only the project creator can delete this" });
+        // Check 1: Are you the person who created this project?
+        const isCreator = project.createdBy.toString() === req.user._id.toString();
+
+        // Check 2: Are you a Workspace Owner or Admin?
+        // We need to fetch the workspace to check your role
+        const workspace = await Workspace.findById(project.workspace);
+        const member = workspace.members.find(m => m.user.toString() === req.user._id.toString());
+        const isAdminOrOwner = member && (member.role === 'owner' || member.role === 'admin');
+
+        // Allow delete if either condition is true
+        if (isCreator || isAdminOrOwner) {
+            await project.deleteOne();
+        
+
+            return res.json({ message: "Project deleted successfully" });
+        } else {
+            return res.status(403).json({ message: "Not authorized to delete this project" });
         }
 
-        await project.deleteOne();
-        res.json({ message: "Project deleted successfully" });
-
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: "Server Error" });
     }
 };

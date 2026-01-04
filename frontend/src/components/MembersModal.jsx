@@ -37,6 +37,22 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
         }
     };
 
+    const handleDeleteWorkspace = async () => {
+        const confirmName = prompt(`To confirm deletion, type "${workspace.name}"`);
+        if (confirmName !== workspace.name) {
+            return toast.error("Workspace name did not match.");
+        }
+
+        try {
+            await axios.delete(`/api/workspaces/${workspace._id}`);
+            toast.success("Workspace deleted");
+            onClose();
+            window.location.reload(); // Hard refresh to reset state/sidebar
+        } catch (err) {
+            toast.error("Failed to delete workspace");
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded-lg w-[500px] relative shadow-xl max-h-[80vh] overflow-y-auto">
@@ -93,6 +109,25 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                         </div>
                     ))}
                 </div>
+
+                {/* DANGER ZONE - Only for Owner */}
+                {isOwner && (
+                    <div className="mt-8 pt-4 border-t border-red-100">
+                        <h3 className="text-red-600 font-bold mb-2 text-sm uppercase">Danger Zone</h3>
+                        <div className="flex justify-between items-center bg-red-50 p-3 rounded border border-red-200">
+                            <div>
+                                <p className="font-bold text-gray-800 text-sm">Delete Workspace</p>
+                                <p className="text-xs text-gray-600">This action cannot be undone.</p>
+                            </div>
+                            <button 
+                                onClick={handleDeleteWorkspace}
+                                className="bg-white text-red-600 border border-red-200 px-3 py-1 rounded text-sm font-semibold hover:bg-red-600 hover:text-white transition"
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -179,3 +179,16 @@ export const removeMember = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+
+export const deleteWorkspace = async (req, res) => {
+    try {
+        const workspaceId = req.params.id;
+    
+        await req.workspace.deleteOne();
+
+        res.json({ message: "Workspace deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};

@@ -78,3 +78,15 @@ export const updateCardOrder = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+
+
+export const deleteCard = async (req, res) => {
+    try {
+        const { id } = req.params;
+        await Card.findByIdAndDelete(id);
+        res.json({ message: "Card deleted" });
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};

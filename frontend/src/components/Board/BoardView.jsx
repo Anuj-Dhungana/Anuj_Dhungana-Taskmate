@@ -48,6 +48,11 @@ const BoardView = ({ projectId }) => {
         } catch (err) { console.error(err); }
     };
 
+    // Delete Card
+    const handleDeleteCard = (cardId) => {
+        setCards(cards.filter(c => c._id !== cardId));
+    };
+
     //  DRAG AND DROP LOGIC 
 
     const handleDragStart = (event) => {
@@ -133,6 +138,7 @@ const BoardView = ({ projectId }) => {
                         cards={cards.filter(c => c.listId === list._id)}
                         // Pass this function to update state when a card is created
                         onCardAdded={(newCard) => setCards([...cards, newCard])} 
+                        onCardDelete={handleDeleteCard}
                     />
                 ))}
 

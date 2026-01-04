@@ -8,6 +8,7 @@ import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
 import InviteUserModal from '../components/InviteUserModal';
 import MembersModal from '../components/MembersModal';
 import { Users } from 'lucide-react'; 
+import CreateProjectModal from '../components/CreateProjectModal';
 
 
 const Dashboard = () => {
@@ -19,6 +20,7 @@ const Dashboard = () => {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showMembersModal, setShowMembersModal] = useState(false);
+  const [showProjectModal, setShowProjectModal] = useState(false);
 
   // 1. Fetch List of Workspaces
   const fetchWorkspaces = async () => {
@@ -115,6 +117,7 @@ const Dashboard = () => {
     onUpdate={() => handleWorkspaceClick(selectedWorkspace.workspace._id)}
 />  
 
+
          {/* Inside Secondary Sidebar */}
 <div className="p-4 border-b border-slate-700">
     <div className="flex justify-between items-center text-white">
@@ -131,6 +134,22 @@ const Dashboard = () => {
         {selectedWorkspace.workspace.members.length} members
     </div>
 </div>
+
+<div className="flex justify-between items-center mb-2 px-2">
+    <span className="text-xs font-semibold uppercase tracking-wider">Projects</span>
+    <button 
+        onClick={() => setShowProjectModal(true)} 
+        className="hover:text-white"
+    >
+        +
+    </button>
+</div>
+<CreateProjectModal 
+    isOpen={showProjectModal}
+    onClose={() => setShowProjectModal(false)}
+    workspaceId={selectedWorkspace?.workspace._id}
+    onCreated={() => handleWorkspaceClick(selectedWorkspace.workspace._id)} 
+/>
 
                 {/* Channels Section */}
                 <div>

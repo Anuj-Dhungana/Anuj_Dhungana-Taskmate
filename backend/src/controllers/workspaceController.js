@@ -149,7 +149,7 @@ export const updateMemberRole = async (req, res) => {
         res.json({ message: "Role updated successfully" });
 
     } catch (error) {
-        console.error("Update Role Error:", error); // Print error to terminal
+        console.error("Update Role Error:", error); 
         res.status(500).json({ message: "Server Error" });
     }
 };

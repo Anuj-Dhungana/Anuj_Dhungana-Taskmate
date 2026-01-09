@@ -15,6 +15,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
     const [dueDate, setDueDate] = useState(card.dueDate ? card.dueDate.split('T')[0] : '');
     const [selectedAssignees, setSelectedAssignees] = useState(card.assignees?.map(u => u._id) || []);
     const [uploading, setUploading] = useState(false);
+    const [attachments, setAttachments] = useState(card.attachments || []);
 
     // Save Changes Handler
     const handleSave = async () => {
@@ -43,12 +44,18 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
         formData.append('file', file);
 
         try {
-            await axios.put(`/api/board/cards/${card._id}`, formData, {
+            const response = await axios.put(`/api/board/cards/${card._id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             toast.success("File uploaded");
+            
+            // Update local attachments state with the new file
+            if (response.data.attachments) {
+                setAttachments(response.data.attachments);
+            }
+            
             onUpdate(); // Refresh board to see new attachment
-            onClose(); // Close/Reopen to refresh or handle state update better
+            // DON'T close the modal - let user continue editing
         } catch (err) {
             toast.error("Upload failed");
         }
@@ -103,7 +110,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                                 <Paperclip size={18}/> Attachments
                             </h3>
                             <div className="flex flex-wrap gap-2 mb-2">
-                                {card.attachments?.map((url, idx) => {
+                                {attachments?.map((url, idx) => {
                                     // Check if it is an image
                                     const isImage = url.match(/\.(jpeg|jpg|gif|png)$/) != null;
                                     

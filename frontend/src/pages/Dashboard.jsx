@@ -11,6 +11,7 @@ import MembersModal from '../components/MembersModal';
 import CreateProjectModal from '../components/CreateProjectModal';
 import BoardView from '../components/Board/BoardView';
 import ChatArea from '../components/Chat/ChatArea';
+import NotificationMenu from '../components/NotificationMenu';
 
 const Dashboard = () => {
     const { userInfo, logout } = useAuthStore();
@@ -183,9 +184,15 @@ const Dashboard = () => {
                 {/* Header */}
                 <header className="bg-white h-14 border-b flex items-center px-6 shadow-sm justify-between">
                     <h2 className="font-semibold text-gray-800">
-                        {activeProject ? activeProject.name : activeChannel ? `#${activeChannel.name}` : (selectedWorkspace ? 'Dashboard' : 'Welcome')}
+                        {activeProject ? activeProject.name : (selectedWorkspace ? 'Dashboard' : 'Welcome')}
                     </h2>
-                    {userInfo && <span className="text-sm text-gray-500">{userInfo.fullname}</span>}
+                    
+                    <div className="flex items-center gap-4">
+                        {/* Notification Bell */}
+                        <NotificationMenu />
+                        
+                        {userInfo && <span className="text-sm text-gray-500 font-medium">{userInfo.fullname}</span>}
+                    </div>
                 </header>
 
                 <main className="flex-1 overflow-hidden relative">

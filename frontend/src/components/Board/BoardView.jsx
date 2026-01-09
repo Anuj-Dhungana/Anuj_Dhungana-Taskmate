@@ -32,14 +32,15 @@ const [selectedCard, setSelectedCard] = useState(null);
 };
 
     // Fetch Board Data
+    const fetchBoard = async () => {
+        try {
+            const res = await axios.get(`/api/board/${projectId}`);
+            setLists(res.data.lists);
+            setCards(res.data.cards);
+        } catch (err) { console.error(err); }
+    };
+
     useEffect(() => {
-        const fetchBoard = async () => {
-            try {
-                const res = await axios.get(`/api/board/${projectId}`);
-                setLists(res.data.lists);
-                setCards(res.data.cards);
-            } catch (err) { console.error(err); }
-        };
         fetchBoard();
     }, [projectId]);
 
@@ -177,8 +178,8 @@ const [selectedCard, setSelectedCard] = useState(null);
                 onClose={() => setSelectedCard(null)}
                 card={selectedCard}
                 onUpdate={() => {
-                    
-                    window.location.reload(); 
+                    // Refetch board data instead of full page reload
+                    fetchBoard();
                 }}
             />
 

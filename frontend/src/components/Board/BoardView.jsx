@@ -11,12 +11,14 @@ import {
 import { arrayMove } from '@dnd-kit/sortable';
 import BoardList from './BoardList';
 import TaskCard from './TaskCard';
+import TaskDetailModal from './TaskDetailModal';
 
 const BoardView = ({ projectId }) => {
     const [lists, setLists] = useState([]);
     const [cards, setCards] = useState([]);
     const [newListTitle, setNewListTitle] = useState('');
     const [activeId, setActiveId] = useState(null); // For drag overlay
+const [selectedCard, setSelectedCard] = useState(null);
 
     // Sensors handle mouse/touch interactions
     const sensors = useSensors(
@@ -24,6 +26,10 @@ const BoardView = ({ projectId }) => {
             activationConstraint: { distance: 5 }, // Drag starts after 5px movement
         })
     );
+
+    const handleCardClick = (card) => {
+    setSelectedCard(card);
+};
 
     // Fetch Board Data
     useEffect(() => {
@@ -139,6 +145,7 @@ const BoardView = ({ projectId }) => {
                         // Pass this function to update state when a card is created
                         onCardAdded={(newCard) => setCards([...cards, newCard])} 
                         onCardDelete={handleDeleteCard}
+                        onCardClick={handleCardClick}
                     />
                 ))}
 
@@ -164,6 +171,16 @@ const BoardView = ({ projectId }) => {
                     </div>
                 ) : null}
             </DragOverlay>
+
+            <TaskDetailModal 
+                isOpen={!!selectedCard}
+                onClose={() => setSelectedCard(null)}
+                card={selectedCard}
+                onUpdate={() => {
+                    
+                    window.location.reload(); 
+                }}
+            />
 
         </DndContext>
     );

@@ -7,6 +7,7 @@ const cardSchema = new mongoose.Schema({
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
     order: { type: Number, default: 0 }, // To keep them sorted top-to-bottom
     assignees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    attachments: [String], 
     dueDate: { type: Date }
 }, {
     timestamps: true

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import axios from 'axios';
 
 
-const BoardList = ({ list, cards, onCardAdded, onCardDelete }) => { // Accept onCardAdded and onCardDelete props
+const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick }) => { // Accept onCardAdded, onCardDelete, and onCardClick props
   // Hook to make this list a "drop zone"
   const { setNodeRef } = useDroppable({
     id: list._id,
@@ -22,7 +22,7 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete }) => { // Accept on
         const res = await axios.post('/api/board/cards', {
             title: newCardTitle,
             listId: list._id,
-            projectId: list.projectId // You might need to pass this or get from list
+            projectId: list.projectId 
         });
         // We need to tell the parent (BoardView) to update the cards array
         onCardAdded(res.data); 
@@ -50,7 +50,7 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete }) => { // Accept on
             strategy={verticalListSortingStrategy}
         >
           {cards.map((card) => (
-            <TaskCard key={card._id} card={card} onDelete={onCardDelete} />
+            <TaskCard key={card._id} card={card} onDelete={onCardDelete} onClick={() => onCardClick(card)} />
           ))}
         </SortableContext>
       </div>

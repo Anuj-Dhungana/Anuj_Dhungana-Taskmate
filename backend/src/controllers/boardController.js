@@ -90,3 +90,45 @@ export const deleteCard = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+
+
+export const updateCard = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, dueDate, assignees } = req.body;
+
+        // Find card
+        const card = await Card.findById(id);
+        if (!card) return res.status(404).json({ message: "Card not found" });
+
+        // Update Text Fields
+        if (title) card.title = title;
+        if (description !== undefined) card.description = description;
+        if (dueDate !== undefined) card.dueDate = dueDate;
+        
+        // Update Assignees (Expects array of User IDs)
+        if (assignees) {
+            // Ensure it's parsed correctly if sent as JSON string
+            card.assignees = Array.isArray(assignees) ? assignees : JSON.parse(assignees);
+        }
+
+        // Handle File Upload (if a file was sent)
+        if (req.file) {
+            // We store the Cloudinary URL
+           
+            if (!card.attachments) card.attachments = [];
+            card.attachments.push(req.file.path); 
+        }
+
+        await card.save();
+        
+        // Populate assignees to show their names immediately on frontend
+        await card.populate('assignees', 'fullname avatar');
+
+        res.json(card);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};

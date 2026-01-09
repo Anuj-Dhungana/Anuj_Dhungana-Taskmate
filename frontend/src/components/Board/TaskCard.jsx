@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const TaskCard = ({ card }) => {
+const TaskCard = ({ card, onDelete, onClick }) => {
   // Hook to make this element draggable
   const {
     attributes,
@@ -24,6 +24,7 @@ const TaskCard = ({ card }) => {
       style={style}
       {...attributes}
       {...listeners} // This makes the whole card draggable
+      onClick={onClick}
       className="bg-white p-3 rounded shadow-sm border border-gray-200 cursor-grab hover:border-blue-400 mb-2 touch-none"
     >
       <h4 className="text-sm font-medium text-gray-800">{card.title}</h4>

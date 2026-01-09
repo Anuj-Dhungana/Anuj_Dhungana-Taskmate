@@ -1,6 +1,7 @@
 import List from '../models/List.js';
 import Card from '../models/Card.js';
 import Project from '../models/Project.js';
+import Notification from '../models/Notification.js';
 
 
 export const getBoard = async (req, res) => {
@@ -107,10 +108,41 @@ export const updateCard = async (req, res) => {
         if (description !== undefined) card.description = description;
         if (dueDate !== undefined) card.dueDate = dueDate;
         
-        // Update Assignees (Expects array of User IDs)
+        // Update Assignees
         if (assignees) {
-            // Ensure it's parsed correctly if sent as JSON string
-            card.assignees = Array.isArray(assignees) ? assignees : JSON.parse(assignees);
+            const newAssignees = Array.isArray(assignees) ? assignees : JSON.parse(assignees);
+            
+            // Find who is NEWLY assigned
+            const previousAssignees = card.assignees.map(id => id.toString());
+            const addedUsers = newAssignees.filter(id => !previousAssignees.includes(id));
+
+            card.assignees = newAssignees;
+
+            // Send Notifications to new assignees
+            const io = req.app.get('io'); // Get Socket Instance
+
+            addedUsers.forEach(async (userId) => {
+                // Don't notify if assigning self
+                if (userId !== req.user._id.toString()) {
+                    
+                    // 1. Create DB Record
+                    const notif = await Notification.create({
+                        recipient: userId,
+                        sender: req.user._id,
+                        message: `assigned you to task "${card.title}"`,
+                        type: 'assignment',
+                        relatedId: card._id
+                    });
+
+                    // 2. Send Real-time Socket Event
+                    // We emit to the user's specific room (we need to make sure frontend joins it)
+                    io.emit("new_notification", { 
+                        ...notif._doc,
+                        recipient: userId, // Frontend will filter this
+                        sender: { fullname: req.user.fullname } 
+                    });
+                }
+            });
         }
 
         // Handle File Upload (if a file was sent)

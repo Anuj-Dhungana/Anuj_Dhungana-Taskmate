@@ -11,7 +11,8 @@ import authRoutes from './routes/authRoutes.js';
 import workspaceRoutes from './routes/workspaceRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import boardRoutes from './routes/boardRoutes.js';
-import chatRoutes from './routes/chatRoutes.js'; // <--- Import Chat Routes
+import chatRoutes from './routes/chatRoutes.js'; 
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // Models for Socket Saving
 import Message from './models/Message.js';
@@ -87,6 +88,8 @@ app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/board', boardRoutes);
 app.use('/api/messages', chatRoutes); 
+app.use('/api/notifications', notificationRoutes);
+app.set('io', io); 
 
 app.get('/', (req, res) => {
     res.json({ message: "TaskMate Backend is running!" });

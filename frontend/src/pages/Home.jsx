@@ -31,7 +31,7 @@ const Home = () => {
               </Link>
               <Link
                 to="/register"
-                className="bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-md shadow-violet-200"
+                className="bg-linear-to-r from-violet-600 to-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-md shadow-violet-200"
               >
                 Get Started Free
               </Link>
@@ -75,7 +75,7 @@ const Home = () => {
               
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-tight">
                 One app to replace
-                <span className="bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent"> them all</span>
+                <span className="bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent"> them all</span>
               </h1>
               
               <p className="mt-6 text-lg text-gray-600 max-w-xl">
@@ -87,7 +87,7 @@ const Home = () => {
               <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link
                   to="/register"
-                  className="group bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 flex items-center justify-center"
+                  className="group bg-linear-to-r from-violet-600 to-indigo-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 flex items-center justify-center"
                 >
                   Get Started — It's Free
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -128,7 +128,7 @@ const Home = () => {
                   </div>
                   
                   {/* Main Content */}
-                  <div className="flex-1 p-4 bg-gray-50 min-h-[300px]">
+                  <div className="flex-1 p-4 bg-gray-50 min-h-75">
                     <div className="grid grid-cols-3 gap-3">
                       {/* Task Cards */}
                       <div className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
@@ -255,7 +255,7 @@ const Home = () => {
       </section>
 
       {/* Big Feature Highlight - Slack Style */}
-      <section className="py-24 px-4 bg-gradient-to-br from-violet-600 to-indigo-700 overflow-hidden">
+      <section className="py-24 px-4 bg-linear-to-br from-violet-600 to-indigo-700 overflow-hidden">
         <div className="max-w-7xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-white">
@@ -292,7 +292,7 @@ const Home = () => {
               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
                 <div className="bg-white rounded-xl p-4">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-pink-400 to-rose-400 rounded-full"></div>
+                    <div className="w-10 h-10 bg-linear-to-br from-pink-400 to-rose-400 rounded-full"></div>
                     <div>
                       <div className="font-medium text-gray-900">Sarah Chen</div>
                       <div className="text-xs text-gray-500">Typing...</div>
@@ -336,7 +336,7 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/register"
-              className="group bg-gradient-to-r from-violet-600 to-indigo-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 flex items-center justify-center"
+              className="group bg-linear-to-r from-violet-600 to-indigo-600 text-white px-8 py-4 rounded-xl text-lg font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all shadow-lg shadow-violet-200 flex items-center justify-center"
             >
               Get Started Free
               <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
@@ -361,7 +361,7 @@ const Home = () => {
             {/* Brand */}
             <div className="col-span-2">
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                <div className="w-8 h-8 bg-linear-to-br from-violet-600 to-indigo-600 rounded-lg flex items-center justify-center">
                   <Layers className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold text-white">TaskMate</span>

@@ -72,7 +72,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
 
     return (
         <div className="fixed inset-0 bg-black/60 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg w-[700px] h-[80vh] flex flex-col relative shadow-2xl">
+            <div className="bg-white rounded-lg w-175 h-[80vh] flex flex-col relative shadow-2xl">
                 
                 {/* Header (Title) */}
                 <div className="p-6 border-b flex justify-between items-start">

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LogOut, PlusSquare, Hash, Kanban, Menu, Settings, UserPlus, Trash2 } from 'lucide-react';
+import { LogOut, PlusSquare, Hash, Kanban, Menu, Settings, UserPlus, Trash2, Layout, Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/userWorkspaceStore';
@@ -10,6 +10,7 @@ import InviteUserModal from '../components/InviteUserModal';
 import MembersModal from '../components/MembersModal';
 import CreateProjectModal from '../components/CreateProjectModal';
 import BoardView from '../components/Board/BoardView';
+import ProjectCalendar from '../components/Calendar/ProjectCalendar';
 import ChatArea from '../components/Chat/ChatArea';
 import NotificationMenu from '../components/NotificationMenu';
 
@@ -27,6 +28,7 @@ const Dashboard = () => {
     const [loadingDetails, setLoadingDetails] = useState(false);
     const [activeProject, setActiveProject] = useState(null); // Track which project (board) is open
     const [activeChannel, setActiveChannel] = useState(null); // Track which channel (chat) is open
+    const [viewMode, setViewMode] = useState('board'); // 'board' or 'calendar'
 
     // 1. Fetch List of Workspaces on Load
     const fetchWorkspaces = async () => {
@@ -183,15 +185,53 @@ const Dashboard = () => {
 
                 {/* Header */}
                 <header className="bg-white h-14 border-b flex items-center px-6 shadow-sm justify-between">
-                    <h2 className="font-semibold text-gray-800">
-                        {activeProject ? activeProject.name : (selectedWorkspace ? 'Dashboard' : 'Welcome')}
-                    </h2>
-                    
                     <div className="flex items-center gap-4">
-                        {/* Notification Bell */}
+                        <h2 className="font-semibold text-gray-800">
+                            {activeProject ? activeProject.name : (selectedWorkspace ? 'Dashboard' : 'Welcome')}
+                        </h2>
+
+                        {/* VIEW TOGGLE (Only show if a project is active) */}
+                        {activeProject && (
+                            <div className="flex bg-gray-100 p-1 rounded-lg ml-4">
+                                <button
+                                    onClick={() => setViewMode('board')}
+                                    className={`p-1.5 rounded-md flex items-center gap-1 text-xs font-medium transition ${viewMode === 'board' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    <Layout size={14} />  Board
+                                </button>
+                                <button
+                                    onClick={() => setViewMode('calendar')}
+                                    className={`p-1.5 rounded-md flex items-center gap-1 text-xs font-medium transition ${viewMode === 'calendar' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                >
+                                    <CalendarIcon size={14} />  Calendar
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-4">
                         <NotificationMenu />
-                        
-                        {userInfo && <span className="text-sm text-gray-500 font-medium">{userInfo.fullname}</span>}
+                        {userInfo && !activeProject && <span className="text-sm text-gray-500 font-medium">{userInfo.fullname}</span>}
+                        {/* Delete Project Button */}
+                        {activeProject && (
+                            <button
+                                onClick={async () => {
+                                    if (!confirm(`Delete project "${activeProject.name}"?`)) return;
+                                    try {
+                                        await axios.delete(`/api/projects/${activeProject._id}`);
+                                        toast.success("Project deleted");
+                                        handleWorkspaceClick(selectedWorkspace.workspace._id); // Refresh
+                                        setActiveProject(null); // Close board
+                                    } catch (err) {
+                                        toast.error("Failed to delete project");
+                                    }
+                                }}
+                                className="text-gray-400 hover:text-red-500"
+                                title="Delete Project"
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        )}
                     </div>
                 </header>
 
@@ -214,39 +254,22 @@ const Dashboard = () => {
 
                     {/* Case 3: Channel Open (Show Chat) */}
                     {activeChannel && (
-                        <ChatArea 
-                            channel={activeChannel} 
+                        <ChatArea
+                            channel={activeChannel}
                             workspaceId={selectedWorkspace.workspace._id}
                         />
                     )}
 
-                    {/* Case 4: Project Open (Show Board) */}
+                    {/* Case 4: Project Open (Show Board or Calendar) */}
                     {activeProject && (
                         <div className="h-full flex flex-col">
-                            <header className="px-6 py-4 bg-white border-b flex justify-between items-center">
-                                <h1 className="text-2xl font-bold text-gray-800">{activeProject.name}</h1>
-
-                                {/* DELETE PROJECT BUTTON */}
-                                <button
-                                    onClick={async () => {
-                                        if (!confirm(`Delete project "${activeProject.name}"?`)) return;
-                                        try {
-                                            await axios.delete(`/api/projects/${activeProject._id}`);
-                                            toast.success("Project deleted");
-                                            handleWorkspaceClick(selectedWorkspace.workspace._id); // Refresh
-                                            setActiveProject(null); // Close board
-                                        } catch (err) {
-                                            toast.error("Failed to delete project");
-                                        }
-                                    }}
-                                    className="text-red-500 hover:bg-red-50 p-2 rounded flex items-center gap-2 text-sm font-medium"
-                                >
-                                    <Trash2 size={16} /> Delete Project
-                                </button>
-                            </header>
-
                             <div className="flex-1 overflow-auto">
-                                <BoardView projectId={activeProject._id} />
+                                {/* TOGGLE LOGIC */}
+                                {viewMode === 'board' ? (
+                                    <BoardView projectId={activeProject._id} />
+                                ) : (
+                                    <ProjectCalendar projectId={activeProject._id} />
+                                )}
                             </div>
                         </div>
                     )}

@@ -151,7 +151,7 @@ const [selectedCard, setSelectedCard] = useState(null);
                 ))}
 
                 {/* Add New List Input */}
-                <div className="w-72 flex-shrink-0">
+                <div className="w-72 shrink-0">
                     <form onSubmit={handleAddList} className="bg-white/50 hover:bg-white p-2 rounded transition cursor-pointer">
                         <input 
                             type="text" 

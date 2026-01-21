@@ -80,7 +80,7 @@ const NotificationMenu = () => {
                                     onClick={() => handleRead(n)}
                                     className={`p-3 border-b flex items-start gap-3 cursor-pointer hover:bg-gray-50 transition ${n.isRead ? 'opacity-60' : 'bg-blue-50'}`}
                                 >
-                                    <div className="w-2 h-2 mt-2 rounded-full flex-shrink-0 bg-blue-500" style={{ opacity: n.isRead ? 0 : 1 }}></div>
+                                    <div className="w-2 h-2 mt-2 rounded-full shrink-0 bg-blue-500" style={{ opacity: n.isRead ? 0 : 1 }}></div>
                                     <div>
                                         <p className="text-sm text-gray-800">
                                             <span className="font-bold">{n.sender?.fullname}</span> {n.message}

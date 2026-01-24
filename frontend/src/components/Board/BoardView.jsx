@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { 
   DndContext, 
@@ -10,15 +10,20 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import BoardList from './BoardList';
-import TaskCard from './TaskCard';
 import TaskDetailModal from './TaskDetailModal';
+import CreateTaskModal from './CreateTaskModal';
+import { ArrowLeft, Plus, Settings } from 'lucide-react';
+import useWorkspaceStore from '../../store/userWorkspaceStore';
 
-const BoardView = ({ projectId }) => {
+const BoardView = ({ projectId, project, onBack }) => {
     const [lists, setLists] = useState([]);
     const [cards, setCards] = useState([]);
     const [newListTitle, setNewListTitle] = useState('');
     const [activeId, setActiveId] = useState(null); // For drag overlay
 const [selectedCard, setSelectedCard] = useState(null);
+    const [filter, setFilter] = useState('All');
+    const [showTaskModal, setShowTaskModal] = useState(false);
+    const { selectedWorkspace } = useWorkspaceStore();
 
     // Sensors handle mouse/touch interactions
     const sensors = useSensors(
@@ -128,6 +133,35 @@ const [selectedCard, setSelectedCard] = useState(null);
         }
     };
 
+    // Derived stats for header
+    const listCounts = useMemo(() => {
+        const map = {};
+        lists.forEach((l) => {
+            map[l._id] = 0;
+        });
+        cards.forEach((c) => {
+            map[c.listId] = (map[c.listId] || 0) + 1;
+        });
+        return map;
+    }, [lists, cards]);
+
+    const totalTasks = cards.length;
+    const doneList = lists.find((l) => l.title?.toLowerCase() === 'done');
+    const doneCount = doneList ? listCounts[doneList._id] || 0 : 0;
+    const progress = totalTasks === 0 ? 0 : Math.round((doneCount / totalTasks) * 100);
+
+    const filteredLists = useMemo(() => {
+        if (filter === 'All') return lists;
+        return lists.filter((l) => l.title?.toLowerCase() === filter.toLowerCase());
+    }, [filter, lists]);
+
+    const handleAddTaskClick = () => {
+        setFilter('All');
+        setShowTaskModal(true);
+    };
+
+    const filters = ['All', 'To Do', 'In Progress', 'Done'];
+
     return (
         <DndContext 
             sensors={sensors} 
@@ -135,33 +169,112 @@ const [selectedCard, setSelectedCard] = useState(null);
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="h-full overflow-x-auto p-4 flex items-start space-x-4">
-                
-                {/* Render Lists */}
-                {lists.map(list => (
-                    <BoardList 
-                        key={list._id} 
-                        list={list} 
-                        cards={cards.filter(c => c.listId === list._id)}
-                        // Pass this function to update state when a card is created
-                        onCardAdded={(newCard) => setCards([...cards, newCard])} 
-                        onCardDelete={handleDeleteCard}
-                        onCardClick={handleCardClick}
-                    />
-                ))}
+            <div className="flex flex-col h-full">
+                {/* Header */}
+                <div className="flex items-center justify-between px-2 pb-4">
+                    <div>
+                        <div className="flex items-center gap-3 mb-1">
+                            {onBack && (
+                                <button
+                                    onClick={onBack}
+                                    className="text-sm text-gray-600 hover:text-blue-600 inline-flex items-center gap-1"
+                                >
+                                    <ArrowLeft size={14} /> Back
+                                </button>
+                            )}
+                        </div>
+                        <h2 className="text-xl font-semibold text-gray-900">{project?.name || 'Project Board'}</h2>
+                        <p className="text-sm text-gray-500">{project?.description || 'Track tasks across lists'}</p>
+                        <div className="flex items-center gap-2 mt-3 text-xs">
+                            {filters.map((f) => (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`px-3 py-1 rounded-full border text-gray-700 transition ${
+                                        filter === f ? 'bg-gray-900 text-white border-gray-900' : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    {f}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
 
-                {/* Add New List Input */}
-                <div className="w-72 shrink-0">
-                    <form onSubmit={handleAddList} className="bg-white/50 hover:bg-white p-2 rounded transition cursor-pointer">
-                        <input 
-                            type="text" 
-                            placeholder="+ Add another list" 
-                            className="w-full bg-transparent p-2 outline-none font-medium placeholder-gray-600"
-                            value={newListTitle}
-                            onChange={e => setNewListTitle(e.target.value)}
-                        />
-                    </form>
+                    <div className="flex items-center gap-4">
+                        <div className="text-sm text-gray-600 flex items-center gap-2">
+                            <span>Progress:</span>
+                            <div className="flex items-center gap-2">
+                                <div className="w-20 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-blue-500" style={{ width: `${progress}%` }}></div>
+                                </div>
+                                <span className="text-gray-800 font-semibold text-xs">{progress}%</span>
+                            </div>
+                        </div>
+                        <button
+                            onClick={handleAddTaskClick}
+                            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 transition"
+                        >
+                            <Plus size={16} /> Add Task
+                        </button>
+                        <button className="w-9 h-9 rounded-md border flex items-center justify-center text-gray-500 hover:text-gray-700">
+                            <Settings size={16} />
+                        </button>
+                    </div>
                 </div>
+
+                <div className="flex items-center gap-3 text-[11px] text-gray-600 px-2 pb-4">
+                    <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">{totalTasks} Tasks</span>
+                    <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">{listCounts[lists.find(l => l.title?.toLowerCase() === 'to do')?._id] || 0} To Do</span>
+                    <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">{listCounts[lists.find(l => l.title?.toLowerCase() === 'in progress')?._id] || 0} In Progress</span>
+                    <span className="flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-full">{doneCount} Done</span>
+                </div>
+
+                <div className="flex-1 overflow-x-auto p-2 flex items-start space-x-4">
+                    {/* Render Lists */}
+                    {filteredLists.map(list => (
+                        <BoardList 
+                            key={list._id} 
+                            list={list} 
+                            cards={cards.filter(c => c.listId === list._id)}
+                            // Pass this function to update state when a card is created
+                            onCardAdded={(newCard) => setCards([...cards, newCard])} 
+                            onCardDelete={handleDeleteCard}
+                            onCardClick={handleCardClick}
+                        />
+                    ))}
+
+                    {/* Add New List Input */}
+                    <div className="w-72 shrink-0">
+                        <form onSubmit={handleAddList} className="bg-white/50 hover:bg-white p-2 rounded transition cursor-pointer border border-dashed border-gray-300">
+                            <input 
+                                type="text" 
+                                placeholder="+ Add another list" 
+                                className="w-full bg-transparent p-2 outline-none font-medium placeholder-gray-600"
+                                value={newListTitle}
+                                onChange={e => setNewListTitle(e.target.value)}
+                            />
+                        </form>
+                    </div>
+                </div>
+            
+            <CreateTaskModal
+                isOpen={showTaskModal}
+                onClose={() => setShowTaskModal(false)}
+                projectId={projectId}
+                lists={lists}
+                workspaceMembers={selectedWorkspace?.workspace?.members || []}
+                onCreated={(newCard) => {
+                            setCards((prev) => [...prev, newCard]);
+                            const targetList = lists.find((l) => l._id === newCard.listId);
+                            if (targetList) {
+                                const label = targetList.title;
+                                if (['to do', 'in progress', 'done'].includes(label?.toLowerCase())) {
+                                    setFilter(label);
+                                }
+                            }
+                            setShowTaskModal(false);
+                        }}
+            />
             </div>
 
             {/* Drag Overlay (Visual effect while dragging) */}

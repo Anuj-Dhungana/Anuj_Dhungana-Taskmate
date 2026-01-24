@@ -6,12 +6,16 @@ import User from '../models/User.js';
 
 export const createWorkspace = async (req, res) => {
     try {
-        const { name, description } = req.body;
+        const { name, description, color } = req.body;
+
+        // Simple guard: ensure color is a string if provided
+        const safeColor = typeof color === 'string' && color.trim() ? color : undefined;
 
         // 1. Create Workspace
         const workspace = await Workspace.create({
             name,
             description,
+            color: safeColor,
             members: [{ user: req.user._id, role: 'owner' }]
         });
 

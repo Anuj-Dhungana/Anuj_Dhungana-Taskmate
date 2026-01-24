@@ -8,7 +8,8 @@ const cardSchema = new mongoose.Schema({
     order: { type: Number, default: 0 }, // To keep them sorted top-to-bottom
     assignees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     attachments: [String], 
-    dueDate: { type: Date }
+    dueDate: { type: Date },
+    priority: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Medium' }
 }, {
     timestamps: true
 });

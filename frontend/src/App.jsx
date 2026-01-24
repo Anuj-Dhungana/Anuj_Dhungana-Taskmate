@@ -4,6 +4,11 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
+import DashboardLayout from './pages/DashboardLayout';
+import WorkspaceList from './pages/WorkspaceList';
+import WorkspaceDetail from './pages/WorkspaceDetail';
+import ProjectView from './pages/ProjectView';
+import Settings from './pages/Settings';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -25,18 +30,53 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         
-        {/* Protected Dashboard Route */}
+        {/* Protected Routes with Shared Layout */}
         <Route 
           path="/dashboard" 
           element={
             <PrivateRoute>
-              <Dashboard />
+              <DashboardLayout />
             </PrivateRoute>
-          } 
-        />
-        <Route path="/" element={<Navigate to="/login" />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
+          }
+        >
+          <Route index element={<Dashboard />} />
+        </Route>
 
+        <Route 
+          path="/workspaces" 
+          element={
+            <PrivateRoute>
+              <DashboardLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<WorkspaceList />} />
+          <Route path=":workspaceId" element={<WorkspaceDetail />} />
+        </Route>
+
+        <Route 
+          path="/projects" 
+          element={
+            <PrivateRoute>
+              <DashboardLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route path=":projectId" element={<ProjectView />} />
+        </Route>
+
+        <Route 
+          path="/settings" 
+          element={
+            <PrivateRoute>
+              <DashboardLayout />
+            </PrivateRoute>
+          }
+        >
+          <Route index element={<Settings />} />
+        </Route>
+
+        <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
         <Route 

@@ -1,14 +1,11 @@
 import { Calendar, dateFnsLocalizer } from 'react-big-calendar';
-import format from 'date-fns/format';
-import parse from 'date-fns/parse';
-import startOfWeek from 'date-fns/startOfWeek';
-import getDay from 'date-fns/getDay';
-import enUS from 'date-fns/locale/en-US';
+import { format, parse, startOfWeek, getDay } from 'date-fns';
+import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 
-// Setup Localizer (Required for the library to handle dates)
+// Setup Localizer
 const locales = {
   'en-US': enUS,
 };
@@ -23,25 +20,38 @@ const localizer = dateFnsLocalizer({
 
 const ProjectCalendar = ({ projectId }) => {
     const [events, setEvents] = useState([]);
+    const [view, setView] = useState('month');
+    const [date, setDate] = useState(new Date());
 
     useEffect(() => {
         const fetchCards = async () => {
             try {
-                // Reuse the board API to get cards
                 const res = await axios.get(`/api/board/${projectId}`);
                 const cards = res.data.cards;
 
-                // Transform Cards into Calendar Events
                 const calendarEvents = cards
-                    .filter(card => card.dueDate) // Only cards with dates
-                    .map(card => ({
-                        id: card._id,
-                        title: card.title,
-                        start: new Date(card.dueDate),
-                        end: new Date(card.dueDate), // One-day event by default
-                        allDay: true,
-                        resource: card
-                    }));
+                    .filter(card => card.dueDate)
+                    .map(card => {
+                        // 1. Create a Date object from the due date
+                        const startDate = new Date(card.dueDate);
+                        
+                        // 2. Force time to 9:00 AM (so it shows up nicely in Week view)
+                        // Note: In a real app, you'd let users pick a specific time.
+                        startDate.setHours(9, 0, 0);
+
+                        // 3. Set End time to 10:00 AM (1 hour duration)
+                        const endDate = new Date(startDate);
+                        endDate.setHours(10, 0, 0);
+
+                        return {
+                            id: card._id,
+                            title: card.title,
+                            start: startDate,
+                            end: endDate,
+                            allDay: false, // <--- CHANGED: Shows in the time grid now
+                            resource: card
+                        };
+                    });
 
                 setEvents(calendarEvents);
             } catch (err) {
@@ -51,11 +61,10 @@ const ProjectCalendar = ({ projectId }) => {
         fetchCards();
     }, [projectId]);
 
-    // Custom Style for Event Bars
     const eventStyleGetter = (event) => {
         return {
             style: {
-                backgroundColor: '#2563EB', // Blue-600
+                backgroundColor: '#2563EB',
                 borderRadius: '4px',
                 opacity: 0.8,
                 color: 'white',
@@ -66,18 +75,29 @@ const ProjectCalendar = ({ projectId }) => {
     };
 
     return (
-        <div className="h-full bg-white p-4 rounded-lg shadow-sm">
-            <Calendar
-                localizer={localizer}
-                events={events}
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: 'calc(100vh - 200px)' }} // Adjust height dynamically
-                views={['month', 'week', 'day']}
-                defaultView="month"
-                eventPropGetter={eventStyleGetter}
-                onSelectEvent={(event) => alert(`Task: ${event.title}\nDue: ${event.start.toDateString()}`)}
-            />
+        <div className="h-full bg-white p-4 rounded-lg shadow-sm flex flex-col">
+            {/* The wrapper div needs flex-1 to fill the space properly */}
+            <div className="flex-1" style={{ minHeight: '500px' }}>
+                <Calendar
+                    localizer={localizer}
+                    events={events}
+                    startAccessor="start"
+                    endAccessor="end"
+                    style={{ height: '100%' }} // Fill the parent
+                    views={['month', 'week', 'day']}
+                    view={view} // Controlled view
+                    date={date} // Controlled date
+                    onView={(newView) => setView(newView)} // Update view state
+                    onNavigate={(newDate) => setDate(newDate)} // Update date state
+                    eventPropGetter={eventStyleGetter}
+                    onSelectEvent={(event) => alert(`${event.title}`)}
+                    
+                    // Fix for "Week" view: Sets the earliest time shown to 8am
+                    min={new Date(0, 0, 0, 8, 0, 0)} 
+                    // Sets the latest time shown to 8pm
+                    max={new Date(0, 0, 0, 20, 0, 0)}
+                />
+            </div>
         </div>
     );
 };

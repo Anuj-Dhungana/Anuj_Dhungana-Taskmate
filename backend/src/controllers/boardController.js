@@ -44,7 +44,7 @@ export const createList = async (req, res) => {
 
 export const createCard = async (req, res) => {
     try {
-        const { title, listId, projectId } = req.body;
+        const { title, listId, projectId, description, dueDate, assignees = [], priority } = req.body;
 
         // Find highest order in this list
         const lastCard = await Card.findOne({ listId }).sort('-order');
@@ -54,9 +54,14 @@ export const createCard = async (req, res) => {
             title,
             listId,
             projectId,
-            order: newOrder
+            order: newOrder,
+            description: description || '',
+            dueDate: dueDate ? new Date(dueDate) : undefined,
+            assignees: Array.isArray(assignees) ? assignees : [],
+            priority: ['Low', 'Medium', 'High'].includes(priority) ? priority : 'Medium'
         });
 
+        await card.populate('assignees', 'fullname avatar');
         res.status(201).json(card);
     } catch (error) {
         res.status(500).json({ message: "Server Error" });
@@ -97,7 +102,7 @@ export const deleteCard = async (req, res) => {
 export const updateCard = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, dueDate, assignees } = req.body;
+        const { title, description, dueDate, assignees, priority } = req.body;
 
         // Find card
         const card = await Card.findById(id);
@@ -107,6 +112,7 @@ export const updateCard = async (req, res) => {
         if (title) card.title = title;
         if (description !== undefined) card.description = description;
         if (dueDate !== undefined) card.dueDate = dueDate;
+        if (priority !== undefined && ['Low', 'Medium', 'High'].includes(priority)) card.priority = priority;
         
         // Update Assignees
         if (assignees) {

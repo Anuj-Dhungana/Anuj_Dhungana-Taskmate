@@ -10,6 +10,10 @@ const workspaceSchema = new mongoose.Schema({
         type: String,
         default: ''
     },
+    color: {
+        type: String,
+        default: '#F97316'
+    },
     // Who owns/is inside this workspace?
     members: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

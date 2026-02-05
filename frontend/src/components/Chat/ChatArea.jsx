@@ -15,7 +15,7 @@ const ChatArea = ({ channel, workspaceId }) => {
 
     // 1. Join Room & Load History when Channel Changes
     useEffect(() => {
-        if (!channel) return;
+        if (!channel || !workspaceId) return;
 
         // Fetch History
         const fetchMessages = async () => {
@@ -29,6 +29,7 @@ const ChatArea = ({ channel, workspaceId }) => {
         fetchMessages();
 
         // Join Socket Room
+        socket.emit("join_workspace", `workspace_${workspaceId}`);
         socket.emit("join_channel", channel._id);
 
         // Listen for incoming messages
@@ -45,7 +46,7 @@ const ChatArea = ({ channel, workspaceId }) => {
         return () => {
             socket.off("receive_message", handleReceiveMessage);
         };
-    }, [channel]);
+    }, [channel, workspaceId]);
 
     // Auto-scroll to bottom
     const scrollToBottom = () => {

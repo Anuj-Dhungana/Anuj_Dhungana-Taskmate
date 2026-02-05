@@ -2,6 +2,7 @@ import List from '../models/List.js';
 import Card from '../models/Card.js';
 import Project from '../models/Project.js';
 import Notification from '../models/Notification.js';
+import Workspace from '../models/Workspace.js';
 
 
 export const getBoard = async (req, res) => {
@@ -127,6 +128,9 @@ export const updateCard = async (req, res) => {
             // Send Notifications to new assignees
             const io = req.app.get('io'); // Get Socket Instance
 
+            const project = await Project.findById(card.projectId).select('workspace');
+            const workspaceRoom = project?.workspace ? `workspace_${project.workspace}` : null;
+
             addedUsers.forEach(async (userId) => {
                 // Don't notify if assigning self
                 if (userId !== req.user._id.toString()) {
@@ -142,11 +146,13 @@ export const updateCard = async (req, res) => {
 
                     // 2. Send Real-time Socket Event
                     // We emit to the user's specific room (we need to make sure frontend joins it)
-                    io.emit("new_notification", { 
+                    if (workspaceRoom) {
+                        io.to(workspaceRoom).emit("new_notification", { 
                         ...notif._doc,
                         recipient: userId, // Frontend will filter this
                         sender: { fullname: req.user.fullname } 
-                    });
+                        });
+                    }
                 }
             });
         }
@@ -165,6 +171,108 @@ export const updateCard = async (req, res) => {
         await card.populate('assignees', 'fullname avatar');
 
         res.json(card);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const getWorkspaceCards = async (req, res) => {
+    try {
+        const { workspaceId } = req.query;
+        if (!workspaceId) {
+            return res.status(400).json({ message: "workspaceId is required" });
+        }
+
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        const isMember = workspace.members.some(m => m.user.toString() === req.user._id.toString());
+        if (!isMember) {
+            return res.status(403).json({ message: "Not authorized to view this workspace" });
+        }
+
+        const projects = await Project.find({ workspace: workspaceId }).select('_id');
+        const projectIds = projects.map(p => p._id);
+
+        const cards = await Card.find({ projectId: { $in: projectIds } })
+            .populate('projectId', 'name')
+            .populate('listId', 'title')
+            .populate('assignees', 'fullname avatar');
+
+        res.json(cards);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const getMyTasks = async (req, res) => {
+    try {
+        const { workspaceId } = req.query;
+        if (!workspaceId) {
+            return res.status(400).json({ message: "workspaceId is required" });
+        }
+
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        const isMember = workspace.members.some(m => m.user.toString() === req.user._id.toString());
+        if (!isMember) {
+            return res.status(403).json({ message: "Not authorized to view this workspace" });
+        }
+
+        const projects = await Project.find({ workspace: workspaceId }).select('_id');
+        const projectIds = projects.map(p => p._id);
+
+        const cards = await Card.find({ 
+            projectId: { $in: projectIds },
+            assignees: req.user._id
+        })
+            .populate('projectId', 'name')
+            .populate('listId', 'title')
+            .populate('assignees', 'fullname avatar');
+
+        res.json(cards);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const getWorkspaceStats = async (req, res) => {
+    try {
+        const { workspaceId } = req.query;
+        if (!workspaceId) {
+            return res.status(400).json({ message: "workspaceId is required" });
+        }
+
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        const isMember = workspace.members.some(m => m.user.toString() === req.user._id.toString());
+        if (!isMember) {
+            return res.status(403).json({ message: "Not authorized to view this workspace" });
+        }
+
+        const projects = await Project.find({ workspace: workspaceId }).select('_id');
+        const projectIds = projects.map(p => p._id);
+
+        const lists = await List.find({ projectId: { $in: projectIds } }).select('_id title');
+        const listTitleMap = new Map(lists.map(l => [l._id.toString(), (l.title || '').toLowerCase()]));
+
+        const cards = await Card.find({ projectId: { $in: projectIds } }).select('listId');
+        const totalCards = cards.length;
+        const completedTasks = cards.filter(c => listTitleMap.get(c.listId.toString()) === 'done').length;
+        const activeTasks = totalCards - completedTasks;
+
+        res.json({ totalCards, completedTasks, activeTasks });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server Error" });

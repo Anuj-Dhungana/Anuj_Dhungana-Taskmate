@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Bell, Check } from 'lucide-react';
+import { Bell } from 'lucide-react';
 import io from 'socket.io-client';
 import useAuthStore from '../store/useAuthStore';
 import { toast } from 'react-hot-toast';
+import useWorkspaceStore from '../store/userWorkspaceStore';
 
 const socket = io('http://localhost:5000');
 
 const NotificationMenu = () => {
     const { userInfo } = useAuthStore();
+    const { currentWorkspaceId } = useWorkspaceStore();
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -37,6 +39,12 @@ const NotificationMenu = () => {
 
         return () => { socket.off("new_notification"); };
     }, [userInfo._id]);
+
+    useEffect(() => {
+        if (currentWorkspaceId) {
+            socket.emit("join_workspace", `workspace_${currentWorkspaceId}`);
+        }
+    }, [currentWorkspaceId]);
 
     // 3. Mark as Read Handler
     const handleRead = async (notif) => {

@@ -6,7 +6,7 @@ import useWorkspaceStore from '../store/userWorkspaceStore';
 
 const WorkspaceList = () => {
     const navigate = useNavigate();
-    const { workspaces, setWorkspaces } = useWorkspaceStore();
+    const { workspaces, setWorkspaces, setCurrentWorkspaceId } = useWorkspaceStore();
     const [loading, setLoading] = useState(true);
 
     const sortedWorkspaces = useMemo(
@@ -30,7 +30,8 @@ const WorkspaceList = () => {
     }, []);
 
     const handleSelectWorkspace = async (workspaceId) => {
-        navigate(`/workspaces/${workspaceId}`);
+        setCurrentWorkspaceId(workspaceId);
+        navigate('/projects');
     };
 
     const workspaceColor = (ws) => ws.color || '#F97316';

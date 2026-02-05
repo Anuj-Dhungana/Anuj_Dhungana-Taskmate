@@ -1,8 +1,7 @@
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import axios from 'axios';
 import {
     Grid,
-    Home,
     ListChecks,
     LogOut,
     Plus,
@@ -13,41 +12,109 @@ import {
     MessageSquare,
     Phone,
     Search,
-    Video
+    Video,
+    ChevronDown
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/userWorkspaceStore';
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
 import NotificationMenu from '../components/NotificationMenu';
+import CreateProjectModal from '../components/CreateProjectModal';
 
 const DashboardLayout = () => {
     const navigate = useNavigate();
     const { userInfo, logout } = useAuthStore();
-    const { workspaces, selectedWorkspace, setSelectedWorkspace } = useWorkspaceStore();
+    const { 
+        workspaces, 
+        selectedWorkspace, 
+        currentWorkspaceId, 
+        setWorkspaces, 
+        setSelectedWorkspace, 
+        setCurrentWorkspaceId,
+        resetWorkspaceState
+    } = useWorkspaceStore();
     const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+    const [showProjectModal, setShowProjectModal] = useState(false);
+    const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
 
     const handleLogout = async () => {
         await axios.post('/api/auth/logout');
         logout();
+        resetWorkspaceState();
         navigate('/login');
     };
 
-    const handleWorkspaceChange = async (workspaceId) => {
-        if (!workspaceId) return;
-        
+    const fetchWorkspaces = async () => {
         try {
-            const res = await axios.get(`/api/workspaces/${workspaceId}`);
-            setSelectedWorkspace(res.data);
-            navigate(`/workspaces/${workspaceId}`);
+            const res = await axios.get('/api/workspaces');
+            setWorkspaces(res.data);
+
+            // If no selection yet, default to first workspace
+            if (!currentWorkspaceId && res.data.length > 0) {
+                setCurrentWorkspaceId(res.data[0]._id);
+            }
+
+            // If stored workspace no longer exists, fallback
+            if (currentWorkspaceId && !res.data.find((w) => w._id === currentWorkspaceId)) {
+                setCurrentWorkspaceId(res.data[0]?._id || null);
+            }
         } catch (err) {
-            console.error('Failed to load workspace', err);
+            console.error('Failed to load workspaces', err);
         }
     };
 
-    const handleWorkspaceCreated = () => {
-        navigate('/workspaces');
+    const fetchWorkspaceDetails = async (workspaceId) => {
+        if (!workspaceId) return;
+        try {
+            const res = await axios.get(`/api/workspaces/${workspaceId}`);
+            setSelectedWorkspace(res.data);
+        } catch (err) {
+            console.error('Failed to load workspace details', err);
+        }
     };
+
+    useEffect(() => {
+        if (userInfo?._id) {
+            fetchWorkspaces();
+        }
+    }, [userInfo?._id]);
+
+    useEffect(() => {
+        if (currentWorkspaceId) {
+            fetchWorkspaceDetails(currentWorkspaceId);
+        }
+    }, [currentWorkspaceId]);
+
+    const handleWorkspaceSelect = (workspaceId) => {
+        setCurrentWorkspaceId(workspaceId);
+        setWorkspaceMenuOpen(false);
+        navigate('/dashboard');
+    };
+
+    const handleWorkspaceCreated = async (workspace) => {
+        await fetchWorkspaces();
+        if (workspace?._id) {
+            setCurrentWorkspaceId(workspace._id);
+        }
+        setShowWorkspaceModal(false);
+    };
+
+    const currentWorkspace = useMemo(
+        () => workspaces.find((w) => w._id === currentWorkspaceId) || null,
+        [workspaces, currentWorkspaceId]
+    );
+
+    const navItems = [
+        { to: '/dashboard', label: 'Dashboard / Analytics', icon: BarChart3 },
+        { to: '/projects', label: 'Projects', icon: Grid },
+        { to: '/tasks', label: 'My Tasks', icon: ListChecks },
+        { to: '/calendar', label: 'Calendar', icon: Calendar },
+        { to: '/chat', label: 'Chat', icon: MessageSquare },
+        { to: '/calls', label: 'Calls', icon: Phone },
+        { to: '/members', label: 'Members', icon: Users },
+        { to: '/settings', label: 'Settings', icon: Settings },
+    ];
 
     return (
         <div className="min-h-screen bg-gray-50 flex">
@@ -62,91 +129,81 @@ const DashboardLayout = () => {
                     </div>
                 </div>
 
-                <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
-                    <button
-                        onClick={() => navigate('/dashboard')}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition bg-blue-600 text-white font-medium"
-                    >
-                        <Home size={18} />
-                        Dashboard
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition hover:bg-gray-700/50 text-gray-300">
-                        <ListChecks size={18} />
-                        My Tasks
-                    </button>
-                    <button
-                        onClick={() => navigate('/workspaces')}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition hover:bg-gray-700/50 text-gray-300"
-                    >
-                        <Grid size={18} />
-                        Projects
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition hover:bg-gray-700/50 text-gray-300">
-                        <Users size={18} />
-                        Members
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition hover:bg-gray-700/50 text-gray-300">
-                        <Calendar size={18} />
-                        Calendar
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition hover:bg-gray-700/50 text-gray-300">
-                        <BarChart3 size={18} />
-                        Analytics
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition hover:bg-gray-700/50 text-gray-300">
-                        <MessageSquare size={18} />
-                        Chat
-                    </button>
-                    <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition hover:bg-gray-700/50 text-gray-300">
-                        <Phone size={18} />
-                        Calls
-                    </button>
+                <div className="px-3 pt-4">
+                    {/* Workspace Selector */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setWorkspaceMenuOpen((v) => !v)}
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg bg-gray-800/70 hover:bg-gray-700/70 transition text-left"
+                        >
+                            <div
+                                className="w-3 h-3 rounded-full"
+                                style={{ backgroundColor: currentWorkspace?.color || '#F97316' }}
+                            ></div>
+                            <div className="flex-1 min-w-0">
+                                <div className="text-sm font-semibold text-white truncate">
+                                    {currentWorkspace?.name || 'Select Workspace'}
+                                </div>
+                                <div className="text-[11px] text-gray-400">Workspace</div>
+                            </div>
+                            <ChevronDown size={14} className="text-gray-400" />
+                        </button>
 
-                    {/* Workspaces Section */}
-                    <div className="pt-6">
-                        <div className="flex items-center justify-between px-3 mb-2">
-                            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Workspaces</div>
-                            <button className="text-gray-400 hover:text-white">
-                                <Plus size={16} />
-                            </button>
-                        </div>
-                        <div className="space-y-1">
-                            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition hover:bg-gray-700/50 text-gray-300 text-sm">
-                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                Marketing Team
-                            </button>
-                            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition hover:bg-gray-700/50 text-gray-300 text-sm">
-                                <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                                Product Dev
-                            </button>
-                            <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg transition hover:bg-gray-700/50 text-gray-300 text-sm">
-                                <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-                                Design Sprint
-                            </button>
-                        </div>
+                        {workspaceMenuOpen && (
+                            <div className="absolute z-50 mt-2 w-full bg-gray-900 border border-gray-700 rounded-lg shadow-xl overflow-hidden">
+                                <div className="max-h-64 overflow-y-auto">
+                                    {workspaces.map((ws) => (
+                                        <button
+                                            key={ws._id}
+                                            onClick={() => handleWorkspaceSelect(ws._id)}
+                                            className={`w-full flex items-center gap-3 px-3 py-2 text-sm text-left hover:bg-gray-800 transition ${
+                                                ws._id === currentWorkspaceId ? 'bg-gray-800 text-white' : 'text-gray-300'
+                                            }`}
+                                        >
+                                            <span
+                                                className="w-2.5 h-2.5 rounded-full"
+                                                style={{ backgroundColor: ws.color || '#F97316' }}
+                                            ></span>
+                                            <span className="truncate">{ws.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        setWorkspaceMenuOpen(false);
+                                        setShowWorkspaceModal(true);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-400 hover:text-blue-300 hover:bg-gray-800 transition border-t border-gray-800"
+                                >
+                                    <Plus size={14} />
+                                    Create Workspace
+                                </button>
+                            </div>
+                        )}
                     </div>
+                </div>
+
+                <nav className="flex-1 px-3 py-4 space-y-1 text-sm">
+                    {navItems.map((item) => (
+                        <NavLink
+                            key={item.to}
+                            to={item.to}
+                            className={({ isActive }) =>
+                                `w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
+                                    isActive
+                                        ? 'bg-blue-600 text-white font-medium'
+                                        : 'hover:bg-gray-700/50 text-gray-300'
+                                }`
+                            }
+                        >
+                            <item.icon size={18} />
+                            {item.label}
+                        </NavLink>
+                    ))}
                 </nav>
 
-                <div className="border-t border-gray-700/50 p-4">
-                    <button
-                        onClick={() => navigate('/settings')}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition hover:bg-gray-700/50 text-gray-300 text-sm mb-3"
-                    >
-                        <Settings size={18} />
-                        Settings
-                    </button>
-                    <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-700/30">
-                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center font-semibold text-sm">
-                            {userInfo?.fullname?.[0]?.toUpperCase() || 'U'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-white truncate">{userInfo?.fullname || 'User'}</div>
-                            <div className="text-xs text-gray-400 truncate">{userInfo?.email || ''}</div>
-                        </div>
-                        <button onClick={handleLogout} className="text-gray-400 hover:text-red-400" title="Logout">
-                            <LogOut size={16} />
-                        </button>
-                    </div>
+                <div className="border-t border-gray-700/50 p-4 text-xs text-gray-400">
+                    Workspace-scoped navigation
                 </div>
             </aside>
 
@@ -166,22 +223,39 @@ const DashboardLayout = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition">
+                        <button
+                            onClick={() => navigate('/calls')}
+                            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
+                        >
                             <Video size={16} />
                             Start Call
                         </button>
                         
-                        <button
-                            onClick={() => setShowWorkspaceModal(true)}
-                            className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
-                        >
-                            <Plus size={16} />
-                            New Task
-                        </button>
+                        {currentWorkspaceId && (
+                            <button
+                                onClick={() => setShowProjectModal(true)}
+                                className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
+                            >
+                                <Plus size={16} />
+                                New Project
+                            </button>
+                        )}
 
                         <NotificationMenu />
-                        
-                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center font-semibold text-white text-sm cursor-pointer">
+
+                        <button
+                            onClick={handleLogout}
+                            className="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-red-500 hover:border-red-200 transition"
+                            title="Logout"
+                        >
+                            <LogOut size={16} />
+                        </button>
+
+                        <div
+                            onClick={() => navigate('/profile')}
+                            className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center font-semibold text-white text-sm cursor-pointer"
+                            title="Profile"
+                        >
                             {userInfo?.fullname?.[0]?.toUpperCase() || 'A'}
                         </div>
                     </div>
@@ -196,6 +270,19 @@ const DashboardLayout = () => {
                     <CreateWorkspaceModal 
                         onClose={() => setShowWorkspaceModal(false)} 
                         onCreated={handleWorkspaceCreated} 
+                    />
+                )}
+
+                {showProjectModal && currentWorkspaceId && (
+                    <CreateProjectModal
+                        isOpen={showProjectModal}
+                        onClose={() => setShowProjectModal(false)}
+                        workspaceId={currentWorkspaceId}
+                        onCreated={() => {
+                            fetchWorkspaceDetails(currentWorkspaceId);
+                            setShowProjectModal(false);
+                        }}
+                        members={selectedWorkspace?.workspace?.members || []}
                     />
                 )}
             </div>

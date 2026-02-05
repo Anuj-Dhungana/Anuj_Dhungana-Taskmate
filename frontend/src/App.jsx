@@ -8,12 +8,17 @@ import DashboardLayout from './pages/DashboardLayout';
 import WorkspaceList from './pages/WorkspaceList';
 import WorkspaceDetail from './pages/WorkspaceDetail';
 import ProjectView from './pages/ProjectView';
-import Settings from './pages/Settings';
+import WorkspaceSettings from './pages/Settings';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
 import useAuthStore from './store/useAuthStore';
 import Profile from './pages/Profile';
+import MyTasks from './pages/MyTasks';
+import WorkspaceCalendar from './pages/WorkspaceCalendar';
+import WorkspaceChat from './pages/WorkspaceChat';
+import WorkspaceCalls from './pages/WorkspaceCalls';
+import WorkspaceMembers from './pages/WorkspaceMembers';
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {
@@ -32,48 +37,23 @@ function App() {
         
         {/* Protected Routes with Shared Layout */}
         <Route 
-          path="/dashboard" 
           element={
             <PrivateRoute>
               <DashboardLayout />
             </PrivateRoute>
           }
         >
-          <Route index element={<Dashboard />} />
-        </Route>
-
-        <Route 
-          path="/workspaces" 
-          element={
-            <PrivateRoute>
-              <DashboardLayout />
-            </PrivateRoute>
-          }
-        >
-          <Route index element={<WorkspaceList />} />
-          <Route path=":workspaceId" element={<WorkspaceDetail />} />
-        </Route>
-
-        <Route 
-          path="/projects" 
-          element={
-            <PrivateRoute>
-              <DashboardLayout />
-            </PrivateRoute>
-          }
-        >
-          <Route path=":projectId" element={<ProjectView />} />
-        </Route>
-
-        <Route 
-          path="/settings" 
-          element={
-            <PrivateRoute>
-              <DashboardLayout />
-            </PrivateRoute>
-          }
-        >
-          <Route index element={<Settings />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/projects" element={<WorkspaceDetail />} />
+          <Route path="/projects/:projectId" element={<ProjectView />} />
+          <Route path="/tasks" element={<MyTasks />} />
+          <Route path="/calendar" element={<WorkspaceCalendar />} />
+          <Route path="/chat" element={<WorkspaceChat />} />
+          <Route path="/calls" element={<WorkspaceCalls />} />
+          <Route path="/members" element={<WorkspaceMembers />} />
+          <Route path="/settings" element={<WorkspaceSettings />} />
+          <Route path="/workspaces" element={<WorkspaceList />} />
+          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail />} />
         </Route>
 
         <Route path="/verify-email" element={<VerifyEmail />} />

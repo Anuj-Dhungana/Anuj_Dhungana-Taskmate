@@ -196,3 +196,23 @@ export const deleteWorkspace = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+export const updateWorkspace = async (req, res) => {
+    try {
+        const { name, description, color } = req.body;
+        const workspace = req.workspace;
+
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        if (name !== undefined) workspace.name = name;
+        if (description !== undefined) workspace.description = description;
+        if (color !== undefined) workspace.color = color;
+
+        const updated = await workspace.save();
+        res.json(updated);
+    } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};

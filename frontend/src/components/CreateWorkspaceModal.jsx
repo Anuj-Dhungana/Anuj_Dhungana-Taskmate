@@ -20,9 +20,9 @@ const CreateWorkspaceModal = ({ onClose, onCreated }) => {
 
         setIsLoading(true);
         try {
-            await axios.post('/api/workspaces', { name, description, color });
+            const res = await axios.post('/api/workspaces', { name, description, color });
             toast.success('Workspace created successfully!');
-            onCreated();
+            onCreated?.(res.data);
             onClose();
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to create workspace');

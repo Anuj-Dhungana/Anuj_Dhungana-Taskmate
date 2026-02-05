@@ -1,9 +1,10 @@
 import express from 'express';
-import { createProject, deleteProject } from '../controllers/projectController.js';
+import { createProject, deleteProject, getProjectsByWorkspace } from '../controllers/projectController.js';
 import protect from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+router.get('/', protect, getProjectsByWorkspace);
 router.post('/', protect, createProject);
 router.delete('/:id', protect, deleteProject);
 

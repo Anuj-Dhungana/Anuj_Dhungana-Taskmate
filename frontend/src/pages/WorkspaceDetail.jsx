@@ -1,34 +1,30 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Plus, Grid, Kanban, Calendar as CalendarIcon, UserPlus, MessageSquare, Hash, X } from 'lucide-react';
+import { Plus, Grid, Kanban, Calendar as CalendarIcon, UserPlus } from 'lucide-react';
 import useWorkspaceStore from '../store/userWorkspaceStore';
 import CreateProjectModal from '../components/CreateProjectModal';
-import ChatArea from '../components/Chat/ChatArea';
 
 const WorkspaceDetail = () => {
     const { workspaceId } = useParams();
     const navigate = useNavigate();
-    const { setSelectedWorkspace } = useWorkspaceStore();
+    const { currentWorkspaceId, setSelectedWorkspace, setCurrentWorkspaceId } = useWorkspaceStore();
     const [workspace, setWorkspace] = useState(null);
     const [projects, setProjects] = useState([]);
-    const [channels, setChannels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showProjectModal, setShowProjectModal] = useState(false);
-    const [showChatPanel, setShowChatPanel] = useState(false);
-    const [selectedChannel, setSelectedChannel] = useState(null);
+
+    const effectiveWorkspaceId = workspaceId || currentWorkspaceId;
 
     const fetchWorkspaceDetails = async () => {
         try {
-            const res = await axios.get(`/api/workspaces/${workspaceId}`);
+            if (!effectiveWorkspaceId) return;
+            setLoading(true);
+            setProjects([]);
+            const res = await axios.get(`/api/workspaces/${effectiveWorkspaceId}`);
             setWorkspace(res.data.workspace);
             setProjects(res.data.projects);
-            setChannels(res.data.channels || []);
             setSelectedWorkspace(res.data);
-            // Auto-select the first channel (general) if available
-            if (res.data.channels?.length > 0 && !selectedChannel) {
-                setSelectedChannel(res.data.channels[0]);
-            }
         } catch (err) {
             console.error('Failed to load workspace', err);
         } finally {
@@ -38,7 +34,13 @@ const WorkspaceDetail = () => {
 
     useEffect(() => {
         fetchWorkspaceDetails();
-    }, [workspaceId]);
+    }, [effectiveWorkspaceId]);
+
+    useEffect(() => {
+        if (workspaceId && workspaceId !== currentWorkspaceId) {
+            setCurrentWorkspaceId(workspaceId);
+        }
+    }, [workspaceId, currentWorkspaceId, setCurrentWorkspaceId]);
 
     const handleProjectCreated = () => {
         fetchWorkspaceDetails();
@@ -85,6 +87,14 @@ const WorkspaceDetail = () => {
                 return { bg: 'bg-purple-50', text: 'text-purple-700', ring: 'ring-purple-100' };
         }
     };
+
+    if (!effectiveWorkspaceId) {
+        return (
+            <div className="px-8 py-10">
+                <div className="text-center text-gray-500">Select a workspace to view projects.</div>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
@@ -134,7 +144,10 @@ const WorkspaceDetail = () => {
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <button className="px-3 py-2 text-sm border rounded-md text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1">
+                    <button
+                        onClick={() => navigate('/members')}
+                        className="px-3 py-2 text-sm border rounded-md text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1"
+                    >
                         <UserPlus size={14} /> Invite
                     </button>
                     <button

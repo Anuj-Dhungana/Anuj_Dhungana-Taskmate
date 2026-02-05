@@ -49,6 +49,13 @@ io.on("connection", (socket) => {
         console.log(`User joined channel: ${channelId}`);
     });
 
+    // Join Workspace Room
+    socket.on("join_workspace", (workspaceRoom) => {
+        if (!workspaceRoom) return;
+        socket.join(workspaceRoom);
+        console.log(`User joined workspace: ${workspaceRoom}`);
+    });
+
     // Handle New Message
     socket.on("send_message", async (data) => {
         // data = { channelId, workspaceId, senderId, content, senderDetails }

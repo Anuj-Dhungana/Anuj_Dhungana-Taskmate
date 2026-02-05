@@ -25,21 +25,19 @@ const ProjectCalendar = ({ projectId }) => {
 
     useEffect(() => {
         const fetchCards = async () => {
+            if (!projectId) return;
+            setEvents([]);
             try {
                 const res = await axios.get(`/api/board/${projectId}`);
-                const cards = res.data.cards;
+                const cards = res.data?.cards || [];
 
                 const calendarEvents = cards
-                    .filter(card => card.dueDate)
-                    .map(card => {
-                        // 1. Create a Date object from the due date
+                    .filter((card) => card.dueDate)
+                    .map((card) => {
                         const startDate = new Date(card.dueDate);
-                        
-                        // 2. Force time to 9:00 AM (so it shows up nicely in Week view)
-                       
-                        startDate.setHours(9, 0, 0);
+                        if (Number.isNaN(startDate.getTime())) return null;
 
-                        // 3. Set End time to 10:00 AM (1 hour duration)
+                        startDate.setHours(9, 0, 0);
                         const endDate = new Date(startDate);
                         endDate.setHours(10, 0, 0);
 
@@ -48,14 +46,15 @@ const ProjectCalendar = ({ projectId }) => {
                             title: card.title,
                             start: startDate,
                             end: endDate,
-                            allDay: false, // <--- CHANGED: Shows in the time grid now
+                            allDay: false,
                             resource: card
                         };
-                    });
+                    })
+                    .filter(Boolean);
 
                 setEvents(calendarEvents);
             } catch (err) {
-                console.error(err);
+                console.error('Failed to load project calendar', err);
             }
         };
         fetchCards();
@@ -75,26 +74,23 @@ const ProjectCalendar = ({ projectId }) => {
     };
 
     return (
-        <div className="h-full bg-white p-4 rounded-lg shadow-sm flex flex-col">
-            {/* The wrapper div needs flex-1 to fill the space properly */}
-            <div className="flex-1" style={{ minHeight: '500px' }}>
+        <div className="bg-white p-4 rounded-lg shadow-sm">
+            <div className="h-[70vh]">
                 <Calendar
                     localizer={localizer}
                     events={events}
                     startAccessor="start"
                     endAccessor="end"
-                    style={{ height: '100%' }} // Fill the parent
+                    style={{ height: '100%' }}
                     views={['month', 'week', 'day']}
-                    view={view} // Controlled view
-                    date={date} // Controlled date
-                    onView={(newView) => setView(newView)} // Update view state
-                    onNavigate={(newDate) => setDate(newDate)} // Update date state
+                    view={view}
+                    date={date}
+                    onView={(newView) => setView(newView)}
+                    onNavigate={(newDate) => setDate(newDate)}
                     eventPropGetter={eventStyleGetter}
                     onSelectEvent={(event) => alert(`${event.title}`)}
                     
-                    // Fix for "Week" view: Sets the earliest time shown to 8am
                     min={new Date(0, 0, 0, 8, 0, 0)} 
-                    // Sets the latest time shown to 8pm
                     max={new Date(0, 0, 0, 20, 0, 0)}
                 />
             </div>

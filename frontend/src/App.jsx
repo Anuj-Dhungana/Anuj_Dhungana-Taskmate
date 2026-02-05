@@ -19,6 +19,7 @@ import WorkspaceCalendar from './pages/WorkspaceCalendar';
 import WorkspaceChat from './pages/WorkspaceChat';
 import WorkspaceCalls from './pages/WorkspaceCalls';
 import WorkspaceMembers from './pages/WorkspaceMembers';
+import Analytics from './pages/Analytics';
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {
@@ -44,6 +45,7 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/projects" element={<WorkspaceDetail />} />
           <Route path="/projects/:projectId" element={<ProjectView />} />
           <Route path="/tasks" element={<MyTasks />} />

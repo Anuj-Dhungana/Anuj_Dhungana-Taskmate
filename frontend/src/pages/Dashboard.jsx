@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
@@ -31,23 +31,34 @@ const Dashboard = () => {
         }
     }, [currentWorkspaceId]);
 
+    useEffect(() => {
+        if (!currentWorkspaceId) {
+            setStats({ totalProjects: 0, activeTasks: 0, completedTasks: 0 });
+            setRecentProjects([]);
+        }
+    }, [currentWorkspaceId]);
+
     const fetchDashboardData = async () => {
         try {
-            const [projectsRes, statsRes] = await Promise.all([
-                axios.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
+            const [statsRes, projectsRes] = await Promise.all([
                 axios.get(`/api/board/workspace-stats?workspaceId=${currentWorkspaceId}`),
+                axios.get(`/api/projects?workspaceId=${currentWorkspaceId}`)
             ]);
 
+            const statsData = statsRes.data || {};
             const projects = projectsRes.data || [];
-            const wsStats = statsRes.data || {};
+
+            const sortedProjects = [...projects].sort(
+                (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+            );
 
             setStats({
                 totalProjects: projects.length,
-                activeTasks: wsStats.activeTasks || 0,
-                completedTasks: wsStats.completedTasks || 0,
+                activeTasks: statsData.activeTasks || 0,
+                completedTasks: statsData.completedTasks || 0,
             });
 
-            setRecentProjects(projects.slice(0, 3));
+            setRecentProjects(sortedProjects.slice(0, 3));
         } catch (err) {
             console.error('Failed to fetch dashboard data', err);
         }
@@ -55,23 +66,24 @@ const Dashboard = () => {
 
     const projectBadgeColor = (project) => project?.status === 'Completed' ? 'bg-green-500' : 'bg-blue-500';
 
+
     return (
         <div className="px-8 py-10 bg-gradient-to-br from-gray-50 to-white min-h-screen">
             {/* Welcome Section */}
             <div className="mb-8">
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Welcome back, {userInfo?.fullname?.split(' ')[0] || 'User'}! ðŸ‘‹
+                    Welcome back, {userInfo?.fullname?.split(' ')[0] || 'User'}!
                 </h1>
                 <p className="text-gray-600 mt-3 text-lg">
                     {selectedWorkspace?.workspace?.name
                         ? `Workspace: ${selectedWorkspace.workspace.name}`
-                        : 'Select a workspace to see analytics.'}
+                        : 'Select a workspace to see your dashboard.'}
                 </p>
             </div>
 
             {!currentWorkspaceId && (
                 <div className="bg-white rounded-xl shadow-md p-6 text-gray-600">
-                    Select a workspace from the sidebar to view analytics.
+                    Select a workspace from the sidebar to view your dashboard.
                 </div>
             )}
 
@@ -226,7 +238,7 @@ const Dashboard = () => {
                             <AlertCircle className="text-white" size={26} />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">ðŸ’¡ Getting Started Tip</h3>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">Getting Started Tip</h3>
                             <p className="text-sm text-gray-600 leading-relaxed">
                                 Create a workspace to organize your projects, invite team members, and start collaborating on tasks. 
                                 Use boards to visualize your workflow and track progress efficiently.
@@ -240,3 +252,5 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
+
+

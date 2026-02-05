@@ -2,6 +2,7 @@ import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import axios from 'axios';
 import {
     Grid,
+    TrendingUp,
     ListChecks,
     LogOut,
     Plus,
@@ -11,8 +12,6 @@ import {
     BarChart3,
     MessageSquare,
     Phone,
-    Search,
-    Video,
     ChevronDown
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -20,7 +19,6 @@ import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/userWorkspaceStore';
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
 import NotificationMenu from '../components/NotificationMenu';
-import CreateProjectModal from '../components/CreateProjectModal';
 
 const DashboardLayout = () => {
     const navigate = useNavigate();
@@ -35,7 +33,6 @@ const DashboardLayout = () => {
         resetWorkspaceState
     } = useWorkspaceStore();
     const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
-    const [showProjectModal, setShowProjectModal] = useState(false);
     const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
 
     const handleLogout = async () => {
@@ -106,7 +103,8 @@ const DashboardLayout = () => {
     );
 
     const navItems = [
-        { to: '/dashboard', label: 'Dashboard / Analytics', icon: BarChart3 },
+        { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+        { to: '/analytics', label: 'Analytics', icon: TrendingUp },
         { to: '/projects', label: 'Projects', icon: Grid },
         { to: '/tasks', label: 'My Tasks', icon: ListChecks },
         { to: '/calendar', label: 'Calendar', icon: Calendar },
@@ -210,36 +208,8 @@ const DashboardLayout = () => {
             {/* Main content */}
             <div className="flex-1 flex flex-col">
                 {/* Top bar */}
-                <header className="h-16 bg-white flex items-center justify-between px-8 shadow-sm">
-                    <div className="flex items-center gap-4 flex-1 max-w-2xl">
-                        <div className="relative flex-1">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
-                            <input
-                                type="text"
-                                placeholder="Search tasks, projects..."
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                            />
-                        </div>
-                    </div>
-
+                <header className="h-16 bg-white flex items-center justify-end px-8 shadow-sm">
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => navigate('/calls')}
-                            className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
-                        >
-                            <Video size={16} />
-                            Start Call
-                        </button>
-                        
-                        {currentWorkspaceId && (
-                            <button
-                                onClick={() => setShowProjectModal(true)}
-                                className="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition"
-                            >
-                                <Plus size={16} />
-                                New Project
-                            </button>
-                        )}
 
                         <NotificationMenu />
 
@@ -273,18 +243,6 @@ const DashboardLayout = () => {
                     />
                 )}
 
-                {showProjectModal && currentWorkspaceId && (
-                    <CreateProjectModal
-                        isOpen={showProjectModal}
-                        onClose={() => setShowProjectModal(false)}
-                        workspaceId={currentWorkspaceId}
-                        onCreated={() => {
-                            fetchWorkspaceDetails(currentWorkspaceId);
-                            setShowProjectModal(false);
-                        }}
-                        members={selectedWorkspace?.workspace?.members || []}
-                    />
-                )}
             </div>
         </div>
     );

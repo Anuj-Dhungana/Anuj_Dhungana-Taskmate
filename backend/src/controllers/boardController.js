@@ -3,6 +3,7 @@ import Card from '../models/Card.js';
 import Project from '../models/Project.js';
 import Notification from '../models/Notification.js';
 import Workspace from '../models/Workspace.js';
+import Message from '../models/Message.js';
 
 
 export const getBoard = async (req, res) => {
@@ -273,6 +274,129 @@ export const getWorkspaceStats = async (req, res) => {
         const activeTasks = totalCards - completedTasks;
 
         res.json({ totalCards, completedTasks, activeTasks });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const getWorkspaceAnalytics = async (req, res) => {
+    try {
+        const { workspaceId } = req.query;
+        if (!workspaceId) {
+            return res.status(400).json({ message: "workspaceId is required" });
+        }
+
+        const workspace = await Workspace.findById(workspaceId);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        const isMember = workspace.members.some(m => m.user.toString() === req.user._id.toString());
+        if (!isMember) {
+            return res.status(403).json({ message: "Not authorized to view this workspace" });
+        }
+
+        const projects = await Project.find({ workspace: workspaceId })
+            .select('name status dueDate createdAt members')
+            .sort({ createdAt: -1 });
+        const projectIds = projects.map(p => p._id);
+
+        const lists = await List.find({ projectId: { $in: projectIds } }).select('_id title projectId');
+        const listIsDone = new Map(
+            lists.map(l => [l._id.toString(), (l.title || '').toLowerCase() === 'done'])
+        );
+
+        const cards = await Card.find({ projectId: { $in: projectIds } })
+            .select('_id title projectId createdAt listId');
+
+        const counts = {};
+        cards.forEach((card) => {
+            const pid = card.projectId.toString();
+            if (!counts[pid]) counts[pid] = { total: 0, done: 0 };
+            counts[pid].total += 1;
+            if (listIsDone.get(card.listId.toString())) {
+                counts[pid].done += 1;
+            }
+        });
+
+        const projectProgress = projects.map((p) => {
+            const c = counts[p._id.toString()] || { total: 0, done: 0 };
+            const progress = c.total === 0 ? 0 : Math.round((c.done / c.total) * 100);
+            return {
+                _id: p._id,
+                name: p.name,
+                status: p.status,
+                dueDate: p.dueDate,
+                createdAt: p.createdAt,
+                totalCards: c.total,
+                doneCards: c.done,
+                progress,
+                membersCount: p.members?.length || 0
+            };
+        });
+
+        const recentCards = await Card.find({ projectId: { $in: projectIds } })
+            .select('title projectId createdAt')
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+        const recentMessages = await Message.find({ workspaceId })
+            .populate('sender', 'fullname avatar')
+            .populate('channelId', 'name')
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+        const recentProjects = await Project.find({ workspace: workspaceId })
+            .select('name createdAt createdBy')
+            .populate('createdBy', 'fullname avatar')
+            .sort({ createdAt: -1 })
+            .limit(20);
+
+        const projectNameMap = new Map(projects.map(p => [p._id.toString(), p.name]));
+
+        const activity = [
+            ...recentCards.map(c => ({
+                type: 'card',
+                action: 'created',
+                title: c.title,
+                projectId: c.projectId,
+                projectName: projectNameMap.get(c.projectId.toString()) || 'Project',
+                createdAt: c.createdAt
+            })),
+            ...recentMessages.map(m => ({
+                type: 'message',
+                action: 'sent',
+                title: m.content,
+                channelName: m.channelId?.name || 'channel',
+                user: m.sender ? { _id: m.sender._id, fullname: m.sender.fullname, avatar: m.sender.avatar } : null,
+                createdAt: m.createdAt
+            })),
+            ...recentProjects.map(p => ({
+                type: 'project',
+                action: 'created',
+                title: p.name,
+                user: p.createdBy ? { _id: p.createdBy._id, fullname: p.createdBy.fullname, avatar: p.createdBy.avatar } : null,
+                createdAt: p.createdAt
+            }))
+        ];
+
+        activity.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        const totalCards = cards.length;
+        const completedTasks = cards.filter(c => listIsDone.get(c.listId.toString())).length;
+        const activeTasks = totalCards - completedTasks;
+
+        res.json({
+            projects: projectProgress,
+            activity: activity.slice(0, 15),
+            stats: {
+                totalProjects: projectProgress.length,
+                totalCards,
+                completedTasks,
+                activeTasks
+            }
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server Error" });

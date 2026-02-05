@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import io from 'socket.io-client';
 import useAuthStore from '../../store/useAuthStore';
-import { Send, Hash } from 'lucide-react';
+import { Send, Hash, Trash2 } from 'lucide-react';
 
 // Connect to backend
 const socket = io('http://localhost:5000');
 
-const ChatArea = ({ channel, workspaceId }) => {
+const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true }) => {
     const { userInfo } = useAuthStore();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
@@ -78,20 +78,32 @@ const ChatArea = ({ channel, workspaceId }) => {
         setNewMessage('');
     };
 
+    const handleDeleteMessage = async (messageId) => {
+        try {
+            await axios.delete(`/api/messages/${messageId}`);
+            setMessages((prev) => prev.filter((m) => m._id !== messageId));
+        } catch (err) {
+            console.error('Failed to delete message', err);
+        }
+    };
+
     return (
         <div className="flex flex-col h-full bg-white">
             {/* Header */}
-            <div className="p-4 border-b flex items-center shadow-sm">
-                <Hash className="text-gray-500 mr-2" size={20}/>
-                <h2 className="font-bold text-gray-800">{channel.name}</h2>
-            </div>
+            {showHeader && (
+                <div className="p-4 border-b flex items-center shadow-sm">
+                    <Hash className="text-gray-500 mr-2" size={20}/>
+                    <h2 className="font-bold text-gray-800">{channel.name}</h2>
+                </div>
+            )}
 
             {/* Messages List */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                {messages.map((msg, index) => {
+                {messages.map((msg) => {
                     const isMe = msg.sender._id === userInfo._id;
+                    const canDelete = canModerate || isMe;
                     return (
-                        <div key={index} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                        <div key={msg._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
                             {/* Avatar */}
                             {!isMe && (
                                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold mr-2 text-blue-600">
@@ -104,9 +116,20 @@ const ChatArea = ({ channel, workspaceId }) => {
                             }`}>
                                 {!isMe && <p className="text-[10px] text-gray-500 font-bold mb-1">{msg.sender.fullname}</p>}
                                 <p className="text-sm">{msg.content}</p>
-                                <p className={`text-[10px] text-right mt-1 ${isMe ? 'text-blue-200' : 'text-gray-400'}`}>
-                                    {new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                </p>
+                                <div className="flex items-center justify-between mt-1">
+                                    <p className={`text-[10px] ${isMe ? 'text-blue-200' : 'text-gray-400'}`}>
+                                        {new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                    </p>
+                                    {canDelete && (
+                                        <button
+                                            onClick={() => handleDeleteMessage(msg._id)}
+                                            className={`ml-2 text-[10px] flex items-center gap-1 ${isMe ? 'text-blue-200 hover:text-white' : 'text-gray-400 hover:text-red-500'}`}
+                                            title="Delete message"
+                                        >
+                                            <Trash2 size={12} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     );

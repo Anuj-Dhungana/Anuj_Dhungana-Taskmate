@@ -25,15 +25,15 @@ const TaskCard = ({ card, onDelete, onClick }) => {
       {...attributes}
       {...listeners} // This makes the whole card draggable
       onClick={onClick}
-      className="bg-white p-3 rounded shadow-sm border border-gray-200 cursor-grab hover:border-blue-400 mb-2 touch-none"
+      className="bg-white p-3.5 rounded-xl shadow-md border-2 border-gray-200 cursor-grab hover:border-blue-400 hover:shadow-lg mb-2.5 touch-none transition-all"
     >
-      <h4 className="text-sm font-medium text-gray-800">{card.title}</h4>
+      <h4 className="text-sm font-semibold text-gray-800">{card.title}</h4>
       
       {/* Show Assignees if any */}
       {card.assignees && card.assignees.length > 0 && (
-        <div className="flex mt-2">
+        <div className="flex mt-2.5">
             {card.assignees.map(u => (
-                <div key={u._id} className="w-5 h-5 rounded-full bg-blue-100 text-[10px] flex items-center justify-center text-blue-700 font-bold border border-white -ml-1 first:ml-0">
+                <div key={u._id} className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-[10px] flex items-center justify-center text-white font-bold border-2 border-white -ml-1 first:ml-0 shadow-md">
                     {u.fullname.substring(0,1)}
                 </div>
             ))}

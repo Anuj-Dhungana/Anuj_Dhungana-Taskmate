@@ -34,17 +34,17 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick }) => {
   };
 
   return (
-    <div className="w-72 bg-white rounded-lg p-3 shadow-sm flex-shrink-0 flex flex-col max-h-full border">
+    <div className="w-72 bg-gradient-to-b from-gray-50 to-white rounded-xl p-4 shadow-md flex-shrink-0 flex flex-col max-h-full border-2 border-gray-200">
       {/* Header */}
-      <h3 className="font-bold text-gray-700 mb-3 flex justify-between items-center">
+      <h3 className="font-bold text-gray-800 mb-3 flex justify-between items-center text-sm">
         {list.title}
-        <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+        <span className="bg-gradient-to-r from-blue-500 to-blue-600 text-white text-xs px-2.5 py-1 rounded-full font-semibold shadow-sm">
             {cards.length}
         </span>
       </h3>
 
       {/* Droppable Area (Cards go here) */}
-      <div ref={setNodeRef} className="flex-1 overflow-y-auto min-h-[100px] bg-gray-50 rounded border border-dashed border-gray-200 p-2">
+      <div ref={setNodeRef} className="flex-1 overflow-y-auto min-h-[100px] bg-gradient-to-b from-gray-50 to-gray-100/50 rounded-xl border-2 border-dashed border-gray-300 p-3">
         <SortableContext 
             items={cards.map(c => c._id)} 
             strategy={verticalListSortingStrategy}
@@ -63,23 +63,23 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick }) => {
       {isAdding ? (
           <form onSubmit={handleAddCard} className="mt-2">
               <input 
-                  className="w-full p-2 rounded border border-blue-500 shadow-sm"
+                  className="w-full p-2.5 rounded-xl border-2 border-blue-500 shadow-md focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                  placeholder="Enter title..."
                  value={newCardTitle}
                  onChange={e => setNewCardTitle(e.target.value)}
                     onBlur={() => !newCardTitle && setIsAdding(false)} // Close if empty and clicked away
               />
               <div className="flex gap-2 mt-2">
-                  <button className="bg-blue-600 text-white text-xs px-3 py-1 rounded">Add</button>
-                    <button type="button" onClick={() => setIsAdding(false)} className="text-gray-500 text-xs">Cancel</button>
+                  <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs px-4 py-1.5 rounded-lg font-medium shadow-md hover:from-blue-700 hover:to-blue-800 transition-all">Add</button>
+                    <button type="button" onClick={() => setIsAdding(false)} className="text-gray-500 hover:text-gray-700 text-xs font-medium transition-colors">Cancel</button>
               </div>
           </form>
       ) : (
           <button 
             onClick={() => setIsAdding(true)}
-            className="mt-2 w-full text-left text-gray-500 hover:bg-gray-200 p-1 rounded text-sm flex items-center"
+            className="mt-3 w-full text-left text-gray-600 hover:bg-gray-100 p-2 rounded-lg text-sm flex items-center font-medium transition-all hover:shadow-sm"
           >
-             <Plus size={16} className="mr-1"/> Add a card
+             <Plus size={16} className="mr-1.5"/> Add a card
           </button>
       )}
     </div>

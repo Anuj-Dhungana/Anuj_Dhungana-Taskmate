@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Plus, Grid, Kanban, Calendar as CalendarIcon, UserPlus } from 'lucide-react';
+import { Plus, Grid, Kanban, Calendar as CalendarIcon, UserPlus, MessageSquare, Hash, X } from 'lucide-react';
 import useWorkspaceStore from '../store/userWorkspaceStore';
 import CreateProjectModal from '../components/CreateProjectModal';
+import ChatArea from '../components/Chat/ChatArea';
 
 const WorkspaceDetail = () => {
     const { workspaceId } = useParams();
@@ -11,15 +12,23 @@ const WorkspaceDetail = () => {
     const { setSelectedWorkspace } = useWorkspaceStore();
     const [workspace, setWorkspace] = useState(null);
     const [projects, setProjects] = useState([]);
+    const [channels, setChannels] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showProjectModal, setShowProjectModal] = useState(false);
+    const [showChatPanel, setShowChatPanel] = useState(false);
+    const [selectedChannel, setSelectedChannel] = useState(null);
 
     const fetchWorkspaceDetails = async () => {
         try {
             const res = await axios.get(`/api/workspaces/${workspaceId}`);
             setWorkspace(res.data.workspace);
             setProjects(res.data.projects);
+            setChannels(res.data.channels || []);
             setSelectedWorkspace(res.data);
+            // Auto-select the first channel (general) if available
+            if (res.data.channels?.length > 0 && !selectedChannel) {
+                setSelectedChannel(res.data.channels[0]);
+            }
         } catch (err) {
             console.error('Failed to load workspace', err);
         } finally {
@@ -141,7 +150,7 @@ const WorkspaceDetail = () => {
             <h2 className="text-sm font-semibold text-gray-800 mb-2">Projects</h2>
 
             {projects.length === 0 ? (
-                <div className="border rounded-lg bg-white shadow-sm px-10 py-16 flex flex-col items-center justify-center text-center text-gray-600">
+                <div className="rounded-lg bg-white shadow-md px-10 py-16 flex flex-col items-center justify-center text-center text-gray-600">
                     <div className="w-12 h-12 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 mb-3">
                         <Grid size={22} />
                     </div>
@@ -161,7 +170,7 @@ const WorkspaceDetail = () => {
                         <button
                             key={project._id}
                             onClick={() => handleProjectClick(project)}
-                            className="p-4 rounded-lg border bg-white text-left hover:border-blue-500 hover:shadow-sm transition"
+                            className="p-4 rounded-lg bg-white text-left hover:shadow-lg transition shadow-md"
                         >
                             <div className="flex items-start justify-between gap-2 mb-2">
                                 <div className="font-semibold text-gray-900 text-sm">{project.name}</div>

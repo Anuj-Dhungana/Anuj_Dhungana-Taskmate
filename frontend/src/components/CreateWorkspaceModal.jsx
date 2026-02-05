@@ -32,14 +32,15 @@ const CreateWorkspaceModal = ({ onClose, onCreated }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg border border-gray-200">
-                <div className="flex items-start justify-between px-6 py-4 border-b">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+                <div className="flex items-start justify-between px-6 py-5 border-b border-gray-100">
                     <div className="space-y-1">
-                        <h2 className="text-lg font-semibold text-gray-900">Create New Workspace</h2>
+                        <h2 className="text-xl font-bold text-gray-900">Create New Workspace</h2>
+                        <p className="text-sm text-gray-500">Set up a new workspace for your team</p>
                     </div>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <X size={18} />
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition">
+                        <X size={20} />
                     </button>
                 </div>
 
@@ -48,7 +49,7 @@ const CreateWorkspaceModal = ({ onClose, onCreated }) => {
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Workspace Name</label>
                         <input
                             type="text"
-                            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             placeholder="Workspace Name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
@@ -59,7 +60,7 @@ const CreateWorkspaceModal = ({ onClose, onCreated }) => {
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Workspace Description</label>
                         <textarea
-                            className="w-full border rounded-md px-3 py-2 text-sm h-20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                             placeholder="Workspace Description (optional)"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -76,13 +77,13 @@ const CreateWorkspaceModal = ({ onClose, onCreated }) => {
                                         type="button"
                                         key={c}
                                         onClick={() => setColor(c)}
-                                        className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition ${
-                                            isActive ? 'border-blue-500' : 'border-transparent hover:border-gray-300'
+                                        className={`w-10 h-10 rounded-full border-2 flex items-center justify-center transition-all transform ${
+                                            isActive ? 'border-blue-500 scale-110 shadow-lg' : 'border-transparent hover:border-gray-300 hover:scale-105'
                                         }`}
                                         aria-label={`Select color ${c}`}
                                     >
                                         <span
-                                            className="w-6 h-6 rounded-full"
+                                            className="w-7 h-7 rounded-full shadow-sm"
                                             style={{ backgroundColor: c }}
                                         />
                                     </button>
@@ -95,7 +96,7 @@ const CreateWorkspaceModal = ({ onClose, onCreated }) => {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm border rounded-md text-gray-700 hover:bg-gray-50"
+                            className="px-5 py-2.5 text-sm border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-all font-medium"
                         >
                             Cancel
                         </button>

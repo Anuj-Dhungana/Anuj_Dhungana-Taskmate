@@ -54,18 +54,18 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg w-[500px] relative shadow-xl max-h-[80vh] overflow-y-auto">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500"><X size={20}/></button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-2xl w-[500px] relative shadow-2xl max-h-[80vh] overflow-y-auto">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"><X size={20}/></button>
                 
-                <h2 className="text-xl font-bold mb-4">Workspace Members</h2>
+                <h2 className="text-xl font-bold mb-4 text-gray-900">Workspace Members</h2>
                 
                 <div className="space-y-3">
                     {workspace.members.map((member) => (
-                        <div key={member.user._id} className="flex justify-between items-center p-3 bg-gray-50 rounded">
+                        <div key={member.user._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all shadow-sm">
                             <div className="flex items-center gap-3">
                                 {/* Avatar or Initials */}
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
                                     {member.user.fullname.substring(0,2).toUpperCase()}
                                 </div>
                                 <div>
@@ -76,9 +76,9 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
 
                             <div className="flex items-center gap-2">
                                 {/* Role Badge */}
-                                <span className={`text-xs px-2 py-1 rounded capitalize 
-                                    ${member.role === 'owner' ? 'bg-purple-100 text-purple-700' : 
-                                      member.role === 'admin' ? 'bg-orange-100 text-orange-700' : 'bg-gray-200 text-gray-600'}`}>
+                                <span className={`text-xs px-3 py-1.5 rounded-lg capitalize font-medium
+                                    ${member.role === 'owner' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 
+                                      member.role === 'admin' ? 'bg-orange-100 text-orange-700 border border-orange-200' : 'bg-gray-200 text-gray-700 border border-gray-300'}`}>
                                     {member.role}
                                 </span>
 
@@ -87,7 +87,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                                     <>
                                         {/* Promote/Demote Dropdown */}
                                         <select 
-                                            className="text-xs border rounded p-1"
+                                            className="text-xs border-2 border-gray-200 rounded-lg p-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                             value={member.role}
                                             onChange={(e) => handleRoleChange(member.user._id, e.target.value)}
                                         >
@@ -98,7 +98,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                                         {/* Kick Button */}
                                         <button 
                                             onClick={() => handleKick(member.user._id)}
-                                            className="text-red-500 hover:text-red-700"
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-all"
                                             title="Remove User"
                                         >
                                             <Trash2 size={16} />
@@ -112,16 +112,16 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
 
                 {/* DANGER ZONE - Only for Owner */}
                 {isOwner && (
-                    <div className="mt-8 pt-4 border-t border-red-100">
-                        <h3 className="text-red-600 font-bold mb-2 text-sm uppercase">Danger Zone</h3>
-                        <div className="flex justify-between items-center bg-red-50 p-3 rounded border border-red-200">
+                    <div className="mt-8 pt-4 border-t border-gray-200">
+                        <h3 className="text-red-600 font-bold mb-2 text-sm uppercase tracking-wide">Danger Zone</h3>
+                        <div className="flex justify-between items-center bg-red-50 p-4 rounded-xl border-2 border-red-200 shadow-sm">
                             <div>
                                 <p className="font-bold text-gray-800 text-sm">Delete Workspace</p>
-                                <p className="text-xs text-gray-600">This action cannot be undone.</p>
+                                <p className="text-xs text-gray-600 mt-0.5">This action cannot be undone.</p>
                             </div>
                             <button 
                                 onClick={handleDeleteWorkspace}
-                                className="bg-white text-red-600 border border-red-200 px-3 py-1 rounded text-sm font-semibold hover:bg-red-600 hover:text-white transition"
+                                className="bg-white text-red-600 border-2 border-red-300 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-600 hover:text-white transition-all shadow-md hover:shadow-lg"
                             >
                                 Delete
                             </button>

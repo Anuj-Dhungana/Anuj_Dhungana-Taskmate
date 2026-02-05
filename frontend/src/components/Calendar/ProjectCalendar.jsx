@@ -36,7 +36,7 @@ const ProjectCalendar = ({ projectId }) => {
                         const startDate = new Date(card.dueDate);
                         
                         // 2. Force time to 9:00 AM (so it shows up nicely in Week view)
-                        // Note: In a real app, you'd let users pick a specific time.
+                       
                         startDate.setHours(9, 0, 0);
 
                         // 3. Set End time to 10:00 AM (1 hour duration)

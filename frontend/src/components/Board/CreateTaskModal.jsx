@@ -73,12 +73,12 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
     };
 
     return (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl border border-gray-200">
-                <div className="flex items-center justify-between px-6 py-4 border-b">
-                    <h2 className="text-lg font-semibold text-gray-900">Create New Task</h2>
-                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-                        <X size={18} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                    <h2 className="text-lg font-bold text-gray-900">Create New Task</h2>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <X size={20} />
                     </button>
                 </div>
 
@@ -87,7 +87,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Title</label>
                         <input
                             type="text"
-                            className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             placeholder="Task title"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
@@ -98,7 +98,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Description</label>
                         <textarea
-                            className="w-full border rounded-md px-3 py-2 text-sm h-20 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm h-24 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                             placeholder="Task description"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
@@ -111,12 +111,12 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                             <button
                                 type="button"
                                 onClick={() => setStatusOpen((v) => !v)}
-                                className="w-full border rounded-md px-3 py-2 text-left text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-left text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-all"
                             >
                                 {statusOptions.find((o) => o.list?._id === listId)?.label || lists.find((l) => l._id === listId)?.title || 'Select status'}
                             </button>
                             {statusOpen && (
-                                <div className="absolute left-0 right-0 mt-2 bg-white border rounded-md shadow-xl z-30">
+                                <div className="absolute left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl z-30 overflow-hidden">
                                     {statusOptions.map((opt) => (
                                         <button
                                             key={opt.label}
@@ -127,8 +127,8 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                                                 setListId(opt.list._id);
                                                 setStatusOpen(false);
                                             }}
-                                            className={`w-full text-left px-3 py-2 text-sm flex items-center justify-between ${
-                                                listId === opt.list?._id ? 'text-gray-900 font-semibold' : 'text-gray-700'
+                                            className={`w-full text-left px-4 py-2.5 text-sm flex items-center justify-between transition-colors ${
+                                                listId === opt.list?._id ? 'text-gray-900 font-semibold bg-blue-50' : 'text-gray-700'
                                             } ${opt.list ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'}`}
                                         >
                                             <span>{opt.label}</span>
@@ -141,7 +141,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                         <div>
                             <label className="block text-xs font-semibold text-gray-700 mb-1">Priority</label>
                             <select
-                                className="w-full border rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
                                 value={priority}
                                 onChange={(e) => setPriority(e.target.value)}
                             >
@@ -156,7 +156,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
 
                     <div>
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Due Date</label>
-                        <div className="flex items-center gap-2 border rounded-md px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
+                        <div className="flex items-center gap-2 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition-all">
                             <CalendarIcon size={16} className="text-gray-400" />
                             <input
                                 type="date"
@@ -172,7 +172,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                         <button
                             type="button"
                             onClick={() => setAssigneeOpen((v) => !v)}
-                            className="w-full border rounded-md px-3 py-2 text-left text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-left text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-all"
                         >
                             {assignees.length === 0 ? (
                                 <span className="text-gray-400">Select assignees</span>
@@ -185,7 +185,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                         </button>
 
                         {assigneeOpen && (
-                            <div className="absolute left-0 right-0 mt-2 bg-white border rounded-md shadow-xl max-h-60 overflow-y-auto z-20 divide-y">
+                            <div className="absolute left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-20 divide-y divide-gray-100">
                                 {workspaceMembers.length === 0 && (
                                     <p className="text-xs text-gray-400 px-3 py-2">No members available</p>
                                 )}
@@ -194,7 +194,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                                     return (
                                         <label
                                             key={m.user._id}
-                                            className="flex items-center justify-between px-3 py-2 text-sm bg-white hover:bg-gray-50 cursor-pointer"
+                                            className="flex items-center justify-between px-4 py-2.5 text-sm bg-white hover:bg-gray-50 cursor-pointer transition-colors"
                                         >
                                             <span className="flex items-center gap-2 text-gray-700">
                                                 <input
@@ -216,14 +216,14 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2 text-sm border rounded-md text-gray-700 hover:bg-gray-50"
+                            className="px-5 py-2.5 text-sm border-2 border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 transition-all font-medium"
                         >
                             Cancel
                         </button>
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-4 py-2 text-sm rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60"
+                            className="px-6 py-2.5 text-sm rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 transition-all font-medium shadow-lg shadow-blue-500/30"
                         >
                             {loading ? 'Creating...' : 'Create Task'}
                         </button>

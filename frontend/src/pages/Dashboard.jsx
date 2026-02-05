@@ -54,80 +54,85 @@ const Dashboard = () => {
     const workspaceColor = (ws) => ws?.color || '#F97316';
 
     return (
-        <div className="px-8 py-10">
+        <div className="px-8 py-10 bg-gradient-to-br from-gray-50 to-white min-h-screen">
             {/* Welcome Section */}
             <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                     Welcome back, {userInfo?.fullname?.split(' ')[0] || 'User'}! 👋
                 </h1>
-                <p className="text-gray-500 mt-2">Here's what's happening with your projects today.</p>
+                <p className="text-gray-600 mt-3 text-lg">Here's what's happening with your projects today.</p>
             </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-lg border p-6 hover:shadow-md transition">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
-                            <FolderKanban className="text-blue-600" size={24} />
+                        <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <FolderKanban className="text-white" size={28} />
                         </div>
-                        <TrendingUp className="text-green-500" size={20} />
+                        <TrendingUp className="text-white/80" size={20} />
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{stats.totalWorkspaces}</div>
-                    <div className="text-sm text-gray-500 mt-1">Total Workspaces</div>
+                    <div className="text-3xl font-bold text-white">{stats.totalWorkspaces}</div>
+                    <div className="text-sm text-blue-100 mt-2 font-medium">Total Workspaces</div>
                 </div>
 
-                <div className="bg-white rounded-lg border p-6 hover:shadow-md transition">
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center">
-                            <Calendar className="text-purple-600" size={24} />
+                        <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Calendar className="text-white" size={28} />
                         </div>
+                        <div className="w-2 h-2 rounded-full bg-white/60 animate-pulse"></div>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{stats.totalProjects}</div>
-                    <div className="text-sm text-gray-500 mt-1">Active Projects</div>
+                    <div className="text-3xl font-bold text-white">{stats.totalProjects}</div>
+                    <div className="text-sm text-purple-100 mt-2 font-medium">Active Projects</div>
                 </div>
 
-                <div className="bg-white rounded-lg border p-6 hover:shadow-md transition">
+                <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 rounded-lg bg-amber-50 flex items-center justify-center">
-                            <Clock className="text-amber-600" size={24} />
+                        <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Clock className="text-white" size={28} />
                         </div>
+                        <div className="w-2 h-2 rounded-full bg-white/60 animate-pulse"></div>
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{stats.activeTasks}</div>
-                    <div className="text-sm text-gray-500 mt-1">Tasks In Progress</div>
+                    <div className="text-3xl font-bold text-white">{stats.activeTasks}</div>
+                    <div className="text-sm text-amber-100 mt-2 font-medium">Tasks In Progress</div>
                 </div>
 
-                <div className="bg-white rounded-lg border p-6 hover:shadow-md transition">
+                <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer group">
                     <div className="flex items-center justify-between mb-4">
-                        <div className="w-12 h-12 rounded-lg bg-green-50 flex items-center justify-center">
-                            <CheckCircle2 className="text-green-600" size={24} />
+                        <div className="w-14 h-14 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <CheckCircle2 className="text-white" size={28} />
                         </div>
+                        <TrendingUp className="text-white/80" size={20} />
                     </div>
-                    <div className="text-2xl font-bold text-gray-900">{stats.completedTasks}</div>
-                    <div className="text-sm text-gray-500 mt-1">Completed Tasks</div>
+                    <div className="text-3xl font-bold text-white">{stats.completedTasks}</div>
+                    <div className="text-sm text-green-100 mt-2 font-medium">Completed Tasks</div>
                 </div>
             </div>
 
             {/* Quick Actions */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Recent Workspaces */}
-                <div className="bg-white rounded-lg border p-6">
-                    <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-gray-900">Recent Workspaces</h2>
+                <div className="bg-white rounded-2xl shadow-lg border-0 p-6 hover:shadow-xl transition-shadow duration-300">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-xl font-bold text-gray-900">Recent Workspaces</h2>
                         <button 
                             onClick={() => navigate('/workspaces')}
-                            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                            className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 hover:gap-2 transition-all"
                         >
-                            View All <ArrowRight size={14} />
+                            View All <ArrowRight size={16} />
                         </button>
                     </div>
 
                     {recentWorkspaces.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500">
-                            <FolderKanban size={40} className="mx-auto mb-3 text-gray-300" />
-                            <p className="text-sm">No workspaces yet</p>
+                        <div className="text-center py-12 text-gray-500">
+                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center mx-auto mb-4">
+                                <FolderKanban size={40} className="text-blue-400" />
+                            </div>
+                            <p className="text-sm font-medium text-gray-700">No workspaces yet</p>
                             <button 
                                 onClick={() => navigate('/workspaces')}
-                                className="mt-3 text-sm text-blue-600 hover:text-blue-700"
+                                className="mt-4 px-5 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all"
                             >
                                 Create your first workspace
                             </button>
@@ -138,22 +143,22 @@ const Dashboard = () => {
                                 <button
                                     key={ws._id}
                                     onClick={() => navigate(`/workspaces/${ws._id}`)}
-                                    className="w-full p-3 rounded-lg border hover:border-blue-500 hover:shadow-sm transition text-left flex items-center gap-3"
+                                    className="w-full p-4 rounded-xl bg-gradient-to-r from-gray-50 to-white border-2 border-gray-100 hover:border-blue-300 hover:shadow-md transition-all duration-300 text-left flex items-center gap-4 group"
                                 >
                                     <div
-                                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold"
+                                        className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-110 transition-transform"
                                         style={{ backgroundColor: workspaceColor(ws) }}
                                     >
                                         {ws.name.substring(0, 1).toUpperCase()}
                                     </div>
                                     <div className="flex-1">
-                                        <div className="font-semibold text-gray-900 text-sm">{ws.name}</div>
-                                        <div className="text-xs text-gray-500 flex items-center gap-2">
-                                            <Users size={12} />
+                                        <div className="font-bold text-gray-900 text-base">{ws.name}</div>
+                                        <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
+                                            <Users size={14} />
                                             {ws.members?.length || 0} members
                                         </div>
                                     </div>
-                                    <ArrowRight size={16} className="text-gray-400" />
+                                    <ArrowRight size={20} className="text-gray-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" />
                                 </button>
                             ))}
                         </div>
@@ -161,39 +166,39 @@ const Dashboard = () => {
                 </div>
 
                 {/* Quick Links */}
-                <div className="bg-white rounded-lg border p-6">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-                    <div className="space-y-3">
+                <div className="bg-white rounded-2xl shadow-lg border-0 p-6 hover:shadow-xl transition-shadow duration-300">
+                    <h2 className="text-xl font-bold text-gray-900 mb-6">Quick Actions</h2>
+                    <div className="space-y-4">
                         <button
                             onClick={() => navigate('/workspaces')}
-                            className="w-full p-4 rounded-lg bg-blue-50 hover:bg-blue-100 transition text-left flex items-center gap-3"
+                            className="w-full p-5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 transition-all shadow-md hover:shadow-xl hover:scale-105 duration-300 text-left flex items-center gap-4 group"
                         >
-                            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                                <FolderKanban className="text-white" size={20} />
+                            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FolderKanban className="text-white" size={24} />
                             </div>
                             <div>
-                                <div className="font-semibold text-gray-900 text-sm">Browse Workspaces</div>
-                                <div className="text-xs text-gray-600">View all your workspaces</div>
+                                <div className="font-bold text-white text-base">Browse Workspaces</div>
+                                <div className="text-sm text-blue-100">View all your workspaces</div>
                             </div>
                         </button>
 
-                        <button className="w-full p-4 rounded-lg bg-purple-50 hover:bg-purple-100 transition text-left flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center">
-                                <Clock className="text-white" size={20} />
+                        <button className="w-full p-5 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 transition-all shadow-md hover:shadow-xl hover:scale-105 duration-300 text-left flex items-center gap-4 group">
+                            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Clock className="text-white" size={24} />
                             </div>
                             <div>
-                                <div className="font-semibold text-gray-900 text-sm">My Tasks</div>
-                                <div className="text-xs text-gray-600">View tasks assigned to you</div>
+                                <div className="font-bold text-white text-base">My Tasks</div>
+                                <div className="text-sm text-purple-100">View tasks assigned to you</div>
                             </div>
                         </button>
 
-                        <button className="w-full p-4 rounded-lg bg-green-50 hover:bg-green-100 transition text-left flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center">
-                                <Users className="text-white" size={20} />
+                        <button className="w-full p-5 rounded-xl bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 transition-all shadow-md hover:shadow-xl hover:scale-105 duration-300 text-left flex items-center gap-4 group">
+                            <div className="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <Users className="text-white" size={24} />
                             </div>
                             <div>
-                                <div className="font-semibold text-gray-900 text-sm">Team Members</div>
-                                <div className="text-xs text-gray-600">Manage workspace members</div>
+                                <div className="font-bold text-white text-base">Team Members</div>
+                                <div className="text-sm text-green-100">Manage workspace members</div>
                             </div>
                         </button>
                     </div>
@@ -201,17 +206,19 @@ const Dashboard = () => {
             </div>
 
             {/* Tips Section */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 p-6">
-                <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
-                        <AlertCircle className="text-white" size={20} />
-                    </div>
-                    <div>
-                        <h3 className="font-semibold text-gray-900 mb-1">Getting Started Tip</h3>
-                        <p className="text-sm text-gray-700">
-                            Create a workspace to organize your projects, invite team members, and start collaborating on tasks. 
-                            Use boards to visualize your workflow and track progress.
-                        </p>
+            <div className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl shadow-xl p-1">
+                <div className="bg-white rounded-2xl p-6">
+                    <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shrink-0 shadow-lg">
+                            <AlertCircle className="text-white" size={26} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900 mb-2">💡 Getting Started Tip</h3>
+                            <p className="text-sm text-gray-600 leading-relaxed">
+                                Create a workspace to organize your projects, invite team members, and start collaborating on tasks. 
+                                Use boards to visualize your workflow and track progress efficiently.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </div>

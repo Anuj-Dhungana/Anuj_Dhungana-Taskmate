@@ -53,10 +53,10 @@ const NotificationMenu = () => {
     return (
         <div className="relative">
             {/* Bell Icon */}
-            <button onClick={() => setIsOpen(!isOpen)} className="relative text-gray-500 hover:text-blue-600">
-                <Bell size={24} />
+            <button onClick={() => setIsOpen(!isOpen)} className="relative text-gray-500 hover:text-blue-600 transition-colors">
+                <Bell size={22} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">
+                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold shadow-lg">
                         {unreadCount}
                     </span>
                 )}
@@ -64,10 +64,10 @@ const NotificationMenu = () => {
 
             {/* Dropdown Menu */}
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-80 bg-white shadow-xl rounded-lg border border-gray-200 z-50 overflow-hidden">
-                    <div className="p-3 border-b bg-gray-50 flex justify-between items-center">
-                        <h3 className="font-bold text-sm text-gray-700">Notifications</h3>
-                        <button onClick={fetchNotifications} className="text-xs text-blue-500 hover:underline">Refresh</button>
+                <div className="absolute right-0 mt-2 w-80 bg-white shadow-2xl rounded-2xl border-2 border-gray-200 z-50 overflow-hidden">
+                    <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50 flex justify-between items-center">
+                        <h3 className="font-bold text-sm text-gray-800">Notifications</h3>
+                        <button onClick={fetchNotifications} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">Refresh</button>
                     </div>
 
                     <div className="max-h-64 overflow-y-auto">
@@ -78,9 +78,9 @@ const NotificationMenu = () => {
                                 <div 
                                     key={n._id} 
                                     onClick={() => handleRead(n)}
-                                    className={`p-3 border-b flex items-start gap-3 cursor-pointer hover:bg-gray-50 transition ${n.isRead ? 'opacity-60' : 'bg-blue-50'}`}
+                                    className={`p-4 border-b border-gray-100 flex items-start gap-3 cursor-pointer hover:bg-gray-50 transition-colors ${n.isRead ? 'opacity-60' : 'bg-blue-50/50'}`}
                                 >
-                                    <div className="w-2 h-2 mt-2 rounded-full shrink-0 bg-blue-500" style={{ opacity: n.isRead ? 0 : 1 }}></div>
+                                    <div className="w-2.5 h-2.5 mt-2 rounded-full shrink-0 bg-gradient-to-r from-blue-500 to-blue-600 shadow-md" style={{ opacity: n.isRead ? 0 : 1 }}></div>
                                     <div>
                                         <p className="text-sm text-gray-800">
                                             <span className="font-bold">{n.sender?.fullname}</span> {n.message}

@@ -24,22 +24,25 @@ const InviteUserModal = ({ isOpen, onClose, workspaceId }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-lg w-96 relative shadow-xl">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
+            <div className="bg-white p-6 rounded-2xl w-96 relative shadow-2xl">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition">
                     <X size={20} />
                 </button>
                 
                 <h2 className="text-xl font-bold mb-1 flex items-center gap-2">
-                    <UserPlus size={20} className="text-blue-600"/> Invite Member
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center">
+                        <UserPlus size={20} className="text-blue-600"/>
+                    </div>
+                    Invite Member
                 </h2>
-                <p className="text-sm text-gray-500 mb-4">Add existing TaskMate users via email.</p>
+                <p className="text-sm text-gray-500 mb-5">Add existing TaskMate users via email.</p>
                 
                 <form onSubmit={handleInvite}>
                     <input 
                         type="email" 
                         placeholder="Enter user email address" 
-                        className="w-full p-2 mb-4 border rounded focus:ring-2 focus:ring-blue-500 outline-none"
+                        className="w-full px-4 py-3 mb-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                         value={email} 
                         onChange={e => setEmail(e.target.value)} 
                         required
@@ -47,7 +50,7 @@ const InviteUserModal = ({ isOpen, onClose, workspaceId }) => {
                     
                     <button 
                         disabled={loading}
-                        className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 disabled:bg-blue-300"
+                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition shadow-lg shadow-blue-500/30"
                     >
                         {loading ? 'Sending...' : 'Add to Workspace'}
                     </button>

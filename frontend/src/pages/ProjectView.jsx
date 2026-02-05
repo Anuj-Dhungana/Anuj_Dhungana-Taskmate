@@ -94,7 +94,7 @@ const ProjectView = () => {
                 </div>
             </div>
 
-            <div className="bg-white border rounded-lg shadow-sm p-2 min-h-125">
+            <div className="bg-white rounded-lg shadow-md p-2 min-h-125">
                 {viewMode === 'board' ? (
                     <div className="h-full">
                         <BoardView

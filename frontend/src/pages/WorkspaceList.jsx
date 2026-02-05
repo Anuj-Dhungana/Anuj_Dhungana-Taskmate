@@ -63,7 +63,7 @@ const WorkspaceList = () => {
             </div>
 
             {sortedWorkspaces.length === 0 ? (
-                <div className="border rounded-lg bg-white shadow-sm px-10 py-16 flex flex-col items-center justify-center text-center text-gray-600">
+                <div className="rounded-lg bg-white shadow-md px-10 py-16 flex flex-col items-center justify-center text-center text-gray-600">
                     <div className="w-12 h-12 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 mb-3">
                         <Grid size={22} />
                     </div>
@@ -76,7 +76,7 @@ const WorkspaceList = () => {
                         <button
                             key={ws._id}
                             onClick={() => handleSelectWorkspace(ws._id)}
-                            className="p-4 rounded-lg border bg-white text-left hover:border-blue-500 hover:shadow-md transition shadow-sm"
+                            className="p-4 rounded-lg bg-white text-left hover:shadow-lg transition shadow-md"
                         >
                             <div className="flex items-start gap-3">
                                 <div

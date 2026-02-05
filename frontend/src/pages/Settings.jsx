@@ -66,7 +66,7 @@ const Settings = () => {
 
             <div className="flex gap-6">
                 {/* Sidebar Tabs */}
-                <div className="w-64 bg-white rounded-lg border p-2 h-fit">
+                <div className="w-64 bg-white rounded-lg shadow-md p-2 h-fit">
                     <nav className="space-y-1">
                         {tabs.map((tab) => (
                             <button
@@ -86,7 +86,7 @@ const Settings = () => {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 bg-white rounded-lg border">
+                <div className="flex-1 bg-white rounded-lg shadow-md">
                     {activeTab === 'profile' && (
                         <div className="p-6">
                             <h2 className="text-xl font-semibold text-gray-900 mb-4">Profile Information</h2>
@@ -98,32 +98,32 @@ const Settings = () => {
                                         name="fullname"
                                         value={formData.fullname}
                                         onChange={handleChange}
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Enter your full name"
-                                    />
-                                </div>
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Enter your full name"
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="Enter your email"
-                                    />
-                                </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            value={formData.email}
+                                            onChange={handleChange}
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            placeholder="Enter your email"
+                                        />
+                                    </div>
 
-                                <div className="pt-4">
-                                    <button
-                                        type="submit"
-                                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
-                                    >
-                                        Save Changes
-                                    </button>
-                                </div>
-                            </form>
+                                    <div className="pt-4">
+                                        <button
+                                            type="submit"
+                                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
+                                        >
+                                            Save Changes
+                                        </button>
+                                    </div>
+                                </form>
                         </div>
                     )}
 
@@ -141,7 +141,7 @@ const Settings = () => {
                                             name="currentPassword"
                                             value={formData.currentPassword}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             placeholder="Enter current password"
                                         />
                                     </div>
@@ -153,7 +153,7 @@ const Settings = () => {
                                             name="newPassword"
                                             value={formData.newPassword}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             placeholder="Enter new password"
                                         />
                                     </div>
@@ -165,7 +165,7 @@ const Settings = () => {
                                             name="confirmPassword"
                                             value={formData.confirmPassword}
                                             onChange={handleChange}
-                                            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                             placeholder="Confirm new password"
                                         />
                                     </div>
@@ -195,7 +195,7 @@ const Settings = () => {
                         <div className="p-6">
                             <h2 className="text-xl font-semibold text-gray-900 mb-4">Notification Preferences</h2>
                             <div className="space-y-4 max-w-lg">
-                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                <div className="flex items-center justify-between p-4 shadow-sm rounded-lg">
                                     <div>
                                         <div className="font-medium text-gray-900">Email Notifications</div>
                                         <div className="text-sm text-gray-500">Receive email updates about your projects</div>
@@ -206,7 +206,7 @@ const Settings = () => {
                                     </label>
                                 </div>
 
-                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                <div className="flex items-center justify-between p-4 shadow-sm rounded-lg">
                                     <div>
                                         <div className="font-medium text-gray-900">Push Notifications</div>
                                         <div className="text-sm text-gray-500">Get push notifications for important updates</div>
@@ -217,7 +217,7 @@ const Settings = () => {
                                     </label>
                                 </div>
 
-                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                <div className="flex items-center justify-between p-4 shadow-sm rounded-lg">
                                     <div>
                                         <div className="font-medium text-gray-900">Task Assignments</div>
                                         <div className="text-sm text-gray-500">Get notified when tasks are assigned to you</div>
@@ -237,7 +237,7 @@ const Settings = () => {
                             <div className="space-y-6 max-w-lg">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                                    <select className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <select className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                         <option>English</option>
                                         <option>Spanish</option>
                                         <option>French</option>
@@ -247,7 +247,7 @@ const Settings = () => {
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Timezone</label>
-                                    <select className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <select className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                         <option>UTC-05:00 (Eastern Time)</option>
                                         <option>UTC-08:00 (Pacific Time)</option>
                                         <option>UTC+00:00 (GMT)</option>

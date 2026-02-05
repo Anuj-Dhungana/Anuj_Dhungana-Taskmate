@@ -49,60 +49,60 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center pt-10">
-            <div className="w-full max-w-2xl bg-white rounded-lg shadow-md p-6">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center pt-10 px-4">
+            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
                 
-                <button onClick={() => navigate('/dashboard')} className="flex items-center text-gray-500 hover:text-blue-600 mb-6">
+                <button onClick={() => navigate('/dashboard')} className="flex items-center text-gray-500 hover:text-blue-600 mb-6 font-medium transition-colors">
                     <ArrowLeft size={20} className="mr-2"/> Back to Dashboard
                 </button>
 
-                <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
-                    <User className="text-blue-600"/> Profile Settings
+                <h1 className="text-3xl font-bold mb-8 flex items-center gap-3 text-gray-900">
+                    <User className="text-blue-600" size={32}/> Profile Settings
                 </h1>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     
                     {/* Left: Edit Details */}
                     <form onSubmit={handleUpdateProfile}>
-                        <h3 className="text-lg font-semibold mb-4">Personal Details</h3>
+                        <h3 className="text-lg font-bold mb-4 text-gray-800">Personal Details</h3>
                         
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">Full Name</label>
+                        <div className="mb-5">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
                             <input 
                                 type="text" 
-                                className="w-full p-2 border rounded mt-1"
+                                className="w-full p-3 border-2 border-gray-200 rounded-xl mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                 value={fullname} 
                                 onChange={(e) => setFullname(e.target.value)}
                             />
                         </div>
 
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700">New Password</label>
+                        <div className="mb-6">
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
                             <input 
                                 type="password" 
                                 placeholder="Leave blank to keep current"
-                                className="w-full p-2 border rounded mt-1"
+                                className="w-full p-3 border-2 border-gray-200 rounded-xl mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                 value={password} 
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
 
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 transition-all">
                             Save Changes
                         </button>
                     </form>
 
                     {/* Right: Security Settings (2FA) */}
-                    <div className="border-l pl-8">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                            <ShieldCheck className="text-green-600"/> Security
+                    <div className="border-l-2 border-gray-200 pl-8">
+                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
+                            <ShieldCheck className="text-green-600" size={24}/> Security
                         </h3>
                         
-                        <div className="bg-gray-100 p-4 rounded-lg">
+                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-sm">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="font-bold text-gray-800">Two-Factor Auth</p>
-                                    <p className="text-xs text-gray-500">Secure your account with Email OTP.</p>
+                                    <p className="text-xs text-gray-600 mt-1">Secure your account with Email OTP.</p>
                                 </div>
                                 <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
                                     <input 
@@ -121,8 +121,8 @@ const Profile = () => {
                             </div>
                         </div>
 
-                        <div className="mt-4 text-sm text-gray-500">
-                            <p>Status: <span className={is2FA ? "text-green-600 font-bold" : "text-red-500 font-bold"}>
+                        <div className="mt-4 text-sm">
+                            <p className="text-gray-600">Status: <span className={is2FA ? "text-green-600 font-bold" : "text-red-500 font-bold"}>
                                 {is2FA ? 'Enabled' : 'Disabled'}
                             </span></p>
                         </div>

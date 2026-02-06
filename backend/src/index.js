@@ -37,8 +37,10 @@ app.use(cors({
     credentials: true 
 }));
 
-// Apply rate limiting to all API routes
-app.use('/api', apiLimiter);
+// Apply rate limiting to all API routes (skip in development to avoid 429s during dev/HMR)
+if (process.env.NODE_ENV === 'production') {
+    app.use('/api', apiLimiter);
+}
 
 // --- SOCKET.IO SETUP ---
 const httpServer = createServer(app); // Wrap Express

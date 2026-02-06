@@ -9,6 +9,17 @@ const channelSchema = new mongoose.Schema({
         ref: 'Workspace', 
         required: true 
     },
+
+    type: {
+        type: String,
+        enum: ['channel', 'dm'],
+        default: 'channel'
+    },
+
+    members: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }],
     
     // Default channels like #general cannot be deleted
     isGeneral: { type: Boolean, default: false }

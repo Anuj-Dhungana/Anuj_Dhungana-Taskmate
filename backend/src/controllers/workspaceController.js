@@ -23,6 +23,7 @@ export const createWorkspace = async (req, res) => {
         await Channel.create({
             name: 'general',
             workspace: workspace._id,
+            type: 'channel',
             isGeneral: true
         });
 
@@ -65,7 +66,10 @@ export const getWorkspaceDetails = async (req, res) => {
 
         // 3. Fetch Channels and Projects belonging to this workspace
         const projects = await Project.find({ workspace: workspaceId }).sort({ createdAt: -1 });
-        const channels = await Channel.find({ workspace: workspaceId }).sort({ name: 1 });
+        const channels = await Channel.find({ 
+            workspace: workspaceId, 
+            type: { $in: ['channel', null] } 
+        }).sort({ name: 1 });
 
         res.json({
             workspace,

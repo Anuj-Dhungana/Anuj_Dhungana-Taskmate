@@ -28,8 +28,37 @@ export const getWorkspaceChannels = async (req, res) => {
         if (!workspace) return res.status(404).json({ message: "Workspace not found" });
         if (!member) return res.status(403).json({ message: "Not authorized" });
 
-        const channels = await Channel.find({ workspace: workspaceId }).sort({ isGeneral: -1, name: 1 });
+        const channels = await Channel.find({ 
+            workspace: workspaceId, 
+            type: { $in: ['channel', null] } 
+        }).sort({ isGeneral: -1, name: 1 });
         res.json(channels);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const getWorkspaceDMs = async (req, res) => {
+    try {
+        const workspaceId = req.params.workspaceId || req.query.workspaceId;
+        if (!workspaceId) {
+            return res.status(400).json({ message: "workspaceId is required" });
+        }
+
+        const { workspace, member } = await getWorkspaceAndMember(workspaceId, req.user._id);
+        if (!workspace) return res.status(404).json({ message: "Workspace not found" });
+        if (!member) return res.status(403).json({ message: "Not authorized" });
+
+        const dms = await Channel.find({
+            workspace: workspaceId,
+            type: 'dm',
+            members: req.user._id
+        })
+            .populate('members', 'fullname email avatar')
+            .sort({ updatedAt: -1 });
+
+        res.json(dms);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server Error" });
@@ -58,6 +87,7 @@ export const createChannel = async (req, res) => {
         const channel = await Channel.create({
             name: name.trim(),
             workspace: workspaceId,
+            type: 'channel',
             isGeneral: false
         });
 
@@ -78,6 +108,9 @@ export const renameChannel = async (req, res) => {
 
         const channel = await Channel.findById(id);
         if (!channel) return res.status(404).json({ message: "Channel not found" });
+        if (channel.type === 'dm') {
+            return res.status(400).json({ message: "Cannot rename a direct message" });
+        }
         if (channel.isGeneral) {
             return res.status(400).json({ message: "Cannot rename the general channel" });
         }
@@ -108,6 +141,9 @@ export const deleteChannel = async (req, res) => {
         const { id } = req.params;
         const channel = await Channel.findById(id);
         if (!channel) return res.status(404).json({ message: "Channel not found" });
+        if (channel.type === 'dm') {
+            return res.status(400).json({ message: "Cannot delete a direct message" });
+        }
         if (channel.isGeneral) {
             return res.status(400).json({ message: "Cannot delete the general channel" });
         }
@@ -120,6 +156,54 @@ export const deleteChannel = async (req, res) => {
         await channel.deleteOne();
 
         res.json({ message: "Channel deleted" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const createOrGetDM = async (req, res) => {
+    try {
+        const { workspaceId, memberId } = req.body;
+        if (!workspaceId || !memberId) {
+            return res.status(400).json({ message: "workspaceId and memberId are required" });
+        }
+        if (memberId.toString() === req.user._id.toString()) {
+            return res.status(400).json({ message: "Cannot create a DM with yourself" });
+        }
+
+        const { workspace, member } = await getWorkspaceAndMember(workspaceId, req.user._id);
+        if (!workspace) return res.status(404).json({ message: "Workspace not found" });
+        if (!member) return res.status(403).json({ message: "Not authorized" });
+
+        const targetIsMember = workspace.members.some(
+            (m) => m.user.toString() === memberId.toString()
+        );
+        if (!targetIsMember) {
+            return res.status(404).json({ message: "User is not in this workspace" });
+        }
+
+        const userIds = [req.user._id.toString(), memberId.toString()].sort();
+        const existing = await Channel.findOne({
+            workspace: workspaceId,
+            type: 'dm',
+            members: { $all: userIds, $size: 2 }
+        }).populate('members', 'fullname email avatar');
+
+        if (existing) {
+            return res.json(existing);
+        }
+
+        const dm = await Channel.create({
+            name: `dm-${userIds[0]}-${userIds[1]}`,
+            workspace: workspaceId,
+            type: 'dm',
+            members: userIds,
+            isGeneral: false
+        });
+
+        const populated = await dm.populate('members', 'fullname email avatar');
+        res.status(201).json(populated);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Server Error" });

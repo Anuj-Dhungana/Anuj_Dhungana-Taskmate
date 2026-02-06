@@ -3,11 +3,22 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { X, Calendar, User, Paperclip, FileText, Clock, Image as ImageIcon } from 'lucide-react';
 import useWorkspaceStore from '../../store/useWorkspaceStore';
+import useAuthStore from '../../store/useAuthStore';
 
 const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
     if (!isOpen || !card) return null;
 
     const { selectedWorkspace } = useWorkspaceStore();
+    const { userInfo } = useAuthStore();
+    const workspaceMembers = selectedWorkspace?.workspace?.members || [];
+    const myRole = workspaceMembers.find((m) => m.user?._id === userInfo?._id)?.role;
+    const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
+    const isAssigned = (card.assignees || []).some((assignee) => {
+        const id = assignee?._id || assignee;
+        return id && id.toString() === userInfo?._id;
+    });
+    const canEditTask = isAdminOrOwner || isAssigned;
+    const canManageAssignees = isAdminOrOwner;
     
     // Local State for Form
     const [title, setTitle] = useState(card.title);
@@ -19,13 +30,17 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
 
     // Save Changes Handler
     const handleSave = async () => {
+        if (!canEditTask) return;
         try {
-            await axios.put(`/api/board/cards/${card._id}`, {
+            const payload = {
                 title,
                 description,
                 dueDate,
-                assignees: selectedAssignees
-            });
+            };
+            if (canManageAssignees) {
+                payload.assignees = selectedAssignees;
+            }
+            await axios.put(`/api/board/cards/${card._id}`, payload);
             toast.success("Card updated");
             onUpdate(); // Refresh board
             onClose();
@@ -36,6 +51,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
 
     // File Upload Handler
     const handleFileUpload = async (e) => {
+        if (!canEditTask) return;
         const file = e.target.files[0];
         if (!file) return;
 
@@ -63,6 +79,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
     };
 
     const toggleAssignee = (userId) => {
+        if (!canManageAssignees) return;
         if (selectedAssignees.includes(userId)) {
             setSelectedAssignees(selectedAssignees.filter(id => id !== userId));
         } else {
@@ -81,6 +98,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                             className="text-xl font-bold w-full outline-none border-b-2 border-transparent focus:border-blue-500 transition-all pb-1"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
+                            readOnly={!canEditTask}
                         />
                         <p className="text-xs text-gray-500 mt-2">in list <span className="font-semibold text-blue-600">Current List</span></p>
                     </div>
@@ -97,10 +115,13 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                                 <FileText size={18}/> Description
                             </h3>
                             <textarea 
-                                className="w-full h-32 p-4 border-2 border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 ring-blue-500 outline-none text-sm transition-all resize-none"
+                                className={`w-full h-32 p-4 border-2 border-gray-200 rounded-xl text-sm transition-all resize-none ${
+                                    canEditTask ? 'bg-gray-50 focus:bg-white focus:ring-2 ring-blue-500 outline-none' : 'bg-gray-100 text-gray-500'
+                                }`}
                                 placeholder="Add a more detailed description..."
                                 value={description}
                                 onChange={(e) => setDescription(e.target.value)}
+                                readOnly={!canEditTask}
                             />
                         </div>
 
@@ -141,9 +162,16 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                                 })}
                             </div>
                             
-                            <label className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 rounded-xl cursor-pointer text-sm text-gray-700 transition-all font-medium shadow-sm">
+                            <label
+                                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all font-medium shadow-sm ${
+                                    canEditTask
+                                        ? 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 cursor-pointer'
+                                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
+                                title={canEditTask ? 'Upload file' : 'Only assignees or admins can upload files'}
+                            >
                                 <span>{uploading ? 'Uploading...' : 'Add File'}</span>
-                                <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+                                <input type="file" className="hidden" onChange={handleFileUpload} disabled={uploading || !canEditTask} />
                             </label>
                         </div>
 
@@ -162,6 +190,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                                     className="outline-none text-sm bg-transparent w-full"
                                     value={dueDate}
                                     onChange={(e) => setDueDate(e.target.value)}
+                                    disabled={!canEditTask}
                                 />
                             </div>
                         </div>
@@ -171,24 +200,34 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                             <h4 className="text-xs font-bold text-gray-500 uppercase mb-2">Assign Members</h4>
                             <div className="space-y-1 max-h-40 overflow-y-auto">
                                 {selectedWorkspace?.workspace.members.map(m => (
-                                    <label key={m.user._id} className="flex items-center gap-2 p-2 hover:bg-white rounded-lg cursor-pointer transition-colors">
+                                    <label key={m.user._id} className={`flex items-center gap-2 p-2 rounded-lg transition-colors ${canManageAssignees ? 'hover:bg-white cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}>
                                         <input 
                                             type="checkbox" 
                                             checked={selectedAssignees.includes(m.user._id)}
                                             onChange={() => toggleAssignee(m.user._id)}
                                             className="rounded text-blue-600 focus:ring-blue-500"
+                                            disabled={!canManageAssignees}
                                         />
                                         <span className="text-sm truncate font-medium text-gray-700">{m.user.fullname}</span>
                                     </label>
                                 ))}
                             </div>
+                            {!canManageAssignees && (
+                                <p className="text-[11px] text-gray-400 mt-2">Only admins can change assignees.</p>
+                            )}
                         </div>
 
                         {/* Save Button */}
                         <div className="pt-10">
                             <button 
                                 onClick={handleSave}
-                                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2.5 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 transition-all"
+                                disabled={!canEditTask}
+                                title={canEditTask ? 'Save changes' : 'Only assignees or admins can edit this task'}
+                                className={`w-full py-2.5 rounded-xl font-semibold shadow-lg transition-all ${
+                                    canEditTask
+                                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-blue-500/30'
+                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                }`}
                             >
                                 Save Changes
                             </button>

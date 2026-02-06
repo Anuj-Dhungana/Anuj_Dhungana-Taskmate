@@ -10,6 +10,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
     // Find MY role
     const myRole = workspace?.members.find(m => m.user._id === userInfo._id)?.role;
     const isOwner = myRole === 'owner';
+    const isAdmin = myRole === 'admin';
 
     if (!isOpen || !workspace) return null;
 
@@ -83,7 +84,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                                 </span>
 
                                 {/* ACTIONS (Only visible if I am Owner) */}
-                                {isOwner && member.role !== 'owner' && (
+                                {isOwner && member.role !== 'owner' && member.user._id !== userInfo._id && (
                                     <>
                                         {/* Promote/Demote Dropdown */}
                                         <select 
@@ -96,6 +97,26 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                                         </select>
 
                                         {/* Kick Button */}
+                                        <button 
+                                            onClick={() => handleKick(member.user._id)}
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-all"
+                                            title="Remove User"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </>
+                                )}
+
+                                {/* Admin can promote/remove members only */}
+                                {isAdmin && member.role === 'member' && member.user._id !== userInfo._id && (
+                                    <>
+                                        <button
+                                            onClick={() => handleRoleChange(member.user._id, 'admin')}
+                                            className="text-xs border-2 border-gray-200 rounded-lg px-2.5 py-1.5 hover:bg-gray-100 transition-all"
+                                            title="Promote to admin"
+                                        >
+                                            Make Admin
+                                        </button>
                                         <button 
                                             onClick={() => handleKick(member.user._id)}
                                             className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-all"

@@ -4,11 +4,13 @@ import axios from 'axios';
 import { Plus, Grid, Kanban, Calendar as CalendarIcon, UserPlus } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
+import useAuthStore from '../store/useAuthStore';
 
 const WorkspaceDetail = () => {
     const { workspaceId } = useParams();
     const navigate = useNavigate();
     const { currentWorkspaceId, setSelectedWorkspace, setCurrentWorkspaceId } = useWorkspaceStore();
+    const { userInfo } = useAuthStore();
     const [workspace, setWorkspace] = useState(null);
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -88,6 +90,9 @@ const WorkspaceDetail = () => {
         }
     };
 
+    const myRole = workspace?.members?.find((m) => m.user?._id === userInfo?._id)?.role;
+    const canInvite = myRole === 'owner' || myRole === 'admin';
+
     if (!effectiveWorkspaceId) {
         return (
             <div className="px-8 py-10">
@@ -145,8 +150,14 @@ const WorkspaceDetail = () => {
 
                 <div className="flex items-center gap-2">
                     <button
-                        onClick={() => navigate('/members')}
-                        className="px-3 py-2 text-sm border rounded-md text-gray-700 hover:bg-gray-50 inline-flex items-center gap-1"
+                        onClick={() => canInvite && navigate('/members')}
+                        disabled={!canInvite}
+                        title={canInvite ? 'Invite members' : 'Only admins can invite members'}
+                        className={`px-3 py-2 text-sm border rounded-md inline-flex items-center gap-1 ${
+                            canInvite
+                                ? 'text-gray-700 hover:bg-gray-50'
+                                : 'text-gray-300 bg-gray-50 cursor-not-allowed'
+                        }`}
                     >
                         <UserPlus size={14} /> Invite
                     </button>

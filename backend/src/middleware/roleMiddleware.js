@@ -4,8 +4,8 @@ import Workspace from '../models/Workspace.js';
 const checkWorkspaceRole = (allowedRoles) => {
     return async (req, res, next) => {
         try {
-            // 1. Identify Workspace ID (It could be in params or body)
-            const workspaceId = req.params.id || req.body.workspaceId;
+            // 1. Identify Workspace ID (It could be in params, body, or query)
+            const workspaceId = req.params.id || req.body.workspaceId || req.query.workspaceId;
 
             if (!workspaceId) {
                 return res.status(400).json({ message: "Workspace ID missing for role check" });

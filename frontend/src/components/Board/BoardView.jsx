@@ -14,16 +14,30 @@ import TaskDetailModal from './TaskDetailModal';
 import CreateTaskModal from './CreateTaskModal';
 import { ArrowLeft, Plus, Settings } from 'lucide-react';
 import useWorkspaceStore from '../../store/useWorkspaceStore';
+import useAuthStore from '../../store/useAuthStore';
 
 const BoardView = ({ projectId, project, onBack }) => {
     const [lists, setLists] = useState([]);
     const [cards, setCards] = useState([]);
     const [newListTitle, setNewListTitle] = useState('');
     const [activeId, setActiveId] = useState(null); // For drag overlay
-const [selectedCard, setSelectedCard] = useState(null);
+    const [selectedCard, setSelectedCard] = useState(null);
     const [filter, setFilter] = useState('All');
     const [showTaskModal, setShowTaskModal] = useState(false);
     const { selectedWorkspace } = useWorkspaceStore();
+    const { userInfo } = useAuthStore();
+
+    const workspaceMembers = selectedWorkspace?.workspace?.members || [];
+    const myRole = workspaceMembers.find((m) => m.user?._id === userInfo?._id)?.role;
+    const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
+    const myUserId = userInfo?._id;
+
+    const canDragCard = (card) => {
+        if (isAdminOrOwner) return true;
+        if (!myUserId) return false;
+        const assignees = card.assignees || [];
+        return assignees.some((a) => (a?._id || a).toString() === myUserId);
+    };
 
     // Sensors handle mouse/touch interactions
     const sensors = useSensors(
@@ -240,21 +254,33 @@ const [selectedCard, setSelectedCard] = useState(null);
                             onCardAdded={(newCard) => setCards([...cards, newCard])} 
                             onCardDelete={handleDeleteCard}
                             onCardClick={handleCardClick}
+                            canDragCard={canDragCard}
                         />
                     ))}
 
                     {/* Add New List Input */}
-                    <div className="w-72 shrink-0">
-                        <form onSubmit={handleAddList} className="bg-white/50 hover:bg-white p-2 rounded transition cursor-pointer border border-dashed border-gray-300">
-                            <input 
-                                type="text" 
-                                placeholder="+ Add another list" 
-                                className="w-full bg-transparent p-2 outline-none font-medium placeholder-gray-600"
-                                value={newListTitle}
-                                onChange={e => setNewListTitle(e.target.value)}
-                            />
-                        </form>
-                    </div>
+                    {isAdminOrOwner ? (
+                        <div className="w-72 shrink-0">
+                            <form onSubmit={handleAddList} className="bg-white/50 hover:bg-white p-2 rounded transition cursor-pointer border border-dashed border-gray-300">
+                                <input 
+                                    type="text" 
+                                    placeholder="+ Add another list" 
+                                    className="w-full bg-transparent p-2 outline-none font-medium placeholder-gray-600"
+                                    value={newListTitle}
+                                    onChange={e => setNewListTitle(e.target.value)}
+                                />
+                            </form>
+                        </div>
+                    ) : (
+                        <div className="w-72 shrink-0">
+                            <div
+                                title="Only admins can create lists"
+                                className="bg-gray-50 p-2 rounded border border-dashed border-gray-200 text-gray-400 text-sm font-medium"
+                            >
+                                + Add another list
+                            </div>
+                        </div>
+                    )}
                 </div>
             
             <CreateTaskModal
@@ -262,7 +288,7 @@ const [selectedCard, setSelectedCard] = useState(null);
                 onClose={() => setShowTaskModal(false)}
                 projectId={projectId}
                 lists={lists}
-                workspaceMembers={selectedWorkspace?.workspace?.members || []}
+                workspaceMembers={workspaceMembers}
                 onCreated={(newCard) => {
                             setCards((prev) => [...prev, newCard]);
                             const targetList = lists.find((l) => l._id === newCard.listId);

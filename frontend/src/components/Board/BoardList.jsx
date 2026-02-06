@@ -6,7 +6,7 @@ import { useState } from 'react';
 import axios from 'axios';
 
 
-const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick }) => { // Accept onCardAdded, onCardDelete, onCardClick props
+const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick, canDragCard }) => { // Accept onCardAdded, onCardDelete, onCardClick props
   // Hook to make this list a "drop zone"
   const { setNodeRef } = useDroppable({
     id: list._id,
@@ -53,7 +53,13 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick }) => {
             <div className="text-center text-xs text-gray-400 py-6">No tasks</div>
           ) : (
             cards.map((card) => (
-              <TaskCard key={card._id} card={card} onDelete={onCardDelete} onClick={() => onCardClick(card)} />
+              <TaskCard
+                key={card._id}
+                card={card}
+                onDelete={onCardDelete}
+                onClick={() => onCardClick(card)}
+                canDrag={canDragCard ? canDragCard(card) : true}
+              />
             ))
           )}
         </SortableContext>

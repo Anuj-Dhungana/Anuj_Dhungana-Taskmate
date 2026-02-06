@@ -135,17 +135,13 @@ export const deleteProject = async (req, res) => {
             return res.status(404).json({ message: "Project not found" });
         }
 
-        // Check 1: Are you the person who created this project?
-        const isCreator = project.createdBy.toString() === req.user._id.toString();
-
-        // Check 2: Are you a Workspace Owner or Admin?
-        // We need to fetch the workspace to check your role
+        // Check: Are you a Workspace Owner or Admin?
         const workspace = await Workspace.findById(project.workspace);
         const member = workspace.members.find(m => m.user.toString() === req.user._id.toString());
         const isAdminOrOwner = member && (member.role === 'owner' || member.role === 'admin');
 
-        // Allow delete if either condition is true
-        if (isCreator || isAdminOrOwner) {
+        // Allow delete if admin/owner
+        if (isAdminOrOwner) {
             await project.deleteOne();
         
 

@@ -2,20 +2,25 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { ArrowRight, CheckCircle2, MessageSquare } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
+import useAuthStore from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
 
 const Analytics = () => {
     const navigate = useNavigate();
-    const { currentWorkspaceId } = useWorkspaceStore();
+    const { currentWorkspaceId, selectedWorkspace } = useWorkspaceStore();
+    const { userInfo } = useAuthStore();
     const [projectProgress, setProjectProgress] = useState([]);
     const [activity, setActivity] = useState([]);
     const [stats, setStats] = useState({ totalProjects: 0, activeTasks: 0, completedTasks: 0 });
+    const members = selectedWorkspace?.workspace?.members || [];
+    const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
+    const canViewAnalytics = myRole === 'owner' || myRole === 'admin';
 
     useEffect(() => {
-        if (currentWorkspaceId) {
+        if (currentWorkspaceId && canViewAnalytics) {
             fetchAnalytics();
         }
-    }, [currentWorkspaceId]);
+    }, [currentWorkspaceId, canViewAnalytics]);
 
     const fetchAnalytics = async () => {
         try {
@@ -52,6 +57,24 @@ const Analytics = () => {
         return (
             <div className="px-8 py-10">
                 <div className="text-center text-gray-500">Select a workspace to view analytics.</div>
+            </div>
+        );
+    }
+
+    if (!selectedWorkspace?.workspace) {
+        return (
+            <div className="px-8 py-10">
+                <div className="text-center text-gray-500">Loading analytics...</div>
+            </div>
+        );
+    }
+
+    if (!canViewAnalytics) {
+        return (
+            <div className="px-8 py-10">
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Analytics are available to workspace owners and admins only.
+                </div>
             </div>
         );
     }

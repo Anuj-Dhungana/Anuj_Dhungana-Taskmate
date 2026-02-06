@@ -246,8 +246,12 @@ const WorkspaceMembers = () => {
                                 const status = user.isVerified === false ? 'inactive' : 'active';
                                 const statusLabel = status === 'active' ? 'Active' : 'Inactive';
                                 const isMe = user._id === userInfo?._id;
-                                const canChangeRole = isOwner && member.role !== 'owner' && !isMe;
-                                const canRemove = (isOwner || isAdmin) && member.role !== 'owner' && !isMe;
+                                const canChangeRole =
+                                    (isOwner && member.role !== 'owner' && !isMe) ||
+                                    (isAdmin && member.role === 'member' && !isMe);
+                                const canRemove =
+                                    (isOwner && member.role !== 'owner' && !isMe) ||
+                                    (isAdmin && member.role === 'member' && !isMe);
                                 const canManage = isOwner || isAdmin;
 
                                 const roleActionLabel = member.role === 'admin' ? 'Make Member' : 'Make Admin';
@@ -315,7 +319,9 @@ const WorkspaceMembers = () => {
                                                                         ? 'Owner role cannot be changed'
                                                                         : isMe
                                                                             ? 'You cannot change your own role'
-                                                                            : 'Only owners can change roles'
+                                                                            : isAdmin
+                                                                                ? 'Admins can only promote members'
+                                                                                : 'Only owners can change roles'
                                                             }
                                                             className={`w-full px-3 py-2 text-left text-xs ${
                                                                 canChangeRole
@@ -335,7 +341,9 @@ const WorkspaceMembers = () => {
                                                                         ? 'Owner cannot be removed'
                                                                         : isMe
                                                                             ? 'You cannot remove yourself'
-                                                                            : 'Only admins can remove members'
+                                                                            : isAdmin
+                                                                                ? 'Admins can only remove members'
+                                                                                : 'Only admins can remove members'
                                                             }
                                                             className={`w-full px-3 py-2 text-left text-xs ${
                                                                 canRemove

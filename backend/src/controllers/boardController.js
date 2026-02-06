@@ -5,10 +5,38 @@ import Notification from '../models/Notification.js';
 import Workspace from '../models/Workspace.js';
 import Message from '../models/Message.js';
 
+const isAdminOrOwner = (member) => member && (member.role === 'owner' || member.role === 'admin');
+
+const getProjectContext = async (projectId, userId) => {
+    if (!projectId) {
+        return { status: 400, message: 'projectId is required' };
+    }
+    const project = await Project.findById(projectId).select('workspace');
+    if (!project) {
+        return { status: 404, message: 'Project not found' };
+    }
+    const workspace = await Workspace.findById(project.workspace);
+    if (!workspace) {
+        return { status: 404, message: 'Workspace not found' };
+    }
+    const member = workspace.members.find(
+        (m) => m.user.toString() === userId.toString()
+    );
+    if (!member) {
+        return { status: 403, message: 'Not authorized' };
+    }
+    return { status: 200, project, workspace, member };
+};
+
 
 export const getBoard = async (req, res) => {
     try {
         const { projectId } = req.params;
+
+        const context = await getProjectContext(projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
 
         // 1. Fetch Lists (Sorted by order)
         const lists = await List.find({ projectId }).sort('order');
@@ -26,6 +54,14 @@ export const getBoard = async (req, res) => {
 export const createList = async (req, res) => {
     try {
         const { title, projectId } = req.body;
+
+        const context = await getProjectContext(projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+        if (!isAdminOrOwner(context.member)) {
+            return res.status(403).json({ message: "Only admins can create lists" });
+        }
         
         // Find highest order to put this at the end
         const lastList = await List.findOne({ projectId }).sort('-order');
@@ -48,6 +84,29 @@ export const createCard = async (req, res) => {
     try {
         const { title, listId, projectId, description, dueDate, assignees = [], priority } = req.body;
 
+        const context = await getProjectContext(projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+
+        const list = await List.findById(listId).select('projectId');
+        if (!list || list.projectId.toString() !== projectId.toString()) {
+            return res.status(400).json({ message: "List does not belong to this project" });
+        }
+
+        const memberIds = new Set(
+            (context.workspace?.members || []).map((m) => m.user.toString())
+        );
+        let sanitizedAssignees = Array.isArray(assignees)
+            ? assignees.filter((id) => memberIds.has(id.toString()))
+            : [];
+
+        if (!isAdminOrOwner(context.member)) {
+            const selfId = req.user._id.toString();
+            const selfOnly = sanitizedAssignees.filter((id) => id.toString() === selfId);
+            sanitizedAssignees = selfOnly.length ? selfOnly : [req.user._id];
+        }
+
         // Find highest order in this list
         const lastCard = await Card.findOne({ listId }).sort('-order');
         const newOrder = lastCard ? lastCard.order + 1 : 0;
@@ -59,7 +118,7 @@ export const createCard = async (req, res) => {
             order: newOrder,
             description: description || '',
             dueDate: dueDate ? new Date(dueDate) : undefined,
-            assignees: Array.isArray(assignees) ? assignees : [],
+            assignees: sanitizedAssignees,
             priority: ['Low', 'Medium', 'High'].includes(priority) ? priority : 'Medium'
         });
 
@@ -74,6 +133,28 @@ export const createCard = async (req, res) => {
 export const updateCardOrder = async (req, res) => {
     try {
         const { cardId, newListId, newOrder } = req.body;
+
+        const card = await Card.findById(cardId);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+
+        const isAssigned = card.assignees.some(
+            (id) => id.toString() === req.user._id.toString()
+        );
+        if (!isAdminOrOwner(context.member) && !isAssigned) {
+            return res.status(403).json({ message: "Not authorized to move this task" });
+        }
+
+        const list = await List.findById(newListId).select('projectId');
+        if (!list || list.projectId.toString() !== card.projectId.toString()) {
+            return res.status(400).json({ message: "List does not belong to this project" });
+        }
 
         // Update the card
         await Card.findByIdAndUpdate(cardId, {
@@ -92,7 +173,21 @@ export const updateCardOrder = async (req, res) => {
 export const deleteCard = async (req, res) => {
     try {
         const { id } = req.params;
-        await Card.findByIdAndDelete(id);
+
+        const card = await Card.findById(id);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+        if (!isAdminOrOwner(context.member)) {
+            return res.status(403).json({ message: "Only admins can delete tasks" });
+        }
+
+        await card.deleteOne();
         res.json({ message: "Card deleted" });
     } catch (error) {
         res.status(500).json({ message: "Server Error" });
@@ -110,6 +205,22 @@ export const updateCard = async (req, res) => {
         const card = await Card.findById(id);
         if (!card) return res.status(404).json({ message: "Card not found" });
 
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+
+        const isAssigned = card.assignees.some(
+            (assigneeId) => assigneeId.toString() === req.user._id.toString()
+        );
+        if (!isAdminOrOwner(context.member) && !isAssigned) {
+            return res.status(403).json({ message: "Not authorized to edit this task" });
+        }
+
+        if (assignees !== undefined && !isAdminOrOwner(context.member)) {
+            return res.status(403).json({ message: "Only admins can change assignees" });
+        }
+
         // Update Text Fields
         if (title) card.title = title;
         if (description !== undefined) card.description = description;
@@ -119,12 +230,17 @@ export const updateCard = async (req, res) => {
         // Update Assignees
         if (assignees) {
             const newAssignees = Array.isArray(assignees) ? assignees : JSON.parse(assignees);
+
+            const memberIds = new Set(
+                (context.workspace?.members || []).map((m) => m.user.toString())
+            );
+            const sanitizedAssignees = newAssignees.filter((id) => memberIds.has(id.toString()));
             
             // Find who is NEWLY assigned
             const previousAssignees = card.assignees.map(id => id.toString());
-            const addedUsers = newAssignees.filter(id => !previousAssignees.includes(id));
+            const addedUsers = sanitizedAssignees.filter(id => !previousAssignees.includes(id.toString()));
 
-            card.assignees = newAssignees;
+            card.assignees = sanitizedAssignees;
 
             // Send Notifications to new assignees
             const io = req.app.get('io'); // Get Socket Instance
@@ -133,12 +249,13 @@ export const updateCard = async (req, res) => {
             const workspaceRoom = project?.workspace ? `workspace_${project.workspace}` : null;
 
             addedUsers.forEach(async (userId) => {
+                const userIdStr = userId.toString();
                 // Don't notify if assigning self
-                if (userId !== req.user._id.toString()) {
+                if (userIdStr !== req.user._id.toString()) {
                     
                     // 1. Create DB Record
                     const notif = await Notification.create({
-                        recipient: userId,
+                        recipient: userIdStr,
                         sender: req.user._id,
                         message: `assigned you to task "${card.title}"`,
                         type: 'assignment',
@@ -150,7 +267,7 @@ export const updateCard = async (req, res) => {
                     if (workspaceRoom) {
                         io.to(workspaceRoom).emit("new_notification", { 
                         ...notif._doc,
-                        recipient: userId, // Frontend will filter this
+                        recipient: userIdStr, // Frontend will filter this
                         sender: { fullname: req.user.fullname } 
                         });
                     }
@@ -292,9 +409,12 @@ export const getWorkspaceAnalytics = async (req, res) => {
             return res.status(404).json({ message: "Workspace not found" });
         }
 
-        const isMember = workspace.members.some(m => m.user.toString() === req.user._id.toString());
-        if (!isMember) {
+        const member = workspace.members.find(m => m.user.toString() === req.user._id.toString());
+        if (!member) {
             return res.status(403).json({ message: "Not authorized to view this workspace" });
+        }
+        if (!isAdminOrOwner(member)) {
+            return res.status(403).json({ message: "Only admins can access analytics" });
         }
 
         const projects = await Project.find({ workspace: workspaceId })

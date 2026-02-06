@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { X, Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import useAuthStore from '../../store/useAuthStore';
 
 const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMembers = [], onCreated }) => {
+    const { userInfo } = useAuthStore();
     const statusOptions = useMemo(() => {
         const mapByLower = lists.reduce((acc, l) => {
             const key = (l.title || '').toLowerCase();
@@ -31,14 +33,24 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
     const [assigneeOpen, setAssigneeOpen] = useState(false);
     const [statusOpen, setStatusOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const myRole = workspaceMembers.find((m) => m.user?._id === userInfo?._id)?.role;
+    const canAssign = myRole === 'owner' || myRole === 'admin';
+    const selfId = userInfo?._id;
 
     useEffect(() => {
         setListId(defaultListId);
     }, [defaultListId, isOpen]);
 
+    useEffect(() => {
+        if (!canAssign && selfId && isOpen) {
+            setAssignees([selfId]);
+        }
+    }, [canAssign, selfId, isOpen]);
+
     if (!isOpen) return null;
 
     const toggleAssignee = (id) => {
+        if (!canAssign) return;
         setAssignees((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
     };
 
@@ -47,15 +59,20 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
         if (!title.trim() || !listId) return;
         setLoading(true);
         try {
-            const res = await axios.post('/api/board/cards', {
+            const payload = {
                 title,
                 description,
                 listId,
                 projectId,
                 priority,
                 dueDate,
-                assignees,
-            });
+            };
+            if (canAssign) {
+                payload.assignees = assignees;
+            } else if (selfId) {
+                payload.assignees = [selfId];
+            }
+            const res = await axios.post('/api/board/cards', payload);
             toast.success('Task created');
             onCreated?.(res.data);
             setTitle('');
@@ -169,46 +186,60 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
 
                     <div className="relative">
                         <label className="block text-xs font-semibold text-gray-700 mb-1">Assignees</label>
-                        <button
-                            type="button"
-                            onClick={() => setAssigneeOpen((v) => !v)}
-                            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-left text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-all"
-                        >
-                            {assignees.length === 0 ? (
-                                <span className="text-gray-400">Select assignees</span>
-                            ) : (
-                                workspaceMembers
-                                    .filter((m) => assignees.includes(m.user._id))
-                                    .map((m) => m.user.fullname)
-                                    .join(', ')
-                            )}
-                        </button>
+                        {canAssign ? (
+                            <>
+                                <button
+                                    type="button"
+                                    onClick={() => setAssigneeOpen((v) => !v)}
+                                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-left text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white transition-all"
+                                >
+                                    {assignees.length === 0 ? (
+                                        <span className="text-gray-400">Select assignees</span>
+                                    ) : (
+                                        workspaceMembers
+                                            .filter((m) => assignees.includes(m.user._id))
+                                            .map((m) => m.user.fullname)
+                                            .join(', ')
+                                    )}
+                                </button>
 
-                        {assigneeOpen && (
-                            <div className="absolute left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-20 divide-y divide-gray-100">
-                                {workspaceMembers.length === 0 && (
-                                    <p className="text-xs text-gray-400 px-3 py-2">No members available</p>
+                                {assigneeOpen && (
+                                    <div className="absolute left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-20 divide-y divide-gray-100">
+                                        {workspaceMembers.length === 0 && (
+                                            <p className="text-xs text-gray-400 px-3 py-2">No members available</p>
+                                        )}
+                                        {workspaceMembers.map((m) => {
+                                            const checked = assignees.includes(m.user._id);
+                                            return (
+                                                <label
+                                                    key={m.user._id}
+                                                    className="flex items-center justify-between px-4 py-2.5 text-sm bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+                                                >
+                                                    <span className="flex items-center gap-2 text-gray-700">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checked}
+                                                            onChange={() => toggleAssignee(m.user._id)}
+                                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                        />
+                                                        {m.user.fullname}
+                                                    </span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
                                 )}
-                                {workspaceMembers.map((m) => {
-                                    const checked = assignees.includes(m.user._id);
-                                    return (
-                                        <label
-                                            key={m.user._id}
-                                            className="flex items-center justify-between px-4 py-2.5 text-sm bg-white hover:bg-gray-50 cursor-pointer transition-colors"
-                                        >
-                                            <span className="flex items-center gap-2 text-gray-700">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={checked}
-                                                    onChange={() => toggleAssignee(m.user._id)}
-                                                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                />
-                                                {m.user.fullname}
-                                            </span>
-                                        </label>
-                                    );
-                                })}
+                            </>
+                        ) : (
+                            <div
+                                className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-left text-sm bg-gray-50 text-gray-500"
+                                title="Only admins can assign members"
+                            >
+                                Assigned to you
                             </div>
+                        )}
+                        {!canAssign && (
+                            <p className="text-[11px] text-gray-400 mt-1">Only admins can assign members.</p>
                         )}
                     </div>
 

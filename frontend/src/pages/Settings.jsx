@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import useWorkspaceStore from '../store/useWorkspaceStore';
+import useAuthStore from '../store/useAuthStore';
 
 const Settings = () => {
     const { currentWorkspaceId, selectedWorkspace, setSelectedWorkspace, setCurrentWorkspaceId } = useWorkspaceStore();
+    const { userInfo } = useAuthStore();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [color, setColor] = useState('#F97316');
@@ -19,9 +21,14 @@ const Settings = () => {
         }
     }, [selectedWorkspace]);
 
+    const members = selectedWorkspace?.workspace?.members || [];
+    const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
+    const isOwner = myRole === 'owner';
+
     const handleSave = async (e) => {
         e.preventDefault();
         if (!currentWorkspaceId) return;
+        if (!isOwner) return;
         setLoading(true);
         try {
             const res = await axios.put(`/api/workspaces/${currentWorkspaceId}`, {
@@ -46,6 +53,7 @@ const Settings = () => {
 
     const handleDelete = async () => {
         if (!currentWorkspaceId) return;
+        if (!isOwner) return;
         const confirmName = prompt(`To confirm deletion, type "${name}"`);
         if (confirmName !== name) {
             return toast.error('Workspace name did not match.');
@@ -76,6 +84,12 @@ const Settings = () => {
                 <p className="text-gray-500 mt-2">Manage the selected workspace.</p>
             </div>
 
+            {!isOwner && (
+                <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Only workspace owners can edit settings or delete the workspace.
+                </div>
+            )}
+
             <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl">
                 <form onSubmit={handleSave} className="space-y-5">
                     <div>
@@ -84,7 +98,10 @@ const Settings = () => {
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            disabled={!isOwner}
+                            className={`w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                                isOwner ? '' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                            }`}
                         />
                     </div>
 
@@ -93,7 +110,10 @@ const Settings = () => {
                         <textarea
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none"
+                            disabled={!isOwner}
+                            className={`w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent h-24 resize-none ${
+                                isOwner ? '' : 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                            }`}
                         />
                     </div>
 
@@ -106,11 +126,12 @@ const Settings = () => {
                                     <button
                                         type="button"
                                         key={c}
-                                        onClick={() => setColor(c)}
+                                        onClick={() => isOwner && setColor(c)}
                                         className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all ${
                                             isActive ? 'border-blue-500 scale-110 shadow-lg' : 'border-transparent hover:border-gray-300 hover:scale-105'
                                         }`}
                                         aria-label={`Select color ${c}`}
+                                        disabled={!isOwner}
                                     >
                                         <span className="w-6 h-6 rounded-full" style={{ backgroundColor: c }} />
                                     </button>
@@ -122,8 +143,13 @@ const Settings = () => {
                     <div className="pt-2">
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-60"
+                            disabled={loading || !isOwner}
+                            title={isOwner ? 'Save changes' : 'Only workspace owners can edit settings'}
+                            className={`px-6 py-2 rounded-lg transition font-semibold ${
+                                isOwner
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                            }`}
                         >
                             {loading ? 'Saving...' : 'Save Changes'}
                         </button>
@@ -139,7 +165,13 @@ const Settings = () => {
                         </div>
                         <button
                             onClick={handleDelete}
-                            className="bg-white text-red-600 border-2 border-red-300 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-red-600 hover:text-white transition-all"
+                            disabled={!isOwner}
+                            title={isOwner ? 'Delete workspace' : 'Only workspace owners can delete'}
+                            className={`bg-white border-2 border-red-300 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                                isOwner
+                                    ? 'text-red-600 hover:bg-red-600 hover:text-white'
+                                    : 'text-gray-400 cursor-not-allowed'
+                            }`}
                         >
                             Delete
                         </button>

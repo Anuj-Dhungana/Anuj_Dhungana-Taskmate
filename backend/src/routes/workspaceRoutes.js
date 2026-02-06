@@ -16,10 +16,10 @@ router.route('/')
     .get(protect, getMyWorkspaces);
 router.route('/:id')
     .get(protect, getWorkspaceDetails)
-    .put(protect, checkWorkspaceRole(['owner', 'admin']), updateWorkspace)
+    .put(protect, checkWorkspaceRole(['owner']), updateWorkspace)
     .delete(protect, checkWorkspaceRole(['owner']), deleteWorkspace);
 router.post('/:id/invite', protect, checkWorkspaceRole(['owner', 'admin']), inviteUserToWorkspace);
-router.put('/:id/role', protect, checkWorkspaceRole(['owner']), updateMemberRole);
+router.put('/:id/role', protect, checkWorkspaceRole(['owner', 'admin']), updateMemberRole);
 router.delete('/:id/members/:memberId', protect, checkWorkspaceRole(['owner', 'admin']), removeMember);
 
 export default router;

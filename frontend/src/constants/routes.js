@@ -22,7 +22,7 @@ export const ROUTES = {
     WORKSPACE_CALENDAR: '/workspace/:workspaceId/calendar',
     
     // Project routes
-    PROJECT_VIEW: '/project/:projectId',
+    PROJECT_VIEW: '/projects/:projectId',
     
     // Task routes
     MY_TASKS: '/my-tasks',
@@ -38,6 +38,6 @@ export const buildRoute = {
     workspaceChat: (workspaceId) => `/workspace/${workspaceId}/chat`,
     workspaceCalls: (workspaceId) => `/workspace/${workspaceId}/calls`,
     workspaceCalendar: (workspaceId) => `/workspace/${workspaceId}/calendar`,
-    projectView: (projectId) => `/project/${projectId}`,
+    projectView: (projectId) => `/projects/${projectId}`,
     resetPassword: (token) => `/reset-password/${token}`,
 };

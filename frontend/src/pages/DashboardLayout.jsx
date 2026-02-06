@@ -149,7 +149,7 @@ const DashboardLayout = () => {
             <aside
                 className={`${
                     isCollapsed ? 'w-[72px]' : 'w-[248px]'
-                } bg-gradient-to-b from-gray-950 to-gray-900 text-white flex flex-col shadow-xl transition-all duration-200 ease-out overflow-hidden`}
+                } bg-gradient-to-b from-gray-950 to-gray-900 text-white flex flex-col shadow-xl transition-all duration-200 ease-out overflow-hidden shrink-0`}
             >
                 <div className="h-16 flex items-center justify-between px-4 border-b border-gray-800/70">
                     <div className="flex items-center gap-2 font-bold text-lg">
@@ -350,7 +350,7 @@ const DashboardLayout = () => {
             </aside>
 
             {/* Main content */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-w-0">
                 {/* Top bar */}
                 <header className="h-16 bg-white flex items-center justify-end px-8 shadow-sm">
                     <div className="flex items-center gap-3">

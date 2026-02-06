@@ -5,10 +5,9 @@ import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendar.css';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import {
-    CalendarDays, Clock, Users, Flag, Plus, ChevronLeft, ChevronRight,
+    CalendarDays, Clock, Users, Flag, ChevronLeft, ChevronRight,
     X, Calendar as CalendarIcon, CheckCircle2, AlertCircle
 } from 'lucide-react';
 
@@ -23,21 +22,17 @@ const EVENT_COLORS = {
     milestone: { bg: '#10B981', light: '#ECFDF5', text: '#065F46', border: '#A7F3D0', dot: '#10B981' },
 };
 
-// Determine event type from card data
-const getEventType = (card) => {
-    const title = (card.title || '').toLowerCase();
-    if (title.includes('meeting') || title.includes('call') || title.includes('sync') || title.includes('standup'))
-        return 'meeting';
-    if (title.includes('milestone') || title.includes('launch') || title.includes('release'))
-        return 'milestone';
-    if (card.priority === 'High' || title.includes('deadline'))
-        return 'deadline';
-    return 'task';
+const toDateAt = (value, hours) => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    d.setHours(hours, 0, 0, 0);
+    return d;
 };
 
 // Badge component
 const TypeBadge = ({ type }) => {
-    const colors = EVENT_COLORS[type];
+    const colors = EVENT_COLORS[type] || EVENT_COLORS.task;
     return (
         <span
             className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize"
@@ -100,12 +95,13 @@ const CustomToolbar = ({ date, onNavigate, view, onView }) => {
 
 // Custom event component for month view
 const CustomEvent = ({ event }) => {
-    const colors = EVENT_COLORS[event.type];
+    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.task;
+    const tooltip = event.meta?.projectName ? `${event.title} (${event.meta.projectName})` : event.title;
     return (
         <div
             className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium truncate cursor-pointer"
             style={{ backgroundColor: colors.light, color: colors.text }}
-            title={event.title}
+            title={tooltip}
         >
             <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
@@ -116,138 +112,16 @@ const CustomEvent = ({ event }) => {
     );
 };
 
-// Create event modal
-const CreateEventModal = ({ isOpen, onClose, prefillDate, workspaceId, onCreated }) => {
-    const [title, setTitle] = useState('');
-    const [eventType, setEventType] = useState('task');
-    const [dueDate, setDueDate] = useState('');
-    const [time, setTime] = useState('09:00');
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (prefillDate) {
-            setDueDate(format(prefillDate, 'yyyy-MM-dd'));
-        }
-    }, [prefillDate]);
-
-    useEffect(() => {
-        if (!isOpen) {
-            setTitle('');
-            setEventType('task');
-            setTime('09:00');
-        }
-    }, [isOpen]);
-
-    if (!isOpen) return null;
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!title.trim()) return toast.error('Title is required');
-        setLoading(true);
-        try {
-            // For now, events map to tasks (cards) — create a card with dueDate
-            toast.success(`${eventType === 'task' ? 'Task' : eventType === 'meeting' ? 'Meeting' : eventType === 'deadline' ? 'Deadline' : 'Milestone'} created!`);
-            onCreated?.();
-            onClose();
-        } catch (err) {
-            toast.error('Failed to create event');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const types = [
-        { key: 'task', label: 'Task', icon: CheckCircle2 },
-        { key: 'meeting', label: 'Meeting', icon: Users },
-        { key: 'deadline', label: 'Deadline', icon: AlertCircle },
-        { key: 'milestone', label: 'Milestone', icon: Flag },
-    ];
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between mb-5">
-                    <h3 className="text-lg font-bold text-gray-900">New Event</h3>
-                    <button onClick={onClose} className="p-1 rounded-lg hover:bg-gray-100 text-gray-400">
-                        <X size={18} />
-                    </button>
-                </div>
-
-                {/* Type selector */}
-                <div className="grid grid-cols-4 gap-2 mb-5">
-                    {types.map(t => {
-                        const colors = EVENT_COLORS[t.key];
-                        const isActive = eventType === t.key;
-                        return (
-                            <button
-                                key={t.key}
-                                onClick={() => setEventType(t.key)}
-                                className={`flex flex-col items-center gap-1 py-3 rounded-xl text-xs font-medium transition-all border-2 ${
-                                    isActive ? 'shadow-sm' : 'border-transparent hover:bg-gray-50'
-                                }`}
-                                style={isActive ? {
-                                    backgroundColor: colors.light,
-                                    borderColor: colors.border,
-                                    color: colors.text,
-                                } : {}}
-                            >
-                                <t.icon size={18} style={isActive ? { color: colors.bg } : { color: '#9CA3AF' }} />
-                                {t.label}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Title</label>
-                        <input
-                            type="text"
-                            value={title}
-                            onChange={e => setTitle(e.target.value)}
-                            placeholder={`e.g. ${eventType === 'meeting' ? 'Team sync call' : eventType === 'deadline' ? 'Submit final report' : eventType === 'milestone' ? 'Beta launch' : 'Design homepage'}`}
-                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-                            autoFocus
-                        />
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
-                            <input
-                                type="date"
-                                value={dueDate}
-                                onChange={e => setDueDate(e.target.value)}
-                                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-medium text-gray-600 mb-1">Time</label>
-                            <input
-                                type="time"
-                                value={time}
-                                onChange={e => setTime(e.target.value)}
-                                className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-                            />
-                        </div>
-                    </div>
-                    <button
-                        type="submit"
-                        disabled={loading || !title.trim()}
-                        className="w-full py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-50 transition-colors"
-                    >
-                        {loading ? 'Creating...' : 'Create Event'}
-                    </button>
-                </form>
-            </div>
-        </div>
-    );
-};
-
 // Event detail modal
 const EventDetailModal = ({ event, onClose }) => {
     if (!event) return null;
-    const colors = EVENT_COLORS[event.type];
-    const card = event.resource;
+    const meta = event.meta || {};
+    const projectName = meta.projectName || event.resource?.projectId?.name || event.resource?.name;
+    const listTitle = meta.listTitle || event.resource?.listId?.title;
+    const priority = meta.priority || event.resource?.priority;
+    const description = meta.description || event.resource?.description;
+    const status = event.resource?.status;
+    const isProjectEvent = event.source?.startsWith('project');
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
@@ -269,30 +143,36 @@ const EventDetailModal = ({ event, onClose }) => {
                         <Clock size={14} />
                         <span>{format(event.start, 'h:mm a')} – {format(event.end, 'h:mm a')}</span>
                     </div>
-                    {card?.projectId?.name && (
+                    {projectName && (
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                             <Flag size={14} />
-                            <span>Project: {card.projectId.name}</span>
+                            <span>Project: {projectName}</span>
                         </div>
                     )}
-                    {card?.listId?.title && (
+                    {listTitle && (
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                             <CheckCircle2 size={14} />
-                            <span>List: {card.listId.title}</span>
+                            <span>List: {listTitle}</span>
                         </div>
                     )}
-                    {card?.priority && (
+                    {priority && (
                         <div className="flex items-center gap-2 text-sm">
                             <AlertCircle size={14} className={
-                                card.priority === 'High' ? 'text-red-500' :
-                                card.priority === 'Medium' ? 'text-amber-500' : 'text-gray-400'
+                                priority === 'High' ? 'text-red-500' :
+                                priority === 'Medium' ? 'text-amber-500' : 'text-gray-400'
                             } />
-                            <span className="text-gray-500">Priority: {card.priority}</span>
+                            <span className="text-gray-500">Priority: {priority}</span>
                         </div>
                     )}
-                    {card?.description && (
+                    {isProjectEvent && status && (
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <AlertCircle size={14} className="text-indigo-500" />
+                            <span>Status: {status}</span>
+                        </div>
+                    )}
+                    {description && (
                         <div className="mt-3 p-3 bg-gray-50 rounded-xl text-sm text-gray-600">
-                            {card.description}
+                            {description}
                         </div>
                     )}
                 </div>
@@ -308,38 +188,87 @@ const WorkspaceCalendar = () => {
     const [view, setView] = useState('month');
     const [date, setDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [createPrefillDate, setCreatePrefillDate] = useState(null);
     const [selectedEvent, setSelectedEvent] = useState(null);
 
-    const fetchCards = useCallback(async () => {
+    const fetchEvents = useCallback(async () => {
         if (!currentWorkspaceId) return;
         setLoading(true);
         try {
-            const res = await axios.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`);
-            const cards = res.data || [];
+            const [cardsRes, projectsRes] = await Promise.allSettled([
+                axios.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`),
+                axios.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
+            ]);
+            const cards = cardsRes.status === 'fulfilled' ? cardsRes.value.data || [] : [];
+            const projects = projectsRes.status === 'fulfilled' ? projectsRes.value.data || [] : [];
 
-            const calendarEvents = cards
+            const taskEvents = cards
                 .filter(card => card.dueDate)
                 .map(card => {
-                    const type = getEventType(card);
-                    const startDate = new Date(card.dueDate);
-                    startDate.setHours(9, 0, 0);
+                    const startDate = toDateAt(card.dueDate, 9);
+                    if (!startDate) return null;
                     const endDate = new Date(startDate);
-                    endDate.setHours(10, 0, 0);
+                    endDate.setHours(10, 0, 0, 0);
 
                     return {
-                        id: card._id,
+                        id: `task-${card._id}`,
                         title: card.title,
                         start: startDate,
                         end: endDate,
                         allDay: false,
-                        type,
+                        type: 'task',
+                        source: 'task',
                         resource: card,
+                        meta: {
+                            projectName: card.projectId?.name,
+                            listTitle: card.listId?.title,
+                            priority: card.priority,
+                            description: card.description,
+                        },
                     };
-                });
+                })
+                .filter(Boolean);
 
-            setEvents(calendarEvents);
+            const projectEvents = [];
+            projects.forEach((project) => {
+                if (project?.dueDate) {
+                    const startDate = toDateAt(project.dueDate, 11);
+                    if (startDate) {
+                        const endDate = new Date(startDate);
+                        endDate.setHours(12, 0, 0, 0);
+                        projectEvents.push({
+                            id: `project-deadline-${project._id}`,
+                            title: `${project.name} — Project Deadline`,
+                            start: startDate,
+                            end: endDate,
+                            allDay: false,
+                            type: 'deadline',
+                            source: 'project-deadline',
+                            resource: project,
+                            meta: { projectName: project.name },
+                        });
+                    }
+                }
+                if (project?.startDate) {
+                    const startDate = toDateAt(project.startDate, 8);
+                    if (startDate) {
+                        const endDate = new Date(startDate);
+                        endDate.setHours(9, 0, 0, 0);
+                        projectEvents.push({
+                            id: `project-start-${project._id}`,
+                            title: `${project.name} — Project Start`,
+                            start: startDate,
+                            end: endDate,
+                            allDay: false,
+                            type: 'milestone',
+                            source: 'project-start',
+                            resource: project,
+                            meta: { projectName: project.name },
+                        });
+                    }
+                }
+            });
+
+            setEvents([...taskEvents, ...projectEvents]);
         } catch (err) {
             console.error(err);
         } finally {
@@ -348,8 +277,8 @@ const WorkspaceCalendar = () => {
     }, [currentWorkspaceId]);
 
     useEffect(() => {
-        fetchCards();
-    }, [fetchCards]);
+        fetchEvents();
+    }, [fetchEvents]);
 
     // Stats computation
     const stats = useMemo(() => {
@@ -376,19 +305,9 @@ const WorkspaceCalendar = () => {
     }, [events]);
 
     // Handlers
-    const handleSelectSlot = useCallback(({ start }) => {
-        setCreatePrefillDate(start);
-        setShowCreateModal(true);
-    }, []);
-
     const handleSelectEvent = useCallback((event) => {
         setSelectedEvent(event);
     }, []);
-
-    const handleNewEvent = () => {
-        setCreatePrefillDate(new Date());
-        setShowCreateModal(true);
-    };
 
     // Calendar event styling
     const eventStyleGetter = useCallback((event) => ({
@@ -456,14 +375,8 @@ const WorkspaceCalendar = () => {
             <div className="flex items-start justify-between mb-6">
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900">Calendar & Events</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Manage your schedule and upcoming events</p>
+                    <p className="text-sm text-gray-500 mt-0.5">Auto-synced from task due dates and project deadlines</p>
                 </div>
-                <button
-                    onClick={handleNewEvent}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                    <Plus size={16} /> New Event
-                </button>
             </div>
 
             {/* ─── STAT CARDS ──────────────────────────────────────────── */}
@@ -501,9 +414,7 @@ const WorkspaceCalendar = () => {
                         date={date}
                         onView={setView}
                         onNavigate={setDate}
-                        onSelectSlot={handleSelectSlot}
                         onSelectEvent={handleSelectEvent}
-                        selectable
                         eventPropGetter={eventStyleGetter}
                         dayPropGetter={dayPropGetter}
                         components={{
@@ -530,7 +441,7 @@ const WorkspaceCalendar = () => {
                         ) : (
                             <div className="space-y-2.5">
                                 {todayItems.map(event => {
-                                    const colors = EVENT_COLORS[event.type];
+                                    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.task;
                                     return (
                                         <div
                                             key={event.id}
@@ -546,9 +457,9 @@ const WorkspaceCalendar = () => {
                                                         Math.round((event.end - event.start) / (1000 * 60 * 60))}h
                                                 </span>
                                             </div>
-                                            {event.resource?.projectId?.name && (
+                                            {event.meta?.projectName && (
                                                 <span className="flex items-center gap-1 text-[11px] text-gray-400 mt-1">
-                                                    <Flag size={10} /> {event.resource.projectId.name}
+                                                    <Flag size={10} /> {event.meta.projectName}
                                                 </span>
                                             )}
                                         </div>
@@ -569,7 +480,7 @@ const WorkspaceCalendar = () => {
                         ) : (
                             <div className="space-y-2.5 max-h-[35vh] overflow-y-auto pr-1">
                                 {upcomingItems.map(event => {
-                                    const colors = EVENT_COLORS[event.type];
+                                    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.task;
                                     return (
                                         <div
                                             key={event.id}
@@ -591,6 +502,11 @@ const WorkspaceCalendar = () => {
                                                     {format(event.start, 'h:mm a')}
                                                 </span>
                                             </div>
+                                            {event.meta?.projectName && (
+                                                <div className="flex items-center gap-1 text-[11px] text-gray-400 mt-1">
+                                                    <Flag size={10} /> {event.meta.projectName}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -618,24 +534,11 @@ const WorkspaceCalendar = () => {
                 <div className="mt-6 text-center py-12 bg-white rounded-2xl border border-gray-100">
                     <CalendarDays size={48} className="mx-auto text-gray-300 mb-3" />
                     <p className="text-gray-500 font-medium mb-1">No events scheduled yet</p>
-                    <p className="text-sm text-gray-400 mb-4">Click on a date or use the button above to add events.</p>
-                    <button
-                        onClick={handleNewEvent}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors"
-                    >
-                        Create Event
-                    </button>
+                    <p className="text-sm text-gray-400 mb-4">Add due dates to tasks or projects to see them here.</p>
                 </div>
             )}
 
             {/* ─── MODALS ──────────────────────────────────────────────── */}
-            <CreateEventModal
-                isOpen={showCreateModal}
-                onClose={() => setShowCreateModal(false)}
-                prefillDate={createPrefillDate}
-                workspaceId={currentWorkspaceId}
-                onCreated={fetchCards}
-            />
             <EventDetailModal
                 event={selectedEvent}
                 onClose={() => setSelectedEvent(null)}

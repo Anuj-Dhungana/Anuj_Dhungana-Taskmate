@@ -15,12 +15,8 @@ const ProjectView = () => {
     useEffect(() => {
         const fetchProject = async () => {
             try {
-                // We need to fetch the project details
-                // Since we don't have a direct project endpoint, we'll get it from the board
-                const res = await axios.get(`/api/board/${projectId}`);
-                // For now, we'll create a minimal project object
-                // In production, you'd have a dedicated endpoint
-                setProject({ _id: projectId, name: 'Project' });
+                const res = await axios.get(`/api/projects/${projectId}`);
+                setProject(res.data);
             } catch (err) {
                 console.error('Failed to load project', err);
             } finally {

@@ -18,54 +18,106 @@ const localizer = dateFnsLocalizer({
   locales,
 });
 
+const EVENT_COLORS = {
+  task: { bg: '#3B82F6' },
+  deadline: { bg: '#EF4444' },
+  milestone: { bg: '#10B981' },
+};
+
+const toDateAt = (value, hours) => {
+  if (!value) return null;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setHours(hours, 0, 0, 0);
+  return d;
+};
+
 const ProjectCalendar = ({ projectId }) => {
     const [events, setEvents] = useState([]);
     const [view, setView] = useState('month');
     const [date, setDate] = useState(new Date());
 
     useEffect(() => {
-        const fetchCards = async () => {
+        const fetchCalendarData = async () => {
             if (!projectId) return;
             setEvents([]);
             try {
-                const res = await axios.get(`/api/board/${projectId}`);
-                const cards = res.data?.cards || [];
+                const [boardRes, projectRes] = await Promise.allSettled([
+                    axios.get(`/api/board/${projectId}`),
+                    axios.get(`/api/projects/${projectId}`),
+                ]);
+                const cards = boardRes.status === 'fulfilled' ? boardRes.value.data?.cards || [] : [];
+                const project = projectRes.status === 'fulfilled' ? projectRes.value.data : null;
 
-                const calendarEvents = cards
+                const taskEvents = cards
                     .filter((card) => card.dueDate)
                     .map((card) => {
-                        const startDate = new Date(card.dueDate);
-                        if (Number.isNaN(startDate.getTime())) return null;
-
-                        startDate.setHours(9, 0, 0);
+                        const startDate = toDateAt(card.dueDate, 9);
+                        if (!startDate) return null;
                         const endDate = new Date(startDate);
-                        endDate.setHours(10, 0, 0);
+                        endDate.setHours(10, 0, 0, 0);
 
                         return {
-                            id: card._id,
+                            id: `task-${card._id}`,
                             title: card.title,
                             start: startDate,
                             end: endDate,
                             allDay: false,
-                            resource: card
+                            type: 'task',
+                            resource: card,
                         };
                     })
                     .filter(Boolean);
 
-                setEvents(calendarEvents);
+                const projectEvents = [];
+                if (project?.dueDate) {
+                    const startDate = toDateAt(project.dueDate, 11);
+                    if (startDate) {
+                        const endDate = new Date(startDate);
+                        endDate.setHours(12, 0, 0, 0);
+                        projectEvents.push({
+                            id: `project-deadline-${project._id}`,
+                            title: `${project.name} — Project Deadline`,
+                            start: startDate,
+                            end: endDate,
+                            allDay: false,
+                            type: 'deadline',
+                            resource: project,
+                        });
+                    }
+                }
+                if (project?.startDate) {
+                    const startDate = toDateAt(project.startDate, 8);
+                    if (startDate) {
+                        const endDate = new Date(startDate);
+                        endDate.setHours(9, 0, 0, 0);
+                        projectEvents.push({
+                            id: `project-start-${project._id}`,
+                            title: `${project.name} — Project Start`,
+                            start: startDate,
+                            end: endDate,
+                            allDay: false,
+                            type: 'milestone',
+                            resource: project,
+                        });
+                    }
+                }
+
+                setEvents([...taskEvents, ...projectEvents]);
             } catch (err) {
                 console.error('Failed to load project calendar', err);
             }
         };
-        fetchCards();
+        fetchCalendarData();
     }, [projectId]);
 
     const eventStyleGetter = (event) => {
+        const color = EVENT_COLORS[event.type]?.bg || EVENT_COLORS.task.bg;
         return {
             style: {
-                backgroundColor: '#2563EB',
-                borderRadius: '4px',
-                opacity: 0.8,
+                backgroundColor: color,
+                borderRadius: '6px',
+                opacity: 0.9,
                 color: 'white',
                 border: '0px',
                 display: 'block'

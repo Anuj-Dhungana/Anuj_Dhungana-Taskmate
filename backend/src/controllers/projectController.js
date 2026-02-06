@@ -97,6 +97,34 @@ export const getProjectsByWorkspace = async (req, res) => {
     }
 };
 
+export const getProjectById = async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id)
+            .populate('members.user', 'fullname email avatar');
+
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        const workspace = await Workspace.findById(project.workspace);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        const isMember = workspace.members.some(
+            (m) => m.user.toString() === req.user._id.toString()
+        );
+        if (!isMember) {
+            return res.status(403).json({ message: "Not authorized to view this project" });
+        }
+
+        res.json(project);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
 
 
 export const deleteProject = async (req, res) => {

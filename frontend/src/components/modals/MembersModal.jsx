@@ -2,7 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { X, Shield, Trash2, User } from 'lucide-react';
-import useAuthStore from '../store/useAuthStore';
+import useAuthStore from '../../store/useAuthStore';
 
 const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
     const { userInfo } = useAuthStore();

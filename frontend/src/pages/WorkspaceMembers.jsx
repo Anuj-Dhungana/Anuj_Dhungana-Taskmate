@@ -3,7 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
-import InviteUserModal from '../components/InviteUserModal';
+import InviteUserModal from '../components/modals/InviteUserModal';
 
 const WorkspaceMembers = () => {
     const { userInfo } = useAuthStore();

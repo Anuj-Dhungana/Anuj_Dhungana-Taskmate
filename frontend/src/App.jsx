@@ -10,7 +10,7 @@ import WorkspaceDetail from './pages/WorkspaceDetail';
 import ProjectView from './pages/ProjectView';
 import WorkspaceSettings from './pages/Settings';
 import VerifyEmail from './pages/VerifyEmail';
-import ForgotPassword from './pages/ForgetPassword';
+import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import useAuthStore from './store/useAuthStore';
 import Profile from './pages/Profile';

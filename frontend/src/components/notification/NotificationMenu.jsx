@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Bell } from 'lucide-react';
 import io from 'socket.io-client';
-import useAuthStore from '../store/useAuthStore';
+import useAuthStore from '../../store/useAuthStore';
 import { toast } from 'react-hot-toast';
-import useWorkspaceStore from '../store/useWorkspaceStore';
+import useWorkspaceStore from '../../store/useWorkspaceStore';
 
 const socket = io('http://localhost:5000');
 

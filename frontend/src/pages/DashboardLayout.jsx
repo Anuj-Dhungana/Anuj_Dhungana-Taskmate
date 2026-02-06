@@ -19,8 +19,8 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
-import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
-import NotificationMenu from '../components/NotificationMenu';
+import CreateWorkspaceModal from '../components/modals/CreateWorkspaceModal';
+import NotificationMenu from '../components/notification/NotificationMenu';
 
 const DashboardLayout = () => {
     const navigate = useNavigate();

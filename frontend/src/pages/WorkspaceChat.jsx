@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
-import ChatArea from '../components/Chat/ChatArea';
+import ChatArea from '../components/chat/ChatArea';
 
 const WorkspaceChat = () => {
     const { currentWorkspaceId, selectedWorkspace, setSelectedWorkspace } = useWorkspaceStore();

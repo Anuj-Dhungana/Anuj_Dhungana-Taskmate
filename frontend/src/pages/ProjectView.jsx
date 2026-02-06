@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Layout, Calendar as CalendarIcon } from 'lucide-react';
-import BoardView from '../components/Board/BoardView';
-import ProjectCalendar from '../components/Calendar/ProjectCalendar';
+import BoardView from '../components/board/BoardView';
+import ProjectCalendar from '../components/calendar/ProjectCalendar';
 
 const ProjectView = () => {
     const { projectId } = useParams();

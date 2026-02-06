@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Grid, Plus, Users } from 'lucide-react';
-import useWorkspaceStore from '../store/userWorkspaceStore';
+import useWorkspaceStore from '../store/useWorkspaceStore';
 
 const WorkspaceList = () => {
     const navigate = useNavigate();

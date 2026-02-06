@@ -1,4 +1,4 @@
-import useWorkspaceStore from '../store/userWorkspaceStore';
+import useWorkspaceStore from '../store/useWorkspaceStore';
 
 const WorkspaceCalls = () => {
     const { currentWorkspaceId } = useWorkspaceStore();

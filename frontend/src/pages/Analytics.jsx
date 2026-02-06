@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { ArrowRight, CheckCircle2, MessageSquare } from 'lucide-react';
-import useWorkspaceStore from '../store/userWorkspaceStore';
+import useWorkspaceStore from '../store/useWorkspaceStore';
 import { useNavigate } from 'react-router-dom';
 
 const Analytics = () => {

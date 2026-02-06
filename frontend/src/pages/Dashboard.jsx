@@ -12,7 +12,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import useAuthStore from '../store/useAuthStore';
-import useWorkspaceStore from '../store/userWorkspaceStore';
+import useWorkspaceStore from '../store/useWorkspaceStore';
 
 const Dashboard = () => {
     const navigate = useNavigate();

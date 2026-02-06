@@ -13,7 +13,7 @@ import BoardList from './BoardList';
 import TaskDetailModal from './TaskDetailModal';
 import CreateTaskModal from './CreateTaskModal';
 import { ArrowLeft, Plus, Settings } from 'lucide-react';
-import useWorkspaceStore from '../../store/userWorkspaceStore';
+import useWorkspaceStore from '../../store/useWorkspaceStore';
 
 const BoardView = ({ projectId, project, onBack }) => {
     const [lists, setLists] = useState([]);

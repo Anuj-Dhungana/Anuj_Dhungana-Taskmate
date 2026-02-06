@@ -6,6 +6,11 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';  
 import connectDB from './config/db.js';
 
+// Middleware
+import { logger, errorLogger } from './middleware/logger.js';
+import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
+
 // Routes
 import authRoutes from './routes/authRoutes.js';
 import workspaceRoutes from './routes/workspaceRoutes.js';
@@ -24,12 +29,16 @@ connectDB();
 const app = express();
 
 // Middleware
+app.use(logger); // Request logging
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
     origin: ["http://localhost:5173"], 
     credentials: true 
 }));
+
+// Apply rate limiting to all API routes
+app.use('/api', apiLimiter);
 
 // --- SOCKET.IO SETUP ---
 const httpServer = createServer(app); // Wrap Express
@@ -99,6 +108,11 @@ app.use('/api/messages', chatRoutes);
 app.use('/api/channels', channelRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.set('io', io); 
+
+// Error handling middleware (must be after all routes)
+app.use(errorLogger); // Log errors
+app.use(notFound); // 404 handler
+app.use(errorHandler); // Global error handler
 
 app.get('/', (req, res) => {
     res.json({ message: "TaskMate Backend is running!" });

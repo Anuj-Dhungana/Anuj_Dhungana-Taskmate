@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { X, Calendar, User, Paperclip, FileText, Clock, Image as ImageIcon } from 'lucide-react';
-import useWorkspaceStore from '../../store/userWorkspaceStore';
+import useWorkspaceStore from '../../store/useWorkspaceStore';
 
 const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
     if (!isOpen || !card) return null;

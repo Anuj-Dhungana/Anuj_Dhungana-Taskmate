@@ -1,31 +1,44 @@
 import express from 'express';
-import { registerUser } from '../controllers/authcontroller.js';
-import { loginUser } from '../controllers/authcontroller.js';
-import { logoutUser } from '../controllers/authcontroller.js';
+import { registerUser } from '../controllers/authController.js';
+import { loginUser } from '../controllers/authController.js';
+import { logoutUser } from '../controllers/authController.js';
 import protect  from '../middleware/authMiddleware.js';
-import { verifyEmail } from '../controllers/authcontroller.js';
-import { forgotPassword } from '../controllers/authcontroller.js';
-import { resetPassword } from '../controllers/authcontroller.js';
-import { updateProfile } from '../controllers/authcontroller.js';
-import { toggle2FA } from '../controllers/authcontroller.js';
-import { verify2FALogin } from '../controllers/authcontroller.js';
+import { verifyEmail } from '../controllers/authController.js';
+import { forgotPassword } from '../controllers/authController.js';
+import { resetPassword } from '../controllers/authController.js';
+import { updateProfile } from '../controllers/authController.js';
+import { toggle2FA } from '../controllers/authController.js';
+import { verify2FALogin } from '../controllers/authController.js';
 
+// Validators
+import {
+    registerValidation,
+    loginValidation,
+    twoFAValidation,
+    forgotPasswordValidation,
+    resetPasswordValidation,
+    updateProfileValidation,
+} from '../validators/authValidator.js';
+import validate from '../middleware/validate.js';
 
+// Rate limiters
+import { authLimiter, registerLimiter, passwordResetLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-// Define the route
-router.post('/register', registerUser);
-router.post('/login', loginUser); 
+// Define the routes with validation and rate limiting
+router.post('/register', registerLimiter, registerValidation, validate, registerUser);
+router.post('/login', authLimiter, loginValidation, validate, loginUser); 
 router.post('/logout', logoutUser);
 router.post('/verify-email', verifyEmail);
-router.post('/forgot-password', forgotPassword);
-router.put('/reset-password/:token', resetPassword);
-router.put('/profile', protect, updateProfile); 
+router.post('/forgot-password', passwordResetLimiter, forgotPasswordValidation, validate, forgotPassword);
+router.put('/reset-password/:token', resetPasswordValidation, validate, resetPassword);
+router.put('/profile', protect, updateProfileValidation, validate, updateProfile); 
 router.put('/2fa/toggle', protect, toggle2FA);  
-router.post('/login-2fa', verify2FALogin);    
+router.post('/login-2fa', authLimiter, twoFAValidation, validate, verify2FALogin);    
 
 router.get('/profile', protect, (req, res) => {
     res.json(req.user);
 });
+
 export default router;

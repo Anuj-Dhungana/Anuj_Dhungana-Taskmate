@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Grid, Kanban, Calendar as CalendarIcon, UserPlus } from 'lucide-react';
-import useWorkspaceStore from '../store/userWorkspaceStore';
+import useWorkspaceStore from '../store/useWorkspaceStore';
 import CreateProjectModal from '../components/CreateProjectModal';
 
 const WorkspaceDetail = () => {

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import useAuthStore from '../store/useAuthStore';
-import useWorkspaceStore from '../store/userWorkspaceStore';
+import useWorkspaceStore from '../store/useWorkspaceStore';
 import CreateWorkspaceModal from '../components/CreateWorkspaceModal';
 import NotificationMenu from '../components/NotificationMenu';
 
@@ -144,12 +144,12 @@ const DashboardLayout = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex">
+        <div className="h-screen overflow-hidden bg-gray-50 flex">
             {/* Dark Sidebar */}
             <aside
                 className={`${
                     isCollapsed ? 'w-[72px]' : 'w-[248px]'
-                } bg-gradient-to-b from-gray-950 to-gray-900 text-white flex flex-col shadow-xl transition-all duration-200 ease-out`}
+                } bg-gradient-to-b from-gray-950 to-gray-900 text-white flex flex-col shadow-xl transition-all duration-200 ease-out overflow-hidden`}
             >
                 <div className="h-16 flex items-center justify-between px-4 border-b border-gray-800/70">
                     <div className="flex items-center gap-2 font-bold text-lg">
@@ -255,7 +255,7 @@ const DashboardLayout = () => {
                     </div>
                 </div>
 
-                <nav className={`flex-1 py-4 text-sm ${isCollapsed ? 'px-2 space-y-2' : 'px-3 space-y-4'}`}>
+                <nav className={`flex-1 py-4 text-sm ${isCollapsed ? 'px-2 space-y-2' : 'px-3 space-y-4'} overflow-hidden`}>
                     {navGroups.map((group) => (
                         <div key={group.label} className={isCollapsed ? 'space-y-1' : 'space-y-1'}>
                             {!isCollapsed && (

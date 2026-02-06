@@ -4,7 +4,7 @@ import { Bell } from 'lucide-react';
 import io from 'socket.io-client';
 import useAuthStore from '../store/useAuthStore';
 import { toast } from 'react-hot-toast';
-import useWorkspaceStore from '../store/userWorkspaceStore';
+import useWorkspaceStore from '../store/useWorkspaceStore';
 
 const socket = io('http://localhost:5000');
 

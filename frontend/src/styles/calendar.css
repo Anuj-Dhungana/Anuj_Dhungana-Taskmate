@@ -1,0 +1,247 @@
+/* ─── Custom react-big-calendar overrides ─────────────────────── */
+
+/* General calendar reset */
+.rbc-calendar {
+    font-family: inherit;
+}
+
+/* Header row (day names) */
+.rbc-header {
+    padding: 8px 4px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6B7280;
+    border-bottom: 1px solid #F3F4F6 !important;
+    background: #FAFAFA;
+}
+
+.rbc-header + .rbc-header {
+    border-left: 1px solid #F3F4F6 !important;
+}
+
+/* Month view cells */
+.rbc-month-view {
+    border: 1px solid #F3F4F6 !important;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.rbc-month-row {
+    border-top: none;
+}
+
+.rbc-month-row + .rbc-month-row {
+    border-top: 1px solid #F3F4F6 !important;
+}
+
+.rbc-day-bg {
+    border-left: 1px solid #F3F4F6 !important;
+    transition: background-color 0.15s ease;
+}
+
+.rbc-day-bg:first-child {
+    border-left: none !important;
+}
+
+.rbc-day-bg:hover {
+    background-color: #F9FAFB;
+}
+
+.rbc-day-bg.rbc-today {
+    background-color: #F5F3FF !important;
+}
+
+.rbc-off-range-bg {
+    background-color: #FAFAFA !important;
+}
+
+/* Date numbers */
+.rbc-date-cell {
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6B7280;
+    text-align: right;
+}
+
+.rbc-date-cell.rbc-now {
+    font-weight: 700;
+}
+
+.rbc-date-cell.rbc-now > a {
+    background-color: #6366F1;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+.rbc-date-cell.rbc-off-range {
+    color: #D1D5DB;
+}
+
+/* Event rows */
+.rbc-row-segment {
+    padding: 0 3px 1px;
+}
+
+.rbc-event {
+    background-color: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-bottom: 1px;
+    border-radius: 4px;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.rbc-event:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.rbc-event-content {
+    font-size: 11px;
+}
+
+/* Show more link */
+.rbc-show-more {
+    font-size: 10px;
+    font-weight: 600;
+    color: #6366F1;
+    background: transparent !important;
+    padding: 2px 4px;
+    text-decoration: none;
+}
+
+.rbc-show-more:hover {
+    color: #4338CA;
+}
+
+/* Week & Day views */
+.rbc-time-view {
+    border: 1px solid #F3F4F6 !important;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.rbc-time-header {
+    border-bottom: 1px solid #F3F4F6 !important;
+}
+
+.rbc-time-header-content {
+    border-left: 1px solid #F3F4F6 !important;
+}
+
+.rbc-time-content {
+    border-top: 1px solid #F3F4F6 !important;
+}
+
+.rbc-time-content > * + * > * {
+    border-left: 1px solid #F3F4F6 !important;
+}
+
+.rbc-timeslot-group {
+    border-bottom: 1px solid #F3F4F6 !important;
+}
+
+.rbc-time-slot {
+    font-size: 11px;
+    color: #9CA3AF;
+}
+
+.rbc-time-gutter {
+    min-width: 60px;
+}
+
+.rbc-current-time-indicator {
+    background-color: #6366F1;
+    height: 2px;
+}
+
+.rbc-current-time-indicator::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    background-color: #6366F1;
+    border-radius: 50%;
+}
+
+/* Day header in week view */
+.rbc-time-header-cell {
+    min-height: 40px;
+}
+
+.rbc-allday-cell {
+    display: none;
+}
+
+/* Popup overlay */
+.rbc-overlay {
+    border-radius: 12px !important;
+    border: 1px solid #F3F4F6 !important;
+    box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1) !important;
+    padding: 8px !important;
+    max-width: 220px;
+    z-index: 40;
+}
+
+.rbc-overlay-header {
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    border-bottom: 1px solid #F3F4F6 !important;
+    padding: 4px 8px 8px !important;
+    margin-bottom: 4px;
+}
+
+/* Selection highlight */
+.rbc-slot-selection {
+    background-color: rgba(99, 102, 241, 0.1) !important;
+    border: 1px dashed #6366F1 !important;
+    border-radius: 4px;
+}
+
+/* Remove default toolbar (we use custom) */
+.rbc-toolbar {
+    display: none !important;
+}
+
+/* Agenda view */
+.rbc-agenda-view table {
+    border: none;
+}
+
+.rbc-agenda-view table tbody > tr > td + td {
+    border-left: 1px solid #F3F4F6;
+}
+
+.rbc-agenda-view table tbody > tr + tr {
+    border-top: 1px solid #F3F4F6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .rbc-date-cell {
+        font-size: 11px;
+        padding: 2px 4px;
+    }
+
+    .rbc-event-content {
+        font-size: 10px;
+    }
+
+    .rbc-header {
+        font-size: 10px;
+        padding: 6px 2px;
+    }
+}

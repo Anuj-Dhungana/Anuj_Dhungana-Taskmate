@@ -244,7 +244,8 @@ export const updateWorkspace = async (req, res) => {
         if (description !== undefined) workspace.description = description;
         if (color !== undefined) workspace.color = color;
 
-        const updated = await workspace.save();
+        const saved = await workspace.save();
+        const updated = await Workspace.findById(saved._id).populate('members.user', 'fullname email avatar');
         res.json(updated);
     } catch (error) {
         res.status(500).json({ message: "Server Error" });

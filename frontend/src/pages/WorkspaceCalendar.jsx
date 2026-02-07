@@ -200,6 +200,9 @@ const WorkspaceCalendar = () => {
 
             const projectEvents = [];
             projects.forEach((project) => {
+                if (project?.calendarEnabled === false) {
+                    return;
+                }
                 const deadlineValue = project?.endDate || project?.dueDate;
                 if (deadlineValue) {
                     const startDate = toDateAt(deadlineValue, 11);
@@ -282,7 +285,7 @@ const WorkspaceCalendar = () => {
     }, []);
 
     // Calendar event styling
-    const eventStyleGetter = useCallback((event) => ({
+    const eventStyleGetter = useCallback(() => ({
         style: {
             backgroundColor: 'transparent',
             border: 'none',

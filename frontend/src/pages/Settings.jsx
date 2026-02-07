@@ -3,6 +3,7 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 const Settings = () => {
     const { currentWorkspaceId, selectedWorkspace, setSelectedWorkspace, setCurrentWorkspaceId } = useWorkspaceStore();
@@ -11,6 +12,8 @@ const Settings = () => {
     const [description, setDescription] = useState('');
     const [color, setColor] = useState('#F97316');
     const [loading, setLoading] = useState(false);
+    const [showDeleteWorkspaceConfirm, setShowDeleteWorkspaceConfirm] = useState(false);
+    const [deletingWorkspace, setDeletingWorkspace] = useState(false);
     const colorOptions = ['#F97316', '#22C55E', '#FACC15', '#14B8A6', '#A855F7', '#22D3EE', '#60A5FA', '#0F172A'];
 
     useEffect(() => {
@@ -22,7 +25,7 @@ const Settings = () => {
     }, [selectedWorkspace]);
 
     const members = selectedWorkspace?.workspace?.members || [];
-    const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
+    const myRole = members.find((m) => String(m?.user?._id || m?.user || '') === String(userInfo?._id || ''))?.role;
     const isOwner = myRole === 'owner';
 
     const handleSave = async (e) => {
@@ -37,13 +40,22 @@ const Settings = () => {
                 color,
             });
             toast.success('Workspace updated');
+            const mergedWorkspace = {
+                ...(selectedWorkspace?.workspace || {}),
+                ...res.data,
+            };
+
+            if (!Array.isArray(res.data?.members) || !res.data.members[0]?.user?._id) {
+                mergedWorkspace.members = selectedWorkspace?.workspace?.members || res.data?.members || [];
+            }
+
             if (selectedWorkspace) {
                 setSelectedWorkspace({
                     ...selectedWorkspace,
-                    workspace: res.data,
+                    workspace: mergedWorkspace,
                 });
             } else {
-                setSelectedWorkspace({ workspace: res.data, projects: [], channels: [] });
+                setSelectedWorkspace({ workspace: mergedWorkspace, projects: [], channels: [] });
             }
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to update workspace');
@@ -54,18 +66,23 @@ const Settings = () => {
     const handleDelete = async () => {
         if (!currentWorkspaceId) return;
         if (!isOwner) return;
-        const confirmName = prompt(`To confirm deletion, type "${name}"`);
-        if (confirmName !== name) {
-            return toast.error('Workspace name did not match.');
-        }
+        setShowDeleteWorkspaceConfirm(true);
+    };
+
+    const confirmDeleteWorkspace = async () => {
+        if (!currentWorkspaceId || !isOwner) return;
+        setDeletingWorkspace(true);
         try {
             await axios.delete(`/api/workspaces/${currentWorkspaceId}`);
             toast.success('Workspace deleted');
+            setShowDeleteWorkspaceConfirm(false);
             setCurrentWorkspaceId(null);
             setSelectedWorkspace(null);
             window.location.assign('/dashboard');
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to delete workspace');
+        } finally {
+            setDeletingWorkspace(false);
         }
     };
 
@@ -178,6 +195,19 @@ const Settings = () => {
                     </div>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={showDeleteWorkspaceConfirm}
+                title="Delete Workspace"
+                message="This action cannot be undone. Please confirm workspace deletion."
+                confirmText="Delete Workspace"
+                cancelText="Cancel"
+                variant="danger"
+                requireText={name}
+                loading={deletingWorkspace}
+                onClose={() => !deletingWorkspace && setShowDeleteWorkspaceConfirm(false)}
+                onConfirm={confirmDeleteWorkspace}
+            />
         </div>
     );
 };

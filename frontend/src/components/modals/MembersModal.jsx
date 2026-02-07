@@ -3,9 +3,14 @@ import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { X, Shield, Trash2, User } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
+import ConfirmModal from './ConfirmModal';
 
 const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
     const { userInfo } = useAuthStore();
+    const [memberToRemove, setMemberToRemove] = useState(null);
+    const [removingMember, setRemovingMember] = useState(false);
+    const [showDeleteWorkspaceConfirm, setShowDeleteWorkspaceConfirm] = useState(false);
+    const [deletingWorkspace, setDeletingWorkspace] = useState(false);
     
     // Find MY role
     const myRole = workspace?.members.find(m => m.user._id === userInfo._id)?.role;
@@ -22,40 +27,52 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
             });
             toast.success('Role updated');
             onUpdate(); // Refresh data
-        } catch (err) {
+        } catch {
             toast.error('Failed to update role');
         }
     };
 
-    const handleKick = async (userId) => {
-        if(!confirm("Are you sure you want to remove this user?")) return;
+    const handleKick = (userId, fullname) => {
+        setMemberToRemove({ userId, fullname });
+    };
+
+    const confirmKick = async () => {
+        if (!memberToRemove?.userId) return;
+        setRemovingMember(true);
         try {
-            await axios.delete(`/api/workspaces/${workspace._id}/members/${userId}`);
+            await axios.delete(`/api/workspaces/${workspace._id}/members/${memberToRemove.userId}`);
             toast.success('Member removed');
+            setMemberToRemove(null);
             onUpdate();
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to remove');
+        } finally {
+            setRemovingMember(false);
         }
     };
 
     const handleDeleteWorkspace = async () => {
-        const confirmName = prompt(`To confirm deletion, type "${workspace.name}"`);
-        if (confirmName !== workspace.name) {
-            return toast.error("Workspace name did not match.");
-        }
+        setShowDeleteWorkspaceConfirm(true);
+    };
 
+    const confirmDeleteWorkspace = async () => {
+        setDeletingWorkspace(true);
         try {
             await axios.delete(`/api/workspaces/${workspace._id}`);
             toast.success("Workspace deleted");
+            setShowDeleteWorkspaceConfirm(false);
             onClose();
             window.location.reload(); // Hard refresh to reset state/sidebar
-        } catch (err) {
+        } catch {
             toast.error("Failed to delete workspace");
+        } finally {
+            setDeletingWorkspace(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
+        <>
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
             <div className="bg-white p-6 rounded-2xl w-[500px] relative shadow-2xl max-h-[80vh] overflow-y-auto">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"><X size={20}/></button>
                 
@@ -97,8 +114,8 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                                         </select>
 
                                         {/* Kick Button */}
-                                        <button 
-                                            onClick={() => handleKick(member.user._id)}
+                                        <button
+                                            onClick={() => handleKick(member.user._id, member.user.fullname)}
                                             className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-all"
                                             title="Remove User"
                                         >
@@ -117,8 +134,8 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                                         >
                                             Make Admin
                                         </button>
-                                        <button 
-                                            onClick={() => handleKick(member.user._id)}
+                                        <button
+                                            onClick={() => handleKick(member.user._id, member.user.fullname)}
                                             className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition-all"
                                             title="Remove User"
                                         >
@@ -150,7 +167,33 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                     </div>
                 )}
             </div>
-        </div>
+            </div>
+
+            <ConfirmModal
+                isOpen={!!memberToRemove}
+                title="Remove Member"
+                message={`Remove ${memberToRemove?.fullname || 'this user'} from the workspace?`}
+                confirmText="Remove"
+                cancelText="Cancel"
+                variant="danger"
+                loading={removingMember}
+                onClose={() => !removingMember && setMemberToRemove(null)}
+                onConfirm={confirmKick}
+            />
+
+            <ConfirmModal
+                isOpen={showDeleteWorkspaceConfirm}
+                title="Delete Workspace"
+                message="This action cannot be undone. Please confirm workspace deletion."
+                confirmText="Delete Workspace"
+                cancelText="Cancel"
+                variant="danger"
+                requireText={workspace?.name || ''}
+                loading={deletingWorkspace}
+                onClose={() => !deletingWorkspace && setShowDeleteWorkspaceConfirm(false)}
+                onConfirm={confirmDeleteWorkspace}
+            />
+        </>
     );
 };
 

@@ -15,6 +15,7 @@ import {
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
 import ChatArea from '../components/chat/ChatArea';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 const WorkspaceChat = () => {
     const { currentWorkspaceId, selectedWorkspace, setSelectedWorkspace } = useWorkspaceStore();
@@ -27,6 +28,8 @@ const WorkspaceChat = () => {
     const [showChannelMenu, setShowChannelMenu] = useState(false);
     const [showDmPicker, setShowDmPicker] = useState(false);
     const [dmSearch, setDmSearch] = useState('');
+    const [channelToDelete, setChannelToDelete] = useState(null);
+    const [deletingChannel, setDeletingChannel] = useState(false);
 
     const loadConversations = async (preferred) => {
         if (!currentWorkspaceId) return;
@@ -131,13 +134,21 @@ const WorkspaceChat = () => {
 
     const handleDeleteChannel = async () => {
         if (!selectedChannel) return;
-        if (!confirm(`Delete #${selectedChannel.name}? This will remove all messages.`)) return;
+        setChannelToDelete(selectedChannel);
+        setShowChannelMenu(false);
+    };
+
+    const confirmDeleteChannel = async () => {
+        if (!channelToDelete) return;
+        setDeletingChannel(true);
         try {
-            await axios.delete(`/api/channels/${selectedChannel._id}`);
-            setShowChannelMenu(false);
+            await axios.delete(`/api/channels/${channelToDelete._id}`);
+            setChannelToDelete(null);
             refreshChannels();
         } catch (err) {
             console.error('Failed to delete channel', err);
+        } finally {
+            setDeletingChannel(false);
         }
     };
 
@@ -482,6 +493,18 @@ const WorkspaceChat = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={!!channelToDelete}
+                title="Delete Channel"
+                message={`Delete #${channelToDelete?.name || ''}? This will remove all messages.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+                loading={deletingChannel}
+                onClose={() => !deletingChannel && setChannelToDelete(null)}
+                onConfirm={confirmDeleteChannel}
+            />
         </div>
     );
 };

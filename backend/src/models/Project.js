@@ -6,6 +6,13 @@ const projectSchema = new mongoose.Schema({
     status: { type: String, default: 'Planning', trim: true },
     startDate: { type: Date },
     dueDate: { type: Date },
+    projectColor: {
+        type: String,
+        trim: true,
+        default: '#6366F1',
+        match: /^#(?:[0-9a-fA-F]{3}){1,2}$/
+    },
+    calendarEnabled: { type: Boolean, default: true },
     tags: [{ type: String, trim: true }],
     
     // Link to Parent Workspace

@@ -5,7 +5,18 @@ import List from '../models/List.js';
 
 export const createProject = async (req, res) => {
     try {
-        const { name, description, workspaceId, status, startDate, dueDate, tags = [], members = [] } = req.body;
+        const {
+            name,
+            description,
+            workspaceId,
+            status,
+            startDate,
+            dueDate,
+            tags = [],
+            members = [],
+            projectColor,
+            calendarEnabled
+        } = req.body;
 
         // 1. Verify Workspace exists
         const workspace = await Workspace.findById(workspaceId);
@@ -37,6 +48,13 @@ export const createProject = async (req, res) => {
                   .filter(Boolean)
             : [];
 
+        const safeProjectColor =
+            typeof projectColor === 'string' && /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(projectColor.trim())
+                ? projectColor.trim()
+                : undefined;
+        const safeCalendarEnabled =
+            typeof calendarEnabled === 'boolean' ? calendarEnabled : undefined;
+
         // 3. Create Project
         const project = await Project.create({
             name,
@@ -46,6 +64,8 @@ export const createProject = async (req, res) => {
             status: status || 'Planning',
             startDate: startDate ? new Date(startDate) : undefined,
             dueDate: dueDate ? new Date(dueDate) : undefined,
+            projectColor: safeProjectColor,
+            calendarEnabled: safeCalendarEnabled,
             tags: normalizedTags,
             members: sanitizedMembers
         });

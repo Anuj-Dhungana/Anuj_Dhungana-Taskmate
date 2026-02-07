@@ -5,6 +5,7 @@ import { Crown, Shield, User as UserIcon, MoreHorizontal, Search, Users } from '
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import InviteUserModal from '../components/modals/InviteUserModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 const ROLE_STYLES = {
     owner: {
@@ -45,6 +46,8 @@ const WorkspaceMembers = () => {
     const [cards, setCards] = useState([]);
     const [search, setSearch] = useState('');
     const [openMenuId, setOpenMenuId] = useState(null);
+    const [memberToRemove, setMemberToRemove] = useState(null);
+    const [removingMember, setRemovingMember] = useState(false);
 
     const refreshWorkspace = async () => {
         if (!currentWorkspaceId) return;
@@ -133,15 +136,23 @@ const WorkspaceMembers = () => {
         }
     };
 
-    const handleKick = async (userId) => {
-        if (!confirm('Are you sure you want to remove this user?')) return;
+    const handleKick = (userId, fullname) => {
+        setMemberToRemove({ userId, fullname });
+        setOpenMenuId(null);
+    };
+
+    const confirmKick = async () => {
+        if (!memberToRemove?.userId) return;
+        setRemovingMember(true);
         try {
-            await axios.delete(`/api/workspaces/${workspace._id}/members/${userId}`);
+            await axios.delete(`/api/workspaces/${workspace._id}/members/${memberToRemove.userId}`);
             toast.success('Member removed');
-            setOpenMenuId(null);
+            setMemberToRemove(null);
             refreshWorkspace();
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to remove user');
+        } finally {
+            setRemovingMember(false);
         }
     };
 
@@ -332,7 +343,7 @@ const WorkspaceMembers = () => {
                                                             {roleActionLabel}
                                                         </button>
                                                         <button
-                                                            onClick={() => handleKick(user._id)}
+                                                            onClick={() => handleKick(user._id, user.fullname)}
                                                             disabled={!canRemove}
                                                             title={
                                                                 canRemove
@@ -379,6 +390,18 @@ const WorkspaceMembers = () => {
                     workspaceId={workspace?._id}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={!!memberToRemove}
+                title="Remove Member"
+                message={`Remove ${memberToRemove?.fullname || 'this user'} from the workspace?`}
+                confirmText="Remove"
+                cancelText="Cancel"
+                variant="danger"
+                loading={removingMember}
+                onClose={() => !removingMember && setMemberToRemove(null)}
+                onConfirm={confirmKick}
+            />
         </div>
     );
 };

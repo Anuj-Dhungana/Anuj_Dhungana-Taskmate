@@ -182,11 +182,11 @@ export const deleteProject = async (req, res) => {
             if (workspaceRoom) {
                 io?.to(workspaceRoom).emit('project_deleted', {
                     workspaceId,
-                    projectId: deletedProjectId,
+                    project: { _id: deletedProjectId },
                 });
                 io?.to(workspaceRoom).emit('project_updated', {
                     workspaceId,
-                    projectId: deletedProjectId,
+                    project: { _id: deletedProjectId },
                     action: 'deleted',
                 });
             }

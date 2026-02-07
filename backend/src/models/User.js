@@ -31,12 +31,6 @@ const userSchema = new mongoose.Schema({
     resetPasswordExpire: Date,
 
 
-    // Authentication Status
-    isVerified: {
-        type: Boolean,
-        default: false
-    },
-
     twoFactorEnabled: {
         type: Boolean,
         default: false

@@ -122,7 +122,10 @@ export const inviteUserToWorkspace = async (req, res) => {
         const io = req.app.get('io');
         io?.to(`workspace_${workspace._id}`).emit('member_added', {
             workspaceId: workspace._id.toString(),
-            memberId: userToInvite._id.toString(),
+            member: {
+                user: userToInvite._id.toString(),
+                role: 'member',
+            },
         });
 
         res.json({ message: `${userToInvite.fullname} added to workspace!` });
@@ -177,8 +180,10 @@ export const updateMemberRole = async (req, res) => {
         const io = req.app.get('io');
         io?.to(`workspace_${workspace._id}`).emit('role_changed', {
             workspaceId: workspace._id.toString(),
-            memberId,
-            newRole,
+            member: {
+                user: memberId,
+                role: newRole,
+            },
         });
 
         res.json({ message: "Role updated successfully" });
@@ -226,7 +231,9 @@ export const removeMember = async (req, res) => {
         const io = req.app.get('io');
         io?.to(`workspace_${workspace._id}`).emit('member_removed', {
             workspaceId: workspace._id.toString(),
-            memberId,
+            member: {
+                user: memberId,
+            },
         });
         res.json({ message: "Member removed from workspace" });
 

@@ -5,6 +5,37 @@ import { emitProjectDataChanged } from '../utils/projectEvents';
 
 const toWorkspaceId = (payload = {}) =>
     String(payload.workspaceId || payload.workspace?._id || '');
+const toProjectId = (payload = {}) =>
+    String(
+        payload.projectId ||
+            payload.project?._id ||
+            payload.task?.projectId ||
+            payload.card?.projectId ||
+            payload.list?.projectId ||
+            payload.entity?.projectId ||
+            ''
+    );
+const toProject = (payload = {}) => payload.project || payload.entity || null;
+const toTask = (payload = {}) => payload.task || payload.card || null;
+const toMemberId = (payload = {}) =>
+    String(
+        payload.memberId ||
+            payload.member?._id ||
+            payload.member?.user?._id ||
+            payload.member?.user ||
+            ''
+    );
+const toMemberRole = (payload = {}) =>
+    payload.newRole || payload.member?.role || '';
+const toWorkspace = (payload = {}) => payload.workspace || payload.entity || null;
+const shouldHandleWorkspace = (payload = {}) => {
+    const eventWorkspaceId = toWorkspaceId(payload);
+    if (!eventWorkspaceId) return true;
+    const currentWorkspaceId = String(
+        useWorkspaceStore.getState().currentWorkspaceId || ''
+    );
+    return !currentWorkspaceId || eventWorkspaceId === currentWorkspaceId;
+};
 
 const useRealtimeSyncStore = create((set, get) => ({
     initialized: false,
@@ -24,8 +55,9 @@ const useRealtimeSyncStore = create((set, get) => ({
         const onDisconnect = () => set({ connected: false });
 
         const onProjectCreated = (payload) => {
+            if (!shouldHandleWorkspace(payload)) return;
             const workspaceId = toWorkspaceId(payload);
-            const project = payload?.project;
+            const project = toProject(payload);
             if (project?._id) {
                 useWorkspaceStore.getState().upsertProjectInSelectedWorkspace(project);
             }
@@ -37,8 +69,9 @@ const useRealtimeSyncStore = create((set, get) => ({
         };
 
         const onProjectDeleted = (payload) => {
+            if (!shouldHandleWorkspace(payload)) return;
             const workspaceId = toWorkspaceId(payload);
-            const projectId = payload?.projectId;
+            const projectId = payload?.project?._id || payload?.projectId;
             if (projectId) {
                 useWorkspaceStore.getState().removeProjectFromSelectedWorkspace(projectId);
             }
@@ -50,32 +83,41 @@ const useRealtimeSyncStore = create((set, get) => ({
         };
 
         const onProjectUpdated = (payload) => {
+            if (!shouldHandleWorkspace(payload)) return;
             const workspaceId = toWorkspaceId(payload);
-            if (payload?.project?._id) {
-                useWorkspaceStore.getState().upsertProjectInSelectedWorkspace(payload.project);
+            const project = toProject(payload);
+            if (project?._id) {
+                useWorkspaceStore.getState().upsertProjectInSelectedWorkspace(project);
             }
             emitProjectDataChanged({
                 workspaceId,
-                projectId: payload?.project?._id || payload?.projectId,
+                projectId: project?._id || toProjectId(payload),
                 source: 'socket:project_updated',
             });
         };
 
         const onTaskEvent = (payload, source) => {
+            if (!shouldHandleWorkspace(payload)) return;
             const workspaceId = toWorkspaceId(payload);
+            const projectId = toProjectId(payload);
             emitProjectDataChanged({
                 workspaceId,
-                projectId: payload?.projectId,
+                projectId,
                 source,
             });
         };
 
         const onRoleChanged = (payload) => {
+            if (!shouldHandleWorkspace(payload)) return;
             const workspaceId = toWorkspaceId(payload);
-            useWorkspaceStore.getState().applyRoleChangeInSelectedWorkspace({
-                memberId: payload?.memberId,
-                newRole: payload?.newRole,
-            });
+            const memberId = toMemberId(payload);
+            const newRole = toMemberRole(payload);
+            if (memberId && newRole) {
+                useWorkspaceStore.getState().applyRoleChangeInSelectedWorkspace({
+                    memberId,
+                    newRole,
+                });
+            }
             emitProjectDataChanged({
                 workspaceId,
                 source: 'socket:role_changed',
@@ -83,8 +125,12 @@ const useRealtimeSyncStore = create((set, get) => ({
         };
 
         const onMemberRemoved = (payload) => {
+            if (!shouldHandleWorkspace(payload)) return;
             const workspaceId = toWorkspaceId(payload);
-            useWorkspaceStore.getState().removeMemberFromSelectedWorkspace(payload?.memberId);
+            const memberId = toMemberId(payload);
+            if (memberId) {
+                useWorkspaceStore.getState().removeMemberFromSelectedWorkspace(memberId);
+            }
             emitProjectDataChanged({
                 workspaceId,
                 source: 'socket:member_removed',
@@ -92,6 +138,7 @@ const useRealtimeSyncStore = create((set, get) => ({
         };
 
         const onMemberAdded = (payload) => {
+            if (!shouldHandleWorkspace(payload)) return;
             const workspaceId = toWorkspaceId(payload);
             emitProjectDataChanged({
                 workspaceId,
@@ -100,7 +147,8 @@ const useRealtimeSyncStore = create((set, get) => ({
         };
 
         const onWorkspaceUpdated = (payload) => {
-            const workspace = payload?.workspace;
+            if (!shouldHandleWorkspace(payload)) return;
+            const workspace = toWorkspace(payload);
             const workspaceId = toWorkspaceId(payload);
             if (workspace) {
                 useWorkspaceStore.getState().patchSelectedWorkspace(workspace);
@@ -114,20 +162,42 @@ const useRealtimeSyncStore = create((set, get) => ({
             });
         };
 
-        socket.on('connect', onConnect);
-        socket.on('disconnect', onDisconnect);
-        socket.on('project_created', onProjectCreated);
-        socket.on('project_deleted', onProjectDeleted);
-        socket.on('project_updated', onProjectUpdated);
-        socket.on('task_created', (payload) => onTaskEvent(payload, 'socket:task_created'));
-        socket.on('task_updated', (payload) => onTaskEvent(payload, 'socket:task_updated'));
-        socket.on('task_deleted', (payload) => onTaskEvent(payload, 'socket:task_deleted'));
-        socket.on('task_moved', (payload) => onTaskEvent(payload, 'socket:task_moved'));
-        socket.on('list_created', (payload) => onTaskEvent(payload, 'socket:list_created'));
-        socket.on('role_changed', onRoleChanged);
-        socket.on('member_removed', onMemberRemoved);
-        socket.on('member_added', onMemberAdded);
-        socket.on('workspace_updated', onWorkspaceUpdated);
+        const onTaskCreated = (payload) => onTaskEvent(payload, 'socket:task_created');
+        const onTaskUpdated = (payload) => onTaskEvent(payload, 'socket:task_updated');
+        const onTaskDeleted = (payload) => onTaskEvent(payload, 'socket:task_deleted');
+        const onTaskMoved = (payload) => {
+            const task = toTask(payload);
+            onTaskEvent(
+                {
+                    ...payload,
+                    projectId:
+                        toProjectId(payload) ||
+                        task?.projectId ||
+                        task?.project?._id,
+                },
+                'socket:task_moved'
+            );
+        };
+        const onListCreated = (payload) => onTaskEvent(payload, 'socket:list_created');
+        const bind = (eventName, handler) => {
+            socket.off(eventName, handler);
+            socket.on(eventName, handler);
+        };
+
+        bind('connect', onConnect);
+        bind('disconnect', onDisconnect);
+        bind('project_created', onProjectCreated);
+        bind('project_deleted', onProjectDeleted);
+        bind('project_updated', onProjectUpdated);
+        bind('task_created', onTaskCreated);
+        bind('task_updated', onTaskUpdated);
+        bind('task_deleted', onTaskDeleted);
+        bind('task_moved', onTaskMoved);
+        bind('list_created', onListCreated);
+        bind('role_changed', onRoleChanged);
+        bind('member_removed', onMemberRemoved);
+        bind('member_added', onMemberAdded);
+        bind('workspace_updated', onWorkspaceUpdated);
 
         set({ initialized: true, connected: socket.connected });
     },

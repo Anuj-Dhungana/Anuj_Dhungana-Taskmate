@@ -84,7 +84,6 @@ export const createList = async (req, res) => {
         });
 
         emitWorkspaceEvent(req, context.workspace._id, 'list_created', {
-            projectId: projectId.toString(),
             list,
         });
 
@@ -139,11 +138,10 @@ export const createCard = async (req, res) => {
 
         await card.populate('assignees', 'fullname avatar');
         emitWorkspaceEvent(req, context.workspace._id, 'task_created', {
-            projectId: projectId.toString(),
-            card,
+            task: card,
         });
         emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
-            projectId: projectId.toString(),
+            project: { _id: projectId.toString() },
             action: 'task_created',
         });
         res.status(201).json(card);
@@ -187,14 +185,16 @@ export const updateCardOrder = async (req, res) => {
         });
 
         emitWorkspaceEvent(req, context.workspace._id, 'task_moved', {
-            projectId: card.projectId.toString(),
-            cardId: cardId.toString(),
-            fromListId: previousListId,
-            toListId: newListId.toString(),
-            newOrder,
+            task: {
+                _id: cardId.toString(),
+                projectId: card.projectId.toString(),
+                listId: newListId.toString(),
+                previousListId,
+                order: newOrder,
+            },
         });
         emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
-            projectId: card.projectId.toString(),
+            project: { _id: card.projectId.toString() },
             action: 'task_moved',
         });
 
@@ -225,11 +225,14 @@ export const deleteCard = async (req, res) => {
 
         await card.deleteOne();
         emitWorkspaceEvent(req, context.workspace._id, 'task_deleted', {
-            projectId: card.projectId.toString(),
-            cardId: card._id.toString(),
+            task: {
+                _id: card._id.toString(),
+                projectId: card.projectId.toString(),
+                listId: card.listId?.toString(),
+            },
         });
         emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
-            projectId: card.projectId.toString(),
+            project: { _id: card.projectId.toString() },
             action: 'task_deleted',
         });
         res.json({ message: "Card deleted" });
@@ -332,11 +335,10 @@ export const updateCard = async (req, res) => {
         // Populate assignees to show their names immediately on frontend
         await card.populate('assignees', 'fullname avatar');
         emitWorkspaceEvent(req, context.workspace._id, 'task_updated', {
-            projectId: card.projectId.toString(),
-            card,
+            task: card,
         });
         emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
-            projectId: card.projectId.toString(),
+            project: { _id: card.projectId.toString() },
             action: 'task_updated',
         });
 

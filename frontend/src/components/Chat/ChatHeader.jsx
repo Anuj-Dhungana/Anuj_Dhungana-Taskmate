@@ -19,7 +19,7 @@ const ChatHeader = ({
         <div className="flex items-center justify-between px-5 py-3 border-b bg-white">
             <div className="flex items-center gap-3">
                 {isDM ? (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold">
+                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold">
                         {displayName?.substring(0, 1).toUpperCase() || 'U'}
                     </div>
                 ) : (

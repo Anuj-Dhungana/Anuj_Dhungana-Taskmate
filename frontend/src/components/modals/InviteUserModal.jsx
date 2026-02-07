@@ -50,7 +50,7 @@ const InviteUserModal = ({ isOpen, onClose, workspaceId }) => {
                     
                     <button 
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition shadow-lg shadow-blue-500/30"
+                        className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition shadow-lg shadow-blue-500/30"
                     >
                         {loading ? 'Sending...' : 'Add to Workspace'}
                     </button>

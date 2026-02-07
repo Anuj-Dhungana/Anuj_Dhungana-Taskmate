@@ -1,7 +1,8 @@
-import { Grid, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import WorkspaceSelector from './WorkspaceSelector';
 import NavigationGroup from './NavigationGroup';
 import { NAV_GROUPS, SYSTEM_ITEMS } from '../../utils/navigationConfig';
+import logo from '../../assets/logo.png';
 
 const DashboardSidebar = ({
     isCollapsed,
@@ -13,15 +14,13 @@ const DashboardSidebar = ({
     return (
         <aside
             className={`${
-                isCollapsed ? 'w-[72px]' : 'w-[248px]'
-            } bg-gradient-to-b from-gray-950 to-gray-900 text-white flex flex-col shadow-xl transition-all duration-200 ease-out overflow-hidden shrink-0`}
+                isCollapsed ? 'w-18' : 'w-62'
+            } bg-linear-to-b from-gray-950 to-gray-900 text-white flex flex-col shadow-xl transition-all duration-200 ease-out overflow-hidden shrink-0`}
         >
             {/* Header */}
             <div className="h-16 flex items-center justify-between px-4 border-b border-gray-800/70">
                 <div className="flex items-center gap-2 font-bold text-lg">
-                    <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-md">
-                        <Grid size={20} />
-                    </div>
+                    <img src={logo} alt="TaskMate" className="w-9 h-9 rounded-lg object-contain" />
                     <span
                         className={`transition-all duration-200 ease-out ${
                             isCollapsed ? 'opacity-0 -translate-x-2 pointer-events-none w-0' : 'opacity-100 translate-x-0'

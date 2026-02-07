@@ -73,7 +73,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
     return (
         <>
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
-            <div className="bg-white p-6 rounded-2xl w-[500px] relative shadow-2xl max-h-[80vh] overflow-y-auto">
+            <div className="bg-white p-6 rounded-2xl w-125 relative shadow-2xl max-h-[80vh] overflow-y-auto">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"><X size={20}/></button>
                 
                 <h2 className="text-xl font-bold mb-4 text-gray-900">Workspace Members</h2>
@@ -83,7 +83,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
                         <div key={member.user._id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all shadow-sm">
                             <div className="flex items-center gap-3">
                                 {/* Avatar or Initials */}
-                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                                <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
                                     {member.user.fullname.substring(0,2).toUpperCase()}
                                 </div>
                                 <div>

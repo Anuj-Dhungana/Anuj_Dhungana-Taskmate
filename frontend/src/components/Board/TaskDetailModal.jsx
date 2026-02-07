@@ -99,7 +99,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
 
     return (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
-            <div className="bg-white rounded-2xl w-[900px] h-[80vh] flex flex-col relative shadow-2xl">
+            <div className="bg-white rounded-2xl w-225 h-[80vh] flex flex-col relative shadow-2xl">
                 
                 {/* Header (Title) */}
                 <div className="p-6 border-b border-gray-100 flex justify-between items-start">
@@ -154,7 +154,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                                             href={url} 
                                             target="_blank" 
                                             rel="noreferrer" 
-                                            className="flex flex-col items-center justify-center w-24 h-24 bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all p-2 text-center no-underline"
+                                            className="flex flex-col items-center justify-center w-24 h-24 bg-linear-to-br from-gray-50 to-gray-100 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all p-2 text-center no-underline"
                                             title="Click to view"
                                         >
                                             {isImage ? (
@@ -175,7 +175,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                             <label
                                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all font-medium shadow-sm ${
                                     canEditTask
-                                        ? 'bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 cursor-pointer'
+                                        ? 'bg-linear-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 cursor-pointer'
                                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                                 }`}
                                 title={canEditTask ? 'Upload file' : 'Only assignees or admins can upload files'}
@@ -188,7 +188,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                     </div>
 
                     {/* RIGHT COLUMN (Sidebar Actions) */}
-                    <div className="w-64 bg-gradient-to-b from-gray-50 to-gray-100 p-6 border-l border-gray-200 space-y-6 overflow-y-auto">
+                    <div className="w-64 bg-linear-to-b from-gray-50 to-gray-100 p-6 border-l border-gray-200 space-y-6 overflow-y-auto">
                         
                         {/* Due Date */}
                         <div>
@@ -235,7 +235,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
                                 title={canEditTask ? 'Save changes' : 'Only assignees or admins can edit this task'}
                                 className={`w-full py-2.5 rounded-xl font-semibold shadow-lg transition-all ${
                                     canEditTask
-                                        ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-blue-500/30'
+                                        ? 'bg-linear-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-blue-500/30'
                                         : 'bg-gray-200 text-gray-500 cursor-not-allowed'
                                 }`}
                             >

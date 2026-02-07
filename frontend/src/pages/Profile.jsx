@@ -49,7 +49,7 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col items-center pt-10 px-4">
+        <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 flex flex-col items-center pt-10 px-4">
             <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
                 
                 <button onClick={() => navigate('/dashboard')} className="flex items-center text-gray-500 hover:text-blue-600 mb-6 font-medium transition-colors">
@@ -87,7 +87,7 @@ const Profile = () => {
                             />
                         </div>
 
-                        <button className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 transition-all">
+                        <button className="bg-linear-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 transition-all">
                             Save Changes
                         </button>
                     </form>
@@ -98,7 +98,7 @@ const Profile = () => {
                             <ShieldCheck className="text-green-600" size={24}/> Security
                         </h3>
                         
-                        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-sm">
+                        <div className="bg-linear-to-br from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-sm">
                             <div className="flex justify-between items-center">
                                 <div>
                                     <p className="font-bold text-gray-800">Two-Factor Auth</p>

@@ -35,7 +35,7 @@ const TaskCard = ({ card, onDelete, onClick, canDrag = true }) => {
       {card.assignees && card.assignees.length > 0 && (
         <div className="flex mt-2.5">
             {card.assignees.map(u => (
-                <div key={u._id} className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-[10px] flex items-center justify-center text-white font-bold border-2 border-white -ml-1 first:ml-0 shadow-md">
+                <div key={u._id} className="w-6 h-6 rounded-full bg-linear-to-br from-blue-500 to-blue-600 text-[10px] flex items-center justify-center text-white font-bold border-2 border-white -ml-1 first:ml-0 shadow-md">
                     {u.fullname.substring(0,1)}
                 </div>
             ))}

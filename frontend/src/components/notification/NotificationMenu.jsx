@@ -73,7 +73,7 @@ const NotificationMenu = () => {
             <button onClick={() => setIsOpen(!isOpen)} className="relative text-gray-500 hover:text-blue-600 transition-colors">
                 <Bell size={22} />
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold shadow-lg">
+                    <span className="absolute -top-1 -right-1 bg-linear-to-r from-red-500 to-red-600 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full font-bold shadow-lg">
                         {unreadCount}
                     </span>
                 )}
@@ -82,7 +82,7 @@ const NotificationMenu = () => {
             {/* Dropdown Menu */}
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-80 bg-white shadow-2xl rounded-2xl border-2 border-gray-200 z-50 overflow-hidden">
-                    <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50 flex justify-between items-center">
+                    <div className="p-4 border-b border-gray-100 bg-linear-to-r from-blue-50 to-purple-50 flex justify-between items-center">
                         <h3 className="font-bold text-sm text-gray-800">Notifications</h3>
                         <button onClick={fetchNotifications} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">Refresh</button>
                     </div>
@@ -97,7 +97,7 @@ const NotificationMenu = () => {
                                     onClick={() => handleRead(n)}
                                     className={`p-4 border-b border-gray-100 flex items-start gap-3 cursor-pointer hover:bg-gray-50 transition-colors ${n.isRead ? 'opacity-60' : 'bg-blue-50/50'}`}
                                 >
-                                    <div className="w-2.5 h-2.5 mt-2 rounded-full shrink-0 bg-gradient-to-r from-blue-500 to-blue-600 shadow-md" style={{ opacity: n.isRead ? 0 : 1 }}></div>
+                                    <div className="w-2.5 h-2.5 mt-2 rounded-full shrink-0 bg-linear-to-r from-blue-500 to-blue-600 shadow-md" style={{ opacity: n.isRead ? 0 : 1 }}></div>
                                     <div>
                                         <p className="text-sm text-gray-800">
                                             <span className="font-bold">{n.sender?.fullname}</span> {n.message}

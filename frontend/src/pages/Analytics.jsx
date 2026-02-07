@@ -80,7 +80,7 @@ const Analytics = () => {
     }
 
     return (
-        <div className="px-8 py-10 bg-gradient-to-br from-gray-50 to-white min-h-screen">
+        <div className="px-8 py-10 bg-linear-to-br from-gray-50 to-white min-h-screen">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
                 <p className="text-gray-500 mt-2">Project progress and activity for this workspace.</p>

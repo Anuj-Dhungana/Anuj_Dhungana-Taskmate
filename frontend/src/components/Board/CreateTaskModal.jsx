@@ -259,7 +259,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-2.5 text-sm rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 transition-all font-medium shadow-lg shadow-blue-500/30"
+                            className="px-6 py-2.5 text-sm rounded-xl text-white bg-linear-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 transition-all font-medium shadow-lg shadow-blue-500/30"
                         >
                             {loading ? 'Creating...' : 'Create Task'}
                         </button>

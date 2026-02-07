@@ -30,7 +30,7 @@ const DirectMessagesList = ({ dmThreads, selectedChannel, onSelectChannel, onCre
                                     : 'text-gray-700 border-transparent hover:bg-white'
                             }`}
                         >
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold">
+                            <div className="w-8 h-8 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold">
                                 {dm.displayName?.substring(0, 1).toUpperCase() || 'U'}
                             </div>
                             <div className="min-w-0">

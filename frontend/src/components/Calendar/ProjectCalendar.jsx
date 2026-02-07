@@ -3,8 +3,9 @@ import { format, parse, startOfWeek, getDay } from 'date-fns';
 import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/calendar.css';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { addProjectDataChangedListener } from '../../utils/projectEvents';
 
 // Setup Localizer
 const locales = {
@@ -91,119 +92,111 @@ const ProjectEvent = ({ event, view }) => {
 };
 
 const ProjectCalendar = ({ projectId }) => {
-    const [events, setEvents] = useState([]);
-    const [view, setView] = useState('month');
-    const [date, setDate] = useState(new Date());
+  const [events, setEvents] = useState([]);
+  const [view, setView] = useState('month');
+  const [date, setDate] = useState(new Date());
 
-    useEffect(() => {
-        const fetchCalendarData = async () => {
-            if (!projectId) return;
-            setEvents([]);
-            try {
-                const [boardRes, projectRes] = await Promise.allSettled([
-                    axios.get(`/api/board/${projectId}`),
-                    axios.get(`/api/projects/${projectId}`),
-                ]);
-                const cards = boardRes.status === 'fulfilled' ? boardRes.value.data?.cards || [] : [];
-                const project = projectRes.status === 'fulfilled' ? projectRes.value.data : null;
+  const fetchCalendarData = useCallback(async () => {
+    if (!projectId) return;
+    setEvents([]);
+    try {
+      const [boardRes, projectRes] = await Promise.allSettled([
+        axios.get(`/api/board/${projectId}`),
+        axios.get(`/api/projects/${projectId}`),
+      ]);
+      const cards = boardRes.status === 'fulfilled' ? boardRes.value.data?.cards || [] : [];
+      const project = projectRes.status === 'fulfilled' ? projectRes.value.data : null;
 
-                const taskEvents = cards
-                    .filter((card) => card.dueDate)
-                    .map((card) => {
-                        const startDate = toDateAt(card.dueDate, 9);
-                        if (!startDate) return null;
-                        const endDate = new Date(startDate);
-                        endDate.setHours(10, 0, 0, 0);
+      const taskEvents = cards
+        .filter((card) => card.dueDate)
+        .map((card) => {
+          const startDate = toDateAt(card.dueDate, 9);
+          if (!startDate) return null;
+          const endDate = new Date(startDate);
+          endDate.setHours(10, 0, 0, 0);
 
-                        return {
-                            id: `task-${card._id}`,
-                            title: card.title,
-                            start: startDate,
-                            end: endDate,
-                            allDay: false,
-                            type: 'task',
-                            resource: card,
-                        };
-                    })
-                    .filter(Boolean);
+          return {
+            id: `task-${card._id}`,
+            title: card.title,
+            start: startDate,
+            end: endDate,
+            allDay: false,
+            type: 'task',
+            resource: card,
+          };
+        })
+        .filter(Boolean);
 
-                const projectEvents = [];
-                const deadlineValue = project?.endDate || project?.dueDate;
-                if (deadlineValue) {
-                    const startDate = toDateAt(deadlineValue, 11);
-                    if (startDate) {
-                        const endDate = new Date(startDate);
-                        endDate.setHours(12, 0, 0, 0);
-                        projectEvents.push({
-                            id: `project-deadline-${project._id}`,
-                            title: `${project.name} — Project Deadline`,
-                            start: startDate,
-                            end: endDate,
-                            allDay: false,
-                            type: 'deadline',
-                            resource: project,
-                        });
-                    }
-                }
-                if (false && project?.startDate) {
-                    const startDate = toDateAt(project.startDate, 8);
-                    if (startDate) {
-                        const endDate = new Date(startDate);
-                        endDate.setHours(9, 0, 0, 0);
-                        projectEvents.push({
-                            id: `project-start-${project._id}`,
-                            title: `${project.name} — Project Start`,
-                            start: startDate,
-                            end: endDate,
-                            allDay: false,
-                            type: 'milestone',
-                            resource: project,
-                        });
-                    }
-                }
-
-                setEvents([...taskEvents, ...projectEvents]);
-            } catch (err) {
-                console.error('Failed to load project calendar', err);
-            }
-        };
-        fetchCalendarData();
-    }, [projectId]);
-
-    const eventStyleGetter = () => ({
-        style: {
-            backgroundColor: 'transparent',
-            border: 'none',
-            padding: 0,
-            margin: 0,
+      const projectEvents = [];
+      const deadlineValue = project?.endDate || project?.dueDate;
+      if (deadlineValue) {
+        const startDate = toDateAt(deadlineValue, 11);
+        if (startDate) {
+          const endDate = new Date(startDate);
+          endDate.setHours(12, 0, 0, 0);
+          projectEvents.push({
+            id: `project-deadline-${project._id}`,
+            title: `${project.name} - Project Deadline`,
+            start: startDate,
+            end: endDate,
+            allDay: false,
+            type: 'deadline',
+            resource: project,
+          });
         }
-    });
+      }
 
-    return (
-        <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="h-[70vh]">
-                <Calendar
-                    localizer={localizer}
-                    events={events}
-                    startAccessor="start"
-                    endAccessor="end"
-                    style={{ height: '100%' }}
-                    views={['month', 'week', 'day']}
-                    view={view}
-                    date={date}
-                    onView={(newView) => setView(newView)}
-                    onNavigate={(newDate) => setDate(newDate)}
-                    eventPropGetter={eventStyleGetter}
-                    components={{
-                        event: (props) => <ProjectEvent {...props} view={view} />,
-                    }}
-                    
-                    min={new Date(0, 0, 0, 8, 0, 0)} 
-                    max={new Date(0, 0, 0, 20, 0, 0)}
-                />
-            </div>
-        </div>
-    );
+      setEvents([...taskEvents, ...projectEvents]);
+    } catch (err) {
+      console.error('Failed to load project calendar', err);
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchCalendarData();
+  }, [fetchCalendarData]);
+
+  useEffect(() => {
+    const unsubscribe = addProjectDataChangedListener((detail) => {
+      if (detail?.projectId && String(detail.projectId) !== String(projectId)) return;
+      fetchCalendarData();
+    });
+    return unsubscribe;
+  }, [fetchCalendarData, projectId]);
+
+  const eventStyleGetter = () => ({
+    style: {
+      backgroundColor: 'transparent',
+      border: 'none',
+      padding: 0,
+      margin: 0,
+    },
+  });
+
+  return (
+    <div className="bg-white p-4 rounded-lg shadow-sm">
+      <div className="h-[70vh]">
+        <Calendar
+          localizer={localizer}
+          events={events}
+          startAccessor="start"
+          endAccessor="end"
+          style={{ height: '100%' }}
+          views={['month', 'week', 'day']}
+          view={view}
+          date={date}
+          onView={(newView) => setView(newView)}
+          onNavigate={(newDate) => setDate(newDate)}
+          eventPropGetter={eventStyleGetter}
+          components={{
+            event: (props) => <ProjectEvent {...props} view={view} />,
+          }}
+          min={new Date(0, 0, 0, 8, 0, 0)}
+          max={new Date(0, 0, 0, 20, 0, 0)}
+        />
+      </div>
+    </div>
+  );
 };
 
 export default ProjectCalendar;

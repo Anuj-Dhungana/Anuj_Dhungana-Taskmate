@@ -28,6 +28,16 @@ const getProjectContext = async (projectId, userId) => {
     return { status: 200, project, workspace, member };
 };
 
+const emitWorkspaceEvent = (req, workspaceId, eventName, payload) => {
+    if (!workspaceId) return;
+    const io = req.app.get('io');
+    const room = `workspace_${workspaceId.toString()}`;
+    io?.to(room).emit(eventName, {
+        workspaceId: workspaceId.toString(),
+        ...payload,
+    });
+};
+
 
 export const getBoard = async (req, res) => {
     try {
@@ -71,6 +81,11 @@ export const createList = async (req, res) => {
             title,
             projectId,
             order: newOrder
+        });
+
+        emitWorkspaceEvent(req, context.workspace._id, 'list_created', {
+            projectId: projectId.toString(),
+            list,
         });
 
         res.status(201).json(list);
@@ -123,6 +138,14 @@ export const createCard = async (req, res) => {
         });
 
         await card.populate('assignees', 'fullname avatar');
+        emitWorkspaceEvent(req, context.workspace._id, 'task_created', {
+            projectId: projectId.toString(),
+            card,
+        });
+        emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
+            projectId: projectId.toString(),
+            action: 'task_created',
+        });
         res.status(201).json(card);
     } catch (error) {
         res.status(500).json({ message: "Server Error" });
@@ -156,10 +179,23 @@ export const updateCardOrder = async (req, res) => {
             return res.status(400).json({ message: "List does not belong to this project" });
         }
 
+        const previousListId = card.listId?.toString();
         // Update the card
         await Card.findByIdAndUpdate(cardId, {
             listId: newListId,
             order: newOrder
+        });
+
+        emitWorkspaceEvent(req, context.workspace._id, 'task_moved', {
+            projectId: card.projectId.toString(),
+            cardId: cardId.toString(),
+            fromListId: previousListId,
+            toListId: newListId.toString(),
+            newOrder,
+        });
+        emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
+            projectId: card.projectId.toString(),
+            action: 'task_moved',
         });
 
         res.json({ message: "Order updated" });
@@ -188,6 +224,14 @@ export const deleteCard = async (req, res) => {
         }
 
         await card.deleteOne();
+        emitWorkspaceEvent(req, context.workspace._id, 'task_deleted', {
+            projectId: card.projectId.toString(),
+            cardId: card._id.toString(),
+        });
+        emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
+            projectId: card.projectId.toString(),
+            action: 'task_deleted',
+        });
         res.json({ message: "Card deleted" });
     } catch (error) {
         res.status(500).json({ message: "Server Error" });
@@ -287,6 +331,14 @@ export const updateCard = async (req, res) => {
         
         // Populate assignees to show their names immediately on frontend
         await card.populate('assignees', 'fullname avatar');
+        emitWorkspaceEvent(req, context.workspace._id, 'task_updated', {
+            projectId: card.projectId.toString(),
+            card,
+        });
+        emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
+            projectId: card.projectId.toString(),
+            action: 'task_updated',
+        });
 
         res.json(card);
     } catch (error) {

@@ -81,6 +81,18 @@ export const createProject = async (req, res) => {
             defaultLists.map((l) => ({ ...l, projectId: project._id }))
         );
 
+        const io = req.app.get('io');
+        const workspaceRoom = `workspace_${workspaceId}`;
+        io?.to(workspaceRoom).emit('project_created', {
+            workspaceId: workspaceId.toString(),
+            project,
+        });
+        io?.to(workspaceRoom).emit('project_updated', {
+            workspaceId: workspaceId.toString(),
+            project,
+            action: 'created',
+        });
+
         res.status(201).json(project);
     } catch (error) {
         console.error(error);
@@ -162,7 +174,22 @@ export const deleteProject = async (req, res) => {
 
         // Allow delete if admin/owner
         if (isAdminOrOwner) {
+            const workspaceId = project.workspace?.toString();
+            const deletedProjectId = project._id?.toString();
             await project.deleteOne();
+            const io = req.app.get('io');
+            const workspaceRoom = workspaceId ? `workspace_${workspaceId}` : null;
+            if (workspaceRoom) {
+                io?.to(workspaceRoom).emit('project_deleted', {
+                    workspaceId,
+                    projectId: deletedProjectId,
+                });
+                io?.to(workspaceRoom).emit('project_updated', {
+                    workspaceId,
+                    projectId: deletedProjectId,
+                    action: 'deleted',
+                });
+            }
         
 
             return res.json({ message: "Project deleted successfully" });

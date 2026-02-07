@@ -16,6 +16,7 @@ import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import { addProjectDataChangedListener, emitProjectDataChanged } from '../utils/projectEvents';
 
 const FILTERS = ['All', 'Active', 'Planning', 'Completed'];
 
@@ -170,6 +171,15 @@ const WorkspaceDetail = () => {
     }, [fetchWorkspaceDetails]);
 
     useEffect(() => {
+        const unsubscribe = addProjectDataChangedListener((detail) => {
+            if (!effectiveWorkspaceId) return;
+            if (detail?.workspaceId && String(detail.workspaceId) !== String(effectiveWorkspaceId)) return;
+            fetchWorkspaceDetails();
+        });
+        return unsubscribe;
+    }, [effectiveWorkspaceId, fetchWorkspaceDetails]);
+
+    useEffect(() => {
         if (workspaceId && workspaceId !== currentWorkspaceId) {
             setCurrentWorkspaceId(workspaceId);
         }
@@ -299,6 +309,11 @@ const WorkspaceDetail = () => {
         try {
             await axios.delete(`/api/projects/${projectToDelete._id}`);
             toast.success('Project deleted');
+            emitProjectDataChanged({
+                workspaceId: effectiveWorkspaceId,
+                projectId: projectToDelete?._id,
+                source: 'workspace-detail-delete-project',
+            });
             setProjectToDelete(null);
             fetchWorkspaceDetails();
         } catch (err) {

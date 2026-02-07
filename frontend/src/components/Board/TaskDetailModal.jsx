@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import { X, Calendar, User, Paperclip, FileText, Clock, Image as ImageIcon } from 'lucide-react';
 import useWorkspaceStore from '../../store/useWorkspaceStore';
 import useAuthStore from '../../store/useAuthStore';
+import { emitProjectDataChanged } from '../../utils/projectEvents';
 
 const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
     if (!isOpen || !card) return null;
@@ -19,6 +20,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
     });
     const canEditTask = isAdminOrOwner || isAssigned;
     const canManageAssignees = isAdminOrOwner;
+    const cardProjectId = card?.projectId?._id || card?.projectId;
     
     // Local State for Form
     const [title, setTitle] = useState(card.title);
@@ -42,6 +44,10 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
             }
             await axios.put(`/api/board/cards/${card._id}`, payload);
             toast.success("Card updated");
+            emitProjectDataChanged({
+                projectId: cardProjectId,
+                source: 'task-detail-save',
+            });
             onUpdate(); // Refresh board
             onClose();
         } catch (err) {
@@ -69,6 +75,10 @@ const TaskDetailModal = ({ isOpen, onClose, card, onUpdate }) => {
             if (response.data.attachments) {
                 setAttachments(response.data.attachments);
             }
+            emitProjectDataChanged({
+                projectId: cardProjectId,
+                source: 'task-detail-upload',
+            });
             
             onUpdate(); // Refresh board to see new attachment
             // DON'T close the modal - let user continue editing

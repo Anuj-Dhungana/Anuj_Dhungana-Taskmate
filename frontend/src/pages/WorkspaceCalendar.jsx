@@ -6,6 +6,7 @@ import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../styles/calendar.css';
 import axios from 'axios';
 import useWorkspaceStore from '../store/useWorkspaceStore';
+import { addProjectDataChangedListener } from '../utils/projectEvents';
 import {
     CalendarDays, Clock, Users, Flag, ChevronLeft, ChevronRight,
     X, Calendar as CalendarIcon, CheckCircle2, AlertCircle
@@ -253,6 +254,15 @@ const WorkspaceCalendar = () => {
     useEffect(() => {
         fetchEvents();
     }, [fetchEvents]);
+
+    useEffect(() => {
+        const unsubscribe = addProjectDataChangedListener((detail) => {
+            if (!currentWorkspaceId) return;
+            if (detail?.workspaceId && String(detail.workspaceId) !== String(currentWorkspaceId)) return;
+            fetchEvents();
+        });
+        return unsubscribe;
+    }, [currentWorkspaceId, fetchEvents]);
 
     // Stats computation
     const stats = useMemo(() => {

@@ -119,6 +119,11 @@ export const inviteUserToWorkspace = async (req, res) => {
         });
 
         await workspace.save();
+        const io = req.app.get('io');
+        io?.to(`workspace_${workspace._id}`).emit('member_added', {
+            workspaceId: workspace._id.toString(),
+            memberId: userToInvite._id.toString(),
+        });
 
         res.json({ message: `${userToInvite.fullname} added to workspace!` });
 
@@ -169,6 +174,13 @@ export const updateMemberRole = async (req, res) => {
         workspace.members[memberIndex].role = newRole;
         await workspace.save();
 
+        const io = req.app.get('io');
+        io?.to(`workspace_${workspace._id}`).emit('role_changed', {
+            workspaceId: workspace._id.toString(),
+            memberId,
+            newRole,
+        });
+
         res.json({ message: "Role updated successfully" });
 
     } catch (error) {
@@ -211,6 +223,11 @@ export const removeMember = async (req, res) => {
         );
 
         await workspace.save();
+        const io = req.app.get('io');
+        io?.to(`workspace_${workspace._id}`).emit('member_removed', {
+            workspaceId: workspace._id.toString(),
+            memberId,
+        });
         res.json({ message: "Member removed from workspace" });
 
     } catch (error) {
@@ -246,6 +263,11 @@ export const updateWorkspace = async (req, res) => {
 
         const saved = await workspace.save();
         const updated = await Workspace.findById(saved._id).populate('members.user', 'fullname email avatar');
+        const io = req.app.get('io');
+        io?.to(`workspace_${workspace._id}`).emit('workspace_updated', {
+            workspaceId: workspace._id.toString(),
+            workspace: updated,
+        });
         res.json(updated);
     } catch (error) {
         res.status(500).json({ message: "Server Error" });

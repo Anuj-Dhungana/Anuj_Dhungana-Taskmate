@@ -3,6 +3,7 @@ import axios from 'axios';
 import { X, Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../../store/useAuthStore';
+import { emitProjectDataChanged } from '../../utils/projectEvents';
 
 const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMembers = [], onCreated }) => {
     const { userInfo } = useAuthStore();
@@ -74,6 +75,10 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
             }
             const res = await axios.post('/api/board/cards', payload);
             toast.success('Task created');
+            emitProjectDataChanged({
+                projectId,
+                source: 'create-task-modal',
+            });
             onCreated?.(res.data);
             setTitle('');
             setDescription('');

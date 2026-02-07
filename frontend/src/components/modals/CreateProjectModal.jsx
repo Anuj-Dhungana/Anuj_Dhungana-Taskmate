@@ -5,6 +5,7 @@ import { toast } from 'react-hot-toast';
 import { X, ChevronDown, ChevronUp } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
 import ConfirmModal from './ConfirmModal';
+import { emitProjectDataChanged } from '../../utils/projectEvents';
 
 const STATUS_OPTIONS = [
     { label: 'Planning', value: 'Planning' },
@@ -247,6 +248,11 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
 
             onCreated?.(createdProject);
             toast.success('Project created successfully');
+            emitProjectDataChanged({
+                workspaceId,
+                projectId: createdProject?._id,
+                source: 'create-project-modal',
+            });
             resetForm();
             onClose?.();
             navigate(`/projects/${createdProject._id}`);

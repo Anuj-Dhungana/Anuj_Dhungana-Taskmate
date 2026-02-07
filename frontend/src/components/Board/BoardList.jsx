@@ -4,6 +4,7 @@ import TaskCard from './TaskCard';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import axios from 'axios';
+import { emitProjectDataChanged } from '../../utils/projectEvents';
 
 
 const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick, canDragCard }) => { // Accept onCardAdded, onCardDelete, onCardClick props
@@ -26,6 +27,10 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick, canDra
         });
         // We need to tell the parent (BoardView) to update the cards array
         onCardAdded(res.data); 
+        emitProjectDataChanged({
+            projectId: list.projectId,
+            source: 'board-list-add-card',
+        });
         setNewCardTitle('');
         setIsAdding(false);
     } catch (err) {

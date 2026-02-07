@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Bell } from 'lucide-react';
-import io from 'socket.io-client';
 import useAuthStore from '../../store/useAuthStore';
 import { toast } from 'react-hot-toast';
 import useWorkspaceStore from '../../store/useWorkspaceStore';
-
-const socket = io('http://localhost:5000');
+import socket from '../../lib/socket';
 
 const NotificationMenu = () => {
     const { userInfo } = useAuthStore();
@@ -25,19 +23,30 @@ const NotificationMenu = () => {
     };
 
     useEffect(() => {
-        fetchNotifications();
+        const loadNotifications = async () => {
+            try {
+                const res = await axios.get('/api/notifications');
+                setNotifications(res.data);
+                setUnreadCount(res.data.filter(n => !n.isRead).length);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        loadNotifications();
 
         // 2. Listen for Real-time alerts
-        socket.on("new_notification", (newNotif) => {
+        const handleNewNotification = (newNotif) => {
             // Check if this notification is for ME
             if (newNotif.recipient === userInfo._id) {
                 setNotifications(prev => [newNotif, ...prev]);
                 setUnreadCount(prev => prev + 1);
                 toast(`New notification from ${newNotif.sender.fullname}`);
             }
-        });
+        };
 
-        return () => { socket.off("new_notification"); };
+        socket.on("new_notification", handleNewNotification);
+
+        return () => { socket.off("new_notification", handleNewNotification); };
     }, [userInfo._id]);
 
     useEffect(() => {
@@ -51,7 +60,7 @@ const NotificationMenu = () => {
         if (notif.isRead) return;
         try {
             await axios.put(`/api/notifications/${notif._id}/read`);
-            setNotifications(notifications.map(n => 
+            setNotifications((prev) => prev.map((n) => 
                 n._id === notif._id ? { ...n, isRead: true } : n
             ));
             setUnreadCount(prev => Math.max(0, prev - 1));

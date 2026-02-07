@@ -1,11 +1,8 @@
 ﻿import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
-import io from 'socket.io-client';
 import useAuthStore from '../../store/useAuthStore';
 import { Send, Hash, Trash2, Paperclip, Smile, Reply, MoreHorizontal } from 'lucide-react';
-
-// Connect to backend
-const socket = io('http://localhost:5000');
+import socket from '../../lib/socket';
 
 const TASK_REGEX = /(Task\s*#\d+)/gi;
 
@@ -34,6 +31,12 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const [isTyping, setIsTyping] = useState(false);
     const typingTimeoutRef = useRef(null);
     const messagesEndRef = useRef(null);
+
+    const scrollToBottom = () => {
+        setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+    };
 
     // 1. Join Room & Load History when Channel Changes
     useEffect(() => {
@@ -70,12 +73,6 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
             socket.off('receive_message', handleReceiveMessage);
         };
     }, [channel, workspaceId]);
-
-    const scrollToBottom = () => {
-        setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-        }, 100);
-    };
 
     const handleSendMessage = async (e) => {
         e?.preventDefault();

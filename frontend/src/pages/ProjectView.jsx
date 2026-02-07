@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowLeft, Layout, Calendar as CalendarIcon } from 'lucide-react';
 import BoardView from '../components/board/BoardView';
 import ProjectCalendar from '../components/calendar/ProjectCalendar';
+import { addProjectDataChangedListener } from '../utils/projectEvents';
 
 const ProjectView = () => {
     const { projectId } = useParams();
@@ -12,20 +13,28 @@ const ProjectView = () => {
     const [viewMode, setViewMode] = useState('board');
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchProject = async () => {
-            try {
-                const res = await axios.get(`/api/projects/${projectId}`);
-                setProject(res.data);
-            } catch (err) {
-                console.error('Failed to load project', err);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProject();
+    const fetchProject = useCallback(async () => {
+        try {
+            const res = await axios.get(`/api/projects/${projectId}`);
+            setProject(res.data);
+        } catch (err) {
+            console.error('Failed to load project', err);
+        } finally {
+            setLoading(false);
+        }
     }, [projectId]);
+
+    useEffect(() => {
+        fetchProject();
+    }, [fetchProject]);
+
+    useEffect(() => {
+        const unsubscribe = addProjectDataChangedListener((detail) => {
+            if (detail?.projectId && String(detail.projectId) !== String(projectId)) return;
+            fetchProject();
+        });
+        return unsubscribe;
+    }, [fetchProject, projectId]);
 
     const handleBack = () => {
         navigate(-1); // Go back to previous page

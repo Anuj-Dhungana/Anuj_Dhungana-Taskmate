@@ -16,9 +16,10 @@ import {
     ChevronsLeft,
     ChevronsRight
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
+import useRealtimeSyncStore from '../store/useRealtimeSyncStore';
 import CreateWorkspaceModal from '../components/modals/CreateWorkspaceModal';
 import NotificationMenu from '../components/notification/NotificationMenu';
 
@@ -37,6 +38,7 @@ const DashboardLayout = () => {
     const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
     const [workspaceMenuOpen, setWorkspaceMenuOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const { initialize: initRealtime, joinWorkspace } = useRealtimeSyncStore();
 
     const handleLogout = async () => {
         await axios.post('/api/auth/logout');
@@ -45,7 +47,7 @@ const DashboardLayout = () => {
         navigate('/login');
     };
 
-    const fetchWorkspaces = async () => {
+    const fetchWorkspaces = useCallback(async () => {
         try {
             const res = await axios.get('/api/workspaces');
             setWorkspaces(res.data);
@@ -62,9 +64,9 @@ const DashboardLayout = () => {
         } catch (err) {
             console.error('Failed to load workspaces', err);
         }
-    };
+    }, [currentWorkspaceId, setCurrentWorkspaceId, setWorkspaces]);
 
-    const fetchWorkspaceDetails = async (workspaceId) => {
+    const fetchWorkspaceDetails = useCallback(async (workspaceId) => {
         if (!workspaceId) return;
         try {
             const res = await axios.get(`/api/workspaces/${workspaceId}`);
@@ -72,19 +74,25 @@ const DashboardLayout = () => {
         } catch (err) {
             console.error('Failed to load workspace details', err);
         }
-    };
+    }, [setSelectedWorkspace]);
 
     useEffect(() => {
         if (userInfo?._id) {
             fetchWorkspaces();
         }
-    }, [userInfo?._id]);
+    }, [userInfo?._id, fetchWorkspaces]);
+
+    useEffect(() => {
+        if (!userInfo?._id) return;
+        initRealtime();
+    }, [userInfo?._id, initRealtime]);
 
     useEffect(() => {
         if (currentWorkspaceId) {
             fetchWorkspaceDetails(currentWorkspaceId);
+            joinWorkspace(currentWorkspaceId);
         }
-    }, [currentWorkspaceId]);
+    }, [currentWorkspaceId, fetchWorkspaceDetails, joinWorkspace]);
 
     const handleWorkspaceSelect = (workspaceId) => {
         setCurrentWorkspaceId(workspaceId);
@@ -284,7 +292,7 @@ const DashboardLayout = () => {
                                             }`
                                     }
                                 >
-                                    {({ isActive }) => (
+                                    {() => (
                                         <>
                                             <item.icon size={navIconSize} />
                                             {!isCollapsed && (
@@ -329,7 +337,7 @@ const DashboardLayout = () => {
                                     }`
                             }
                         >
-                            {({ isActive }) => (
+                            {() => (
                                 <>
                                     <item.icon size={navIconSize} />
                                     {!isCollapsed && (

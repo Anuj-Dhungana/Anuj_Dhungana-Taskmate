@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import { 
   DndContext, 
@@ -15,6 +15,7 @@ import CreateTaskModal from './CreateTaskModal';
 import { ArrowLeft, Plus, Settings } from 'lucide-react';
 import useWorkspaceStore from '../../store/useWorkspaceStore';
 import useAuthStore from '../../store/useAuthStore';
+import { addProjectDataChangedListener, emitProjectDataChanged } from '../../utils/projectEvents';
 
 const BoardView = ({ projectId, project, onBack }) => {
     const [lists, setLists] = useState([]);
@@ -51,17 +52,25 @@ const BoardView = ({ projectId, project, onBack }) => {
 };
 
     // Fetch Board Data
-    const fetchBoard = async () => {
+    const fetchBoard = useCallback(async () => {
         try {
             const res = await axios.get(`/api/board/${projectId}`);
             setLists(res.data.lists);
             setCards(res.data.cards);
         } catch (err) { console.error(err); }
-    };
+    }, [projectId]);
 
     useEffect(() => {
         fetchBoard();
-    }, [projectId]);
+    }, [fetchBoard]);
+
+    useEffect(() => {
+        const unsubscribe = addProjectDataChangedListener((detail) => {
+            if (detail?.projectId && String(detail.projectId) !== String(projectId)) return;
+            fetchBoard();
+        });
+        return unsubscribe;
+    }, [fetchBoard, projectId]);
 
     // Create New List
     const handleAddList = async (e) => {
@@ -69,8 +78,13 @@ const BoardView = ({ projectId, project, onBack }) => {
         if (!newListTitle.trim()) return;
         try {
             const res = await axios.post('/api/board/lists', { title: newListTitle, projectId });
-            setLists([...lists, res.data]);
+            setLists((prev) => [...prev, res.data]);
             setNewListTitle('');
+            emitProjectDataChanged({
+                workspaceId: selectedWorkspace?.workspace?._id,
+                projectId,
+                source: 'board-add-list',
+            });
         } catch (err) { console.error(err); }
     };
 
@@ -141,8 +155,14 @@ const BoardView = ({ projectId, project, onBack }) => {
                     newListId: newListId,
                     newOrder: 0 // Ideally we calculate index, simplified for now
                 });
+                emitProjectDataChanged({
+                    workspaceId: selectedWorkspace?.workspace?._id,
+                    projectId,
+                    source: 'board-reorder-card',
+                });
             } catch (err) {
                 console.error("Failed to save order", err);
+                fetchBoard();
             }
         }
     };
@@ -251,7 +271,7 @@ const BoardView = ({ projectId, project, onBack }) => {
                             list={list} 
                             cards={cards.filter(c => c.listId === list._id)}
                             // Pass this function to update state when a card is created
-                            onCardAdded={(newCard) => setCards([...cards, newCard])} 
+                            onCardAdded={(newCard) => setCards((prev) => [...prev, newCard])}
                             onCardDelete={handleDeleteCard}
                             onCardClick={handleCardClick}
                             canDragCard={canDragCard}
@@ -316,10 +336,7 @@ const BoardView = ({ projectId, project, onBack }) => {
                 isOpen={!!selectedCard}
                 onClose={() => setSelectedCard(null)}
                 card={selectedCard}
-                onUpdate={() => {
-                    // Refetch board data instead of full page reload
-                    fetchBoard();
-                }}
+                onUpdate={fetchBoard}
             />
 
         </DndContext>

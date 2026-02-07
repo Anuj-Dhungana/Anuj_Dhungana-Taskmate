@@ -16,7 +16,6 @@ const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales
 
 // Event type colors
 const EVENT_COLORS = {
-    task:      { bg: '#3B82F6', light: '#EFF6FF', text: '#1E40AF', border: '#BFDBFE', dot: '#3B82F6' },
     deadline:  { bg: '#EF4444', light: '#FEF2F2', text: '#991B1B', border: '#FECACA', dot: '#EF4444' },
     meeting:   { bg: '#8B5CF6', light: '#F5F3FF', text: '#5B21B6', border: '#DDD6FE', dot: '#8B5CF6' },
     milestone: { bg: '#10B981', light: '#ECFDF5', text: '#065F46', border: '#A7F3D0', dot: '#10B981' },
@@ -32,7 +31,7 @@ const toDateAt = (value, hours) => {
 
 // Badge component
 const TypeBadge = ({ type }) => {
-    const colors = EVENT_COLORS[type] || EVENT_COLORS.task;
+    const colors = EVENT_COLORS[type] || EVENT_COLORS.deadline;
     return (
         <span
             className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full capitalize"
@@ -95,7 +94,7 @@ const CustomToolbar = ({ date, onNavigate, view, onView }) => {
 
 // Custom event component for month view
 const CustomEvent = ({ event }) => {
-    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.task;
+    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.deadline;
     const tooltip = event.meta?.projectName ? `${event.title} (${event.meta.projectName})` : event.title;
     return (
         <div
@@ -194,44 +193,16 @@ const WorkspaceCalendar = () => {
         if (!currentWorkspaceId) return;
         setLoading(true);
         try {
-            const [cardsRes, projectsRes] = await Promise.allSettled([
-                axios.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`),
+            const [projectsRes] = await Promise.allSettled([
                 axios.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
             ]);
-            const cards = cardsRes.status === 'fulfilled' ? cardsRes.value.data || [] : [];
             const projects = projectsRes.status === 'fulfilled' ? projectsRes.value.data || [] : [];
-
-            const taskEvents = cards
-                .filter(card => card.dueDate)
-                .map(card => {
-                    const startDate = toDateAt(card.dueDate, 9);
-                    if (!startDate) return null;
-                    const endDate = new Date(startDate);
-                    endDate.setHours(10, 0, 0, 0);
-
-                    return {
-                        id: `task-${card._id}`,
-                        title: card.title,
-                        start: startDate,
-                        end: endDate,
-                        allDay: false,
-                        type: 'task',
-                        source: 'task',
-                        resource: card,
-                        meta: {
-                            projectName: card.projectId?.name,
-                            listTitle: card.listId?.title,
-                            priority: card.priority,
-                            description: card.description,
-                        },
-                    };
-                })
-                .filter(Boolean);
 
             const projectEvents = [];
             projects.forEach((project) => {
-                if (project?.dueDate) {
-                    const startDate = toDateAt(project.dueDate, 11);
+                const deadlineValue = project?.endDate || project?.dueDate;
+                if (deadlineValue) {
+                    const startDate = toDateAt(deadlineValue, 11);
                     if (startDate) {
                         const endDate = new Date(startDate);
                         endDate.setHours(12, 0, 0, 0);
@@ -268,7 +239,7 @@ const WorkspaceCalendar = () => {
                 }
             });
 
-            setEvents([...taskEvents, ...projectEvents]);
+            setEvents(projectEvents);
         } catch (err) {
             console.error(err);
         } finally {
@@ -291,8 +262,9 @@ const WorkspaceCalendar = () => {
         const upcoming = events.filter(e => isAfter(e.start, todayEnd) && isBefore(e.start, weekEnd));
         const meetings = events.filter(e => e.type === 'meeting');
         const deadlines = events.filter(e => e.type === 'deadline');
+        const milestones = events.filter(e => e.type === 'milestone');
 
-        return { todayEvents, upcoming, meetings, deadlines };
+        return { todayEvents, upcoming, meetings, deadlines, milestones };
     }, [events]);
 
     // Side panel items
@@ -374,8 +346,9 @@ const WorkspaceCalendar = () => {
             {/* ─── HEADER ──────────────────────────────────────────────── */}
             <div className="flex items-start justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Calendar & Events</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Auto-synced from task due dates and project deadlines</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Workspace Calendar</h1>
+                    <p className="text-sm text-gray-500 mt-0.5">High-level view of workspace deadlines and meetings.</p>
+                    <p className="text-xs text-gray-400 mt-1">Task due dates appear in Project Calendars and My Tasks.</p>
                 </div>
             </div>
 
@@ -384,8 +357,8 @@ const WorkspaceCalendar = () => {
                 {[
                     { label: "Today's Events", value: stats.todayEvents.length, icon: CalendarDays, color: '#3B82F6' },
                     { label: 'Upcoming',        value: stats.upcoming.length,     icon: Clock,        color: '#8B5CF6' },
-                    { label: 'Meetings',        value: stats.meetings.length,     icon: Users,        color: '#F59E0B' },
                     { label: 'Deadlines',       value: stats.deadlines.length,    icon: Flag,         color: '#EF4444' },
+                    { label: 'Meetings',        value: stats.meetings.length,     icon: Users,        color: '#F59E0B' },
                 ].map((stat, i) => (
                     <div key={i} className="bg-white rounded-xl border border-gray-100 p-4 flex items-center justify-between">
                         <div>
@@ -441,7 +414,7 @@ const WorkspaceCalendar = () => {
                         ) : (
                             <div className="space-y-2.5">
                                 {todayItems.map(event => {
-                                    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.task;
+                                    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.deadline;
                                     return (
                                         <div
                                             key={event.id}
@@ -480,7 +453,7 @@ const WorkspaceCalendar = () => {
                         ) : (
                             <div className="space-y-2.5 max-h-[35vh] overflow-y-auto pr-1">
                                 {upcomingItems.map(event => {
-                                    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.task;
+                                    const colors = EVENT_COLORS[event.type] || EVENT_COLORS.deadline;
                                     return (
                                         <div
                                             key={event.id}
@@ -533,8 +506,9 @@ const WorkspaceCalendar = () => {
             {!loading && events.length === 0 && (
                 <div className="mt-6 text-center py-12 bg-white rounded-2xl border border-gray-100">
                     <CalendarDays size={48} className="mx-auto text-gray-300 mb-3" />
-                    <p className="text-gray-500 font-medium mb-1">No events scheduled yet</p>
-                    <p className="text-sm text-gray-400 mb-4">Add due dates to tasks or projects to see them here.</p>
+                    <p className="text-gray-500 font-medium mb-1">No workspace events scheduled yet</p>
+                    <p className="text-sm text-gray-400 mb-4">Project deadlines and meetings will appear here.</p>
+                    <p className="text-xs text-gray-400">Task due dates appear in Project Calendars and My Tasks.</p>
                 </div>
             )}
 

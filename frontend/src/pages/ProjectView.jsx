@@ -102,7 +102,7 @@ const ProjectView = () => {
     }
 
     const statusKey = (project.status || 'planning').toLowerCase();
-    const projectPriority = project.priority || null;
+    const projectPriority = project.priority || 'Medium';
 
     return (
         <div className="px-6 py-6 min-h-screen bg-gray-50/30">
@@ -122,11 +122,9 @@ const ProjectView = () => {
                             <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${statusColors[statusKey] || 'bg-gray-100 text-gray-600'}`}>
                                 {project.status || 'Planning'}
                             </span>
-                            {projectPriority && (
-                                <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${priorityColors[projectPriority.toLowerCase()] || 'bg-gray-100 text-gray-600'}`}>
-                                    {projectPriority}
-                                </span>
-                            )}
+                            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full capitalize ${priorityColors[projectPriority.toLowerCase()] || 'bg-gray-100 text-gray-600'}`}>
+                                {projectPriority}
+                            </span>
                         </div>
                         {project.description && (
                             <p className="text-sm text-gray-500 mt-0.5 line-clamp-1 max-w-lg">{project.description}</p>

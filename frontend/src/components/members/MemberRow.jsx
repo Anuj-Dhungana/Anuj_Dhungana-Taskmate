@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
 import {
     ROLE_STYLES,
@@ -36,6 +37,42 @@ const MemberRow = ({
     const canRemove = canRemoveMember(myRole, member.role, isMe);
     const roleActionLabel = getRoleActionLabel(member.role);
     const roleActionValue = getRoleActionValue(member.role);
+    const buttonRef = useRef(null);
+    const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+    const isMenuOpen = openMenuId === user._id && canManage;
+
+    useEffect(() => {
+        if (!isMenuOpen || !buttonRef.current) return;
+
+        const updateMenuPosition = () => {
+            const rect = buttonRef.current.getBoundingClientRect();
+            const menuWidth = 176;
+            const menuHeight = 96;
+            const margin = 8;
+            let left = rect.right - menuWidth;
+            let top = rect.bottom + margin;
+
+            if (left < margin) left = margin;
+            if (left + menuWidth > window.innerWidth - margin) {
+                left = window.innerWidth - menuWidth - margin;
+            }
+            if (top + menuHeight > window.innerHeight - margin) {
+                top = rect.top - menuHeight - margin;
+            }
+            if (top < margin) top = margin;
+
+            setMenuPosition({ top, left });
+        };
+
+        updateMenuPosition();
+        window.addEventListener('resize', updateMenuPosition);
+        window.addEventListener('scroll', updateMenuPosition, true);
+
+        return () => {
+            window.removeEventListener('resize', updateMenuPosition);
+            window.removeEventListener('scroll', updateMenuPosition, true);
+        };
+    }, [isMenuOpen]);
 
     return (
         <tr className="hover:bg-gray-50">
@@ -76,6 +113,7 @@ const MemberRow = ({
             <td className="px-6 py-4 text-right">
                 <div className="relative inline-block text-left">
                     <button
+                        ref={buttonRef}
                         onClick={() => onToggleMenu(user._id)}
                         disabled={!canManage}
                         title={canManage ? 'Actions' : 'Only workspace admins can manage members'}
@@ -87,8 +125,11 @@ const MemberRow = ({
                     >
                         <MoreHorizontal size={16} />
                     </button>
-                    {openMenuId === user._id && canManage && (
-                        <div className="absolute right-0 mt-2 w-44 rounded-lg border border-gray-200 bg-white shadow-lg z-20">
+                    {isMenuOpen && (
+                        <div
+                            className="fixed w-44 rounded-lg border border-gray-200 bg-white shadow-lg z-[1000]"
+                            style={{ top: `${menuPosition.top}px`, left: `${menuPosition.left}px` }}
+                        >
                             <button
                                 onClick={() => onRoleChange(user._id, roleActionValue)}
                                 disabled={!canChange}

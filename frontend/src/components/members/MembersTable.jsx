@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import { Search } from 'lucide-react';
 import MemberRow from './MemberRow';
 
@@ -14,6 +15,20 @@ const MembersTable = ({
     search,
     onSearchChange,
 }) => {
+    const PAGE_SIZE = 15;
+    const [currentPage, setCurrentPage] = useState(1);
+    const totalMembers = filteredMembers.length;
+    const totalPages = Math.max(1, Math.ceil(totalMembers / PAGE_SIZE));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const startIndex = (safeCurrentPage - 1) * PAGE_SIZE;
+    const endIndex = startIndex + PAGE_SIZE;
+    const paginatedMembers = useMemo(
+        () => filteredMembers.slice(startIndex, endIndex),
+        [filteredMembers, startIndex, endIndex]
+    );
+    const showingFrom = totalMembers === 0 ? 0 : startIndex + 1;
+    const showingTo = totalMembers === 0 ? 0 : Math.min(endIndex, totalMembers);
+
     return (
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm">
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -25,7 +40,10 @@ const MembersTable = ({
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                         value={search}
-                        onChange={(e) => onSearchChange(e.target.value)}
+                        onChange={(e) => {
+                            setCurrentPage(1);
+                            onSearchChange(e.target.value);
+                        }}
                         placeholder="Search by name or email"
                         className="w-60 pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                     />
@@ -46,7 +64,7 @@ const MembersTable = ({
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                        {filteredMembers.map((member) => (
+                        {paginatedMembers.map((member) => (
                             <MemberRow
                                 key={member.user?._id}
                                 member={member}
@@ -66,6 +84,35 @@ const MembersTable = ({
 
             {filteredMembers.length === 0 && (
                 <div className="px-6 py-10 text-center text-sm text-gray-400">No matching members found.</div>
+            )}
+
+            {filteredMembers.length > 0 && (
+                <div className="flex items-center justify-between px-5 py-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-500">
+                        Showing {showingFrom}-{showingTo} of {totalMembers}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage((prev) => Math.max(1, safeCurrentPage - 1))}
+                            disabled={safeCurrentPage === 1}
+                            className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Prev
+                        </button>
+                        <span className="text-xs text-gray-500">
+                            Page {safeCurrentPage} of {totalPages}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, safeCurrentPage + 1))}
+                            disabled={safeCurrentPage >= totalPages}
+                            className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
             )}
         </div>
     );

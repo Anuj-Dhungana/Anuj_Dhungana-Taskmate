@@ -31,6 +31,12 @@ const BoardView = ({ projectId, project, onStatsChange }) => {
     const { userInfo } = useAuthStore();
 
     const workspaceMembers = selectedWorkspace?.workspace?.members || [];
+    const projectMembers = useMemo(() => {
+        if (!Array.isArray(project?.members)) return [];
+        return project.members
+            .map((m) => m?.user)
+            .filter(Boolean);
+    }, [project]);
     const myRole = workspaceMembers.find((m) => m.user?._id === userInfo?._id)?.role;
     const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
     const myUserId = userInfo?._id;
@@ -297,6 +303,7 @@ const BoardView = ({ projectId, project, onStatsChange }) => {
                     projectId={projectId}
                     lists={lists}
                     workspaceMembers={workspaceMembers}
+                    projectMembers={projectMembers}
                     onCreated={(newCard) => {
                         setCards((prev) => [...prev, newCard]);
                         setShowTaskModal(false);

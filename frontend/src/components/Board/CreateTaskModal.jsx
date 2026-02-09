@@ -5,7 +5,15 @@ import { toast } from 'react-hot-toast';
 import useAuthStore from '../../store/useAuthStore';
 import { emitProjectDataChanged } from '../../utils/projectEvents';
 
-const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMembers = [], onCreated }) => {
+const CreateTaskModal = ({
+    isOpen,
+    onClose,
+    projectId,
+    lists = [],
+    workspaceMembers = [],
+    projectMembers = [],
+    onCreated
+}) => {
     const { userInfo } = useAuthStore();
     const statusOptions = useMemo(() => {
         const mapByLower = lists.reduce((acc, l) => {
@@ -37,16 +45,46 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
     const myRole = workspaceMembers.find((m) => m.user?._id === userInfo?._id)?.role;
     const canAssign = myRole === 'owner' || myRole === 'admin';
     const selfId = userInfo?._id;
+    const normalizedProjectMembers = useMemo(() => {
+        const byId = new Map();
+        projectMembers.forEach((member) => {
+            const user = member?.user || member;
+            const id = user?._id || member?._id;
+            if (!id) return;
+            const idStr = String(id);
+            if (!byId.has(idStr)) {
+                byId.set(idStr, {
+                    _id: idStr,
+                    fullname: user?.fullname || 'Unknown user',
+                });
+            }
+        });
+        return Array.from(byId.values());
+    }, [projectMembers]);
+    const isSelfProjectMember = useMemo(() => {
+        if (!selfId) return false;
+        return normalizedProjectMembers.some((m) => m._id === String(selfId));
+    }, [normalizedProjectMembers, selfId]);
 
     useEffect(() => {
         setListId(defaultListId);
     }, [defaultListId, isOpen]);
 
     useEffect(() => {
-        if (!canAssign && selfId && isOpen) {
+        if (!canAssign && selfId && isOpen && isSelfProjectMember) {
             setAssignees([selfId]);
+            return;
         }
-    }, [canAssign, selfId, isOpen]);
+        if (!canAssign && isOpen) {
+            setAssignees([]);
+        }
+    }, [canAssign, selfId, isOpen, isSelfProjectMember]);
+
+    useEffect(() => {
+        if (!isOpen) return;
+        const allowed = new Set(normalizedProjectMembers.map((m) => m._id));
+        setAssignees((prev) => prev.filter((id) => allowed.has(String(id))));
+    }, [normalizedProjectMembers, isOpen]);
 
     if (!isOpen) return null;
 
@@ -70,7 +108,7 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
             };
             if (canAssign) {
                 payload.assignees = assignees;
-            } else if (selfId) {
+            } else if (selfId && isSelfProjectMember) {
                 payload.assignees = [selfId];
             }
             const res = await axios.post('/api/board/cards', payload);
@@ -201,33 +239,33 @@ const CreateTaskModal = ({ isOpen, onClose, projectId, lists = [], workspaceMemb
                                     {assignees.length === 0 ? (
                                         <span className="text-gray-400">Select assignees</span>
                                     ) : (
-                                        workspaceMembers
-                                            .filter((m) => assignees.includes(m.user._id))
-                                            .map((m) => m.user.fullname)
+                                        normalizedProjectMembers
+                                            .filter((m) => assignees.includes(m._id))
+                                            .map((m) => m.fullname)
                                             .join(', ')
                                     )}
                                 </button>
 
                                 {assigneeOpen && (
                                     <div className="absolute left-0 right-0 mt-2 bg-white border-2 border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto z-20 divide-y divide-gray-100">
-                                        {workspaceMembers.length === 0 && (
+                                        {normalizedProjectMembers.length === 0 && (
                                             <p className="text-xs text-gray-400 px-3 py-2">No members available</p>
                                         )}
-                                        {workspaceMembers.map((m) => {
-                                            const checked = assignees.includes(m.user._id);
+                                        {normalizedProjectMembers.map((m) => {
+                                            const checked = assignees.includes(m._id);
                                             return (
                                                 <label
-                                                    key={m.user._id}
+                                                    key={m._id}
                                                     className="flex items-center justify-between px-4 py-2.5 text-sm bg-white hover:bg-gray-50 cursor-pointer transition-colors"
                                                 >
                                                     <span className="flex items-center gap-2 text-gray-700">
                                                         <input
                                                             type="checkbox"
                                                             checked={checked}
-                                                            onChange={() => toggleAssignee(m.user._id)}
+                                                            onChange={() => toggleAssignee(m._id)}
                                                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                                         />
-                                                        {m.user.fullname}
+                                                        {m.fullname}
                                                     </span>
                                                 </label>
                                             );

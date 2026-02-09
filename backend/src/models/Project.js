@@ -4,6 +4,12 @@ const projectSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
     status: { type: String, default: 'Planning', trim: true },
+    priority: {
+        type: String,
+        enum: ['Low', 'Medium', 'High'],
+        default: 'Medium',
+        trim: true
+    },
     startDate: { type: Date },
     dueDate: { type: Date },
     projectColor: {

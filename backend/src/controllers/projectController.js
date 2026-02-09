@@ -10,6 +10,7 @@ export const createProject = async (req, res) => {
             description,
             workspaceId,
             status,
+            priority,
             startDate,
             dueDate,
             tags = [],
@@ -54,6 +55,7 @@ export const createProject = async (req, res) => {
                 : undefined;
         const safeCalendarEnabled =
             typeof calendarEnabled === 'boolean' ? calendarEnabled : undefined;
+        const safePriority = ['Low', 'Medium', 'High'].includes(priority) ? priority : 'Medium';
 
         // 3. Create Project
         const project = await Project.create({
@@ -62,6 +64,7 @@ export const createProject = async (req, res) => {
             workspace: workspaceId,
             createdBy: req.user._id,
             status: status || 'Planning',
+            priority: safePriority,
             startDate: startDate ? new Date(startDate) : undefined,
             dueDate: dueDate ? new Date(dueDate) : undefined,
             projectColor: safeProjectColor,
@@ -221,12 +224,14 @@ export const updateProject = async (req, res) => {
 
         const safeCalendarEnabled =
             typeof calendarEnabled === 'boolean' ? calendarEnabled : project.calendarEnabled;
+        const safePriority =
+            ['Low', 'Medium', 'High'].includes(priority) ? priority : project.priority || 'Medium';
 
         // Update project fields
         if (name !== undefined) project.name = name.trim();
         if (description !== undefined) project.description = description.trim();
         if (status !== undefined) project.status = status;
-        if (priority !== undefined) project.priority = priority;
+        project.priority = safePriority;
         if (startDate !== undefined) project.startDate = startDate ? new Date(startDate) : undefined;
         if (dueDate !== undefined) project.dueDate = dueDate ? new Date(dueDate) : undefined;
         project.tags = normalizedTags;

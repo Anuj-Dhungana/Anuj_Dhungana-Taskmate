@@ -6,12 +6,56 @@ import Workspace from '../models/Workspace.js';
 import Message from '../models/Message.js';
 
 const isAdminOrOwner = (member) => member && (member.role === 'owner' || member.role === 'admin');
+const isCardAssignee = (card, userId) =>
+    (card?.assignees || []).some((id) => id.toString() === userId.toString());
+const canEditTask = (member, card, userId) =>
+    isAdminOrOwner(member) || isCardAssignee(card, userId);
+const canDeleteComment = (member, comment, userId) =>
+    isAdminOrOwner(member) || comment?.author?.toString() === userId.toString();
+
+const getProjectAssignableUserIds = (project) =>
+    new Set(
+        (project?.members || [])
+            .map((m) => (m?.user ? m.user.toString() : ''))
+            .filter(Boolean)
+    );
+
+const sanitizeAssigneesForProject = (assignees, project) => {
+    if (!Array.isArray(assignees)) return [];
+    const projectMemberIds = getProjectAssignableUserIds(project);
+    return assignees
+        .map((id) => id?.toString())
+        .filter((id) => id && projectMemberIds.has(id));
+};
+
+const appendActivity = (card, { type, message, actor }) => {
+    if (!card) return;
+    if (!card.activity) card.activity = [];
+    card.activity.push({
+        type,
+        message,
+        actor,
+    });
+    if (card.activity.length > 200) {
+        card.activity = card.activity.slice(-200);
+    }
+};
+
+const emitTaskChanged = (req, context, card, action = 'task_updated') => {
+    emitWorkspaceEvent(req, context.workspace._id, 'task_updated', {
+        task: card,
+    });
+    emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
+        project: { _id: card.projectId.toString() },
+        action,
+    });
+};
 
 const getProjectContext = async (projectId, userId) => {
     if (!projectId) {
         return { status: 400, message: 'projectId is required' };
     }
-    const project = await Project.findById(projectId).select('workspace');
+    const project = await Project.findById(projectId).select('workspace members');
     if (!project) {
         return { status: 404, message: 'Project not found' };
     }
@@ -52,7 +96,10 @@ export const getBoard = async (req, res) => {
         const lists = await List.find({ projectId }).sort('order');
         
         // 2. Fetch Cards (Sorted by order)
-        const cards = await Card.find({ projectId }).sort('order').populate('assignees', 'fullname avatar');
+        const cards = await Card.find({ projectId, archived: { $ne: true } })
+            .sort('order')
+            .populate('assignees', 'fullname avatar')
+            .populate('comments.author', 'fullname avatar');
 
         res.json({ lists, cards });
     } catch (error) {
@@ -108,17 +155,12 @@ export const createCard = async (req, res) => {
             return res.status(400).json({ message: "List does not belong to this project" });
         }
 
-        const memberIds = new Set(
-            (context.workspace?.members || []).map((m) => m.user.toString())
-        );
-        let sanitizedAssignees = Array.isArray(assignees)
-            ? assignees.filter((id) => memberIds.has(id.toString()))
-            : [];
+        let sanitizedAssignees = sanitizeAssigneesForProject(assignees, context.project);
 
         if (!isAdminOrOwner(context.member)) {
             const selfId = req.user._id.toString();
             const selfOnly = sanitizedAssignees.filter((id) => id.toString() === selfId);
-            sanitizedAssignees = selfOnly.length ? selfOnly : [req.user._id];
+            sanitizedAssignees = selfOnly.length ? selfOnly : [];
         }
 
         // Find highest order in this list
@@ -135,6 +177,13 @@ export const createCard = async (req, res) => {
             assignees: sanitizedAssignees,
             priority: ['Low', 'Medium', 'High'].includes(priority) ? priority : 'Medium'
         });
+
+        appendActivity(card, {
+            type: 'task_created',
+            message: `${req.user?.fullname || 'Someone'} created this task`,
+            actor: req.user._id,
+        });
+        await card.save();
 
         await card.populate('assignees', 'fullname avatar');
         emitWorkspaceEvent(req, context.workspace._id, 'task_created', {
@@ -257,10 +306,7 @@ export const updateCard = async (req, res) => {
             return res.status(context.status).json({ message: context.message });
         }
 
-        const isAssigned = card.assignees.some(
-            (assigneeId) => assigneeId.toString() === req.user._id.toString()
-        );
-        if (!isAdminOrOwner(context.member) && !isAssigned) {
+        if (!canEditTask(context.member, card, req.user._id)) {
             return res.status(403).json({ message: "Not authorized to edit this task" });
         }
 
@@ -269,25 +315,65 @@ export const updateCard = async (req, res) => {
         }
 
         // Update Text Fields
-        if (title) card.title = title;
-        if (description !== undefined) card.description = description;
-        if (dueDate !== undefined) card.dueDate = dueDate;
-        if (priority !== undefined && ['Low', 'Medium', 'High'].includes(priority)) card.priority = priority;
+        if (title !== undefined) {
+            const trimmed = String(title || '').trim();
+            if (!trimmed) {
+                return res.status(400).json({ message: "Title is required" });
+            }
+            if (trimmed !== card.title) {
+                card.title = trimmed;
+                appendActivity(card, {
+                    type: 'title_updated',
+                    message: `${req.user?.fullname || 'Someone'} updated the title`,
+                    actor: req.user._id,
+                });
+            }
+        }
+        if (description !== undefined && description !== card.description) {
+            card.description = description;
+            appendActivity(card, {
+                type: 'description_updated',
+                message: `${req.user?.fullname || 'Someone'} updated the description`,
+                actor: req.user._id,
+            });
+        }
+        if (dueDate !== undefined) {
+            const nextDueDate = dueDate ? new Date(dueDate) : undefined;
+            const prev = card.dueDate ? new Date(card.dueDate).toISOString() : '';
+            const next = nextDueDate ? nextDueDate.toISOString() : '';
+            if (prev !== next) {
+                card.dueDate = nextDueDate;
+                appendActivity(card, {
+                    type: 'due_date_updated',
+                    message: `${req.user?.fullname || 'Someone'} updated the due date`,
+                    actor: req.user._id,
+                });
+            }
+        }
+        if (priority !== undefined && ['Low', 'Medium', 'High'].includes(priority) && priority !== card.priority) {
+            card.priority = priority;
+            appendActivity(card, {
+                type: 'priority_updated',
+                message: `${req.user?.fullname || 'Someone'} changed priority to ${priority}`,
+                actor: req.user._id,
+            });
+        }
         
         // Update Assignees
-        if (assignees) {
+        if (assignees !== undefined) {
             const newAssignees = Array.isArray(assignees) ? assignees : JSON.parse(assignees);
-
-            const memberIds = new Set(
-                (context.workspace?.members || []).map((m) => m.user.toString())
-            );
-            const sanitizedAssignees = newAssignees.filter((id) => memberIds.has(id.toString()));
+            const sanitizedAssignees = sanitizeAssigneesForProject(newAssignees, context.project);
             
             // Find who is NEWLY assigned
             const previousAssignees = card.assignees.map(id => id.toString());
             const addedUsers = sanitizedAssignees.filter(id => !previousAssignees.includes(id.toString()));
 
             card.assignees = sanitizedAssignees;
+            appendActivity(card, {
+                type: 'assignees_updated',
+                message: `${req.user?.fullname || 'Someone'} updated assignees`,
+                actor: req.user._id,
+            });
 
             // Send Notifications to new assignees
             const io = req.app.get('io'); // Get Socket Instance
@@ -327,20 +413,218 @@ export const updateCard = async (req, res) => {
             // We store the Cloudinary URL
            
             if (!card.attachments) card.attachments = [];
-            card.attachments.push(req.file.path); 
+            card.attachments.push(req.file.path);
+            appendActivity(card, {
+                type: 'attachment_added',
+                message: `${req.user?.fullname || 'Someone'} added an attachment`,
+                actor: req.user._id,
+            });
         }
 
         await card.save();
         
         // Populate assignees to show their names immediately on frontend
         await card.populate('assignees', 'fullname avatar');
-        emitWorkspaceEvent(req, context.workspace._id, 'task_updated', {
-            task: card,
+        await card.populate('comments.author', 'fullname avatar');
+        emitTaskChanged(req, context, card, 'task_updated');
+
+        res.json(card);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const addCardComment = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const content = String(req.body?.content || '').trim();
+        if (!content) {
+            return res.status(400).json({ message: "Comment content is required" });
+        }
+
+        const card = await Card.findById(id);
+        if (!card || card.archived) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+
+        card.comments.push({
+            author: req.user._id,
+            content,
         });
-        emitWorkspaceEvent(req, context.workspace._id, 'project_updated', {
-            project: { _id: card.projectId.toString() },
-            action: 'task_updated',
+        appendActivity(card, {
+            type: 'comment_added',
+            message: `${req.user?.fullname || 'Someone'} added a comment`,
+            actor: req.user._id,
         });
+
+        await card.save();
+        await card.populate('comments.author', 'fullname avatar');
+        const comment = card.comments[card.comments.length - 1];
+
+        emitTaskChanged(req, context, card, 'task_commented');
+        res.status(201).json({ comment });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const deleteCardComment = async (req, res) => {
+    try {
+        const { id, commentId } = req.params;
+        const card = await Card.findById(id);
+        if (!card || card.archived) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+
+        const comment = card.comments.id(commentId);
+        if (!comment) {
+            return res.status(404).json({ message: "Comment not found" });
+        }
+        if (!canDeleteComment(context.member, comment, req.user._id)) {
+            return res.status(403).json({ message: "Not authorized to delete this comment" });
+        }
+
+        card.comments.pull(commentId);
+        appendActivity(card, {
+            type: 'comment_deleted',
+            message: `${req.user?.fullname || 'Someone'} deleted a comment`,
+            actor: req.user._id,
+        });
+
+        await card.save();
+        emitTaskChanged(req, context, card, 'task_comment_deleted');
+        res.json({ message: "Comment deleted" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const addCardSubtask = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const text = String(req.body?.text || '').trim();
+        if (!text) {
+            return res.status(400).json({ message: "Subtask text is required" });
+        }
+
+        const card = await Card.findById(id);
+        if (!card || card.archived) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+        if (!canEditTask(context.member, card, req.user._id)) {
+            return res.status(403).json({ message: "Not authorized to edit this task" });
+        }
+
+        card.subtasks.push({
+            text,
+            done: false,
+            createdBy: req.user._id,
+        });
+        appendActivity(card, {
+            type: 'subtask_added',
+            message: `${req.user?.fullname || 'Someone'} added a subtask`,
+            actor: req.user._id,
+        });
+
+        await card.save();
+        const subtask = card.subtasks[card.subtasks.length - 1];
+        emitTaskChanged(req, context, card, 'task_subtask_added');
+        res.status(201).json({ subtask });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const toggleCardSubtask = async (req, res) => {
+    try {
+        const { id, subtaskId } = req.params;
+        const { done } = req.body || {};
+
+        const card = await Card.findById(id);
+        if (!card || card.archived) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+        if (!canEditTask(context.member, card, req.user._id)) {
+            return res.status(403).json({ message: "Not authorized to edit this task" });
+        }
+
+        const subtask = card.subtasks.id(subtaskId);
+        if (!subtask) {
+            return res.status(404).json({ message: "Subtask not found" });
+        }
+
+        const nextDone = typeof done === 'boolean' ? done : !subtask.done;
+        if (subtask.done !== nextDone) {
+            subtask.done = nextDone;
+            appendActivity(card, {
+                type: 'subtask_toggled',
+                message: `${req.user?.fullname || 'Someone'} ${nextDone ? 'completed' : 'reopened'} a subtask`,
+                actor: req.user._id,
+            });
+            await card.save();
+            emitTaskChanged(req, context, card, 'task_subtask_toggled');
+        }
+
+        res.json({ subtask });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const archiveCard = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { archived } = req.body || {};
+
+        const card = await Card.findById(id);
+        if (!card) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+        if (!isAdminOrOwner(context.member)) {
+            return res.status(403).json({ message: "Only admins can archive tasks" });
+        }
+
+        const nextArchived = typeof archived === 'boolean' ? archived : !card.archived;
+        if (card.archived !== nextArchived) {
+            card.archived = nextArchived;
+            appendActivity(card, {
+                type: nextArchived ? 'task_archived' : 'task_unarchived',
+                message: `${req.user?.fullname || 'Someone'} ${nextArchived ? 'archived' : 'unarchived'} this task`,
+                actor: req.user._id,
+            });
+            await card.save();
+            emitTaskChanged(req, context, card, nextArchived ? 'task_archived' : 'task_unarchived');
+        }
 
         res.json(card);
     } catch (error) {
@@ -369,7 +653,7 @@ export const getWorkspaceCards = async (req, res) => {
         const projects = await Project.find({ workspace: workspaceId }).select('_id');
         const projectIds = projects.map(p => p._id);
 
-        const cards = await Card.find({ projectId: { $in: projectIds } })
+        const cards = await Card.find({ projectId: { $in: projectIds }, archived: { $ne: true } })
             .populate('projectId', 'name')
             .populate('listId', 'title')
             .populate('assignees', 'fullname avatar');
@@ -403,7 +687,8 @@ export const getMyTasks = async (req, res) => {
 
         const cards = await Card.find({ 
             projectId: { $in: projectIds },
-            assignees: req.user._id
+            assignees: req.user._id,
+            archived: { $ne: true },
         })
             .populate('projectId', 'name')
             .populate('listId', 'title')
@@ -439,7 +724,7 @@ export const getWorkspaceStats = async (req, res) => {
         const lists = await List.find({ projectId: { $in: projectIds } }).select('_id title');
         const listTitleMap = new Map(lists.map(l => [l._id.toString(), (l.title || '').toLowerCase()]));
 
-        const cards = await Card.find({ projectId: { $in: projectIds } }).select('listId');
+        const cards = await Card.find({ projectId: { $in: projectIds }, archived: { $ne: true } }).select('listId');
         const totalCards = cards.length;
         const completedTasks = cards.filter(c => listTitleMap.get(c.listId.toString()) === 'done').length;
         const activeTasks = totalCards - completedTasks;
@@ -481,7 +766,7 @@ export const getWorkspaceAnalytics = async (req, res) => {
             lists.map(l => [l._id.toString(), (l.title || '').toLowerCase() === 'done'])
         );
 
-        const cards = await Card.find({ projectId: { $in: projectIds } })
+        const cards = await Card.find({ projectId: { $in: projectIds }, archived: { $ne: true } })
             .select('_id title projectId createdAt listId');
 
         const counts = {};
@@ -510,7 +795,7 @@ export const getWorkspaceAnalytics = async (req, res) => {
             };
         });
 
-        const recentCards = await Card.find({ projectId: { $in: projectIds } })
+        const recentCards = await Card.find({ projectId: { $in: projectIds }, archived: { $ne: true } })
             .select('title projectId createdAt')
             .sort({ createdAt: -1 })
             .limit(20);

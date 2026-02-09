@@ -324,6 +324,7 @@ const BoardView = ({ projectId, project, onStatsChange }) => {
                 isOpen={!!selectedCard}
                 onClose={() => setSelectedCard(null)}
                 card={selectedCard}
+                projectMembers={projectMembers}
                 onUpdate={fetchBoard}
             />
 

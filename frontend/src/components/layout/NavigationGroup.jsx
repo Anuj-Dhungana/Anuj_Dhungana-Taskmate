@@ -2,9 +2,9 @@ import NavigationItem from './NavigationItem';
 
 const NavigationGroup = ({ group, isCollapsed, iconSize, showDivider }) => {
     return (
-        <div className={isCollapsed ? 'space-y-1' : 'space-y-1'}>
+        <div className={isCollapsed ? 'space-y-2' : 'space-y-2'}>
             {!isCollapsed && (
-                <div className="px-3 text-[11px] uppercase tracking-wider text-gray-500">
+                <div className="px-3 text-xs uppercase tracking-wider text-gray-500">
                     {group.label}
                 </div>
             )}

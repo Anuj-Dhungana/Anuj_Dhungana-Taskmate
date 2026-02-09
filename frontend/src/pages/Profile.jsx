@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { Upload, Camera } from 'lucide-react';
+import { Upload, Camera, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
+import useWorkspaceStore from '../store/useWorkspaceStore';
 
 const Profile = () => {
-    const { userInfo, setUserInfo } = useAuthStore();
+    const navigate = useNavigate();
+    const { userInfo, setUserInfo, logout } = useAuthStore();
+    const { resetWorkspaceState } = useWorkspaceStore();
     
     const [fullname, setFullname] = useState('');
     const [email, setEmail] = useState('');
@@ -69,6 +73,17 @@ const Profile = () => {
             toast.error(err?.response?.data?.message || 'Failed to update profile');
         }
         setLoading(false);
+    };
+
+    const handleLogout = async () => {
+        try {
+            await axios.post('/api/auth/logout');
+            logout();
+            resetWorkspaceState();
+            navigate('/login');
+        } catch (err) {
+            toast.error('Logout failed');
+        }
     };
 
     const displayAvatar = avatarPreview || avatar;
@@ -165,6 +180,24 @@ const Profile = () => {
                         </button>
                     </div>
                 </form>
+
+                {/* Logout Section */}
+                <div className="mt-10 pt-6 border-t border-gray-200">
+                    <h3 className="text-gray-900 font-bold mb-2 text-sm uppercase tracking-wide">Account</h3>
+                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <div>
+                            <p className="font-semibold text-gray-800 text-sm">Sign Out</p>
+                            <p className="text-xs text-gray-600 mt-0.5">Sign out of your account on this device.</p>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 bg-white border-2 border-gray-300 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-all"
+                        >
+                            <LogOut size={16} />
+                            Logout
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );

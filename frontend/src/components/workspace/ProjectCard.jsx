@@ -1,4 +1,4 @@
-import { CalendarIcon, MoreVertical } from 'lucide-react';
+import { CalendarIcon, MoreVertical, AlertTriangle } from 'lucide-react';
 import { formatDueDate, getPriorityUi } from '../../utils/projectHelpers';
 
 const clampTwoLines = {
@@ -35,61 +35,79 @@ const ProjectCard = ({
                     <div className="flex items-center gap-2">
                         <h3 className="text-base font-semibold text-gray-900 truncate">{project.name}</h3>
                         {project.label && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
+                            <span 
+                                className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium whitespace-nowrap border"
+                                style={{
+                                    backgroundColor: project.accentColor ? `${project.accentColor}15` : 'rgb(243, 244, 246)',
+                                    color: project.accentColor || 'rgb(75, 85, 99)',
+                                    borderColor: project.accentColor ? `${project.accentColor}30` : 'rgb(229, 231, 235)'
+                                }}
+                            >
                                 {project.label}
                             </span>
                         )}
                     </div>
                 </div>
 
-                {showMenu && (
-                    <div className="relative" onClick={(e) => e.stopPropagation()}>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onMenuToggle(project._id);
-                            }}
-                            className="w-8 h-8 rounded-lg border border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200 hover:bg-gray-50 flex items-center justify-center"
+                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    {project.behindSchedule && (
+                        <div 
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 transition"
+                            title="Behind schedule: overdue end date or incomplete tasks past deadline"
                         >
-                            <MoreVertical size={16} />
-                        </button>
+                            <AlertTriangle size={16} />
+                        </div>
+                    )}
+                    
+                    {showMenu && (
+                        <div className="relative">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onMenuToggle(project._id);
+                                }}
+                                className="w-8 h-8 rounded-lg border border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200 hover:bg-gray-50 flex items-center justify-center"
+                            >
+                                <MoreVertical size={16} />
+                            </button>
 
-                        {isMenuOpen && (
-                            <div className="absolute right-0 mt-1 w-36 rounded-lg border border-gray-200 bg-white shadow-lg z-20 overflow-hidden">
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onEdit(project._id);
-                                    }}
-                                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
-                                    title="Edit project settings"
-                                >
-                                    Edit Project
-                                </button>
+                            {isMenuOpen && (
+                                <div className="absolute right-0 mt-1 w-36 rounded-lg border border-gray-200 bg-white shadow-lg z-20 overflow-hidden">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onEdit(project._id);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                                        title="Edit project settings"
+                                    >
+                                        Edit Project
+                                    </button>
 
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDelete(project);
-                                    }}
-                                    className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50"
-                                >
-                                    Delete
-                                </button>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDelete(project);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                                    >
+                                        Delete
+                                    </button>
 
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        onSettings(project);
-                                    }}
-                                    className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
-                                >
-                                    Settings
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onSettings(project);
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                                    >
+                                        Settings
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
 
             <div className="flex items-center gap-2 mb-2">

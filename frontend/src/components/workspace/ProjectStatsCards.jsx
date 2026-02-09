@@ -30,11 +30,11 @@ const ProjectStatsCards = ({ stats }) => {
             <div className="rounded-xl border border-gray-200 bg-white p-4">
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
                     <span
-                        className="inline-flex items-center gap-1"
-                        title="Projects with overdue tasks or past end date"
+                        className="inline-flex items-center gap-1 cursor-help"
+                        title="Projects with overdue end dates or incomplete tasks past deadline"
                     >
                         Behind Schedule
-                        <Info size={12} className="text-gray-400" />
+                        <Info size={12} className="text-gray-400 hover:text-gray-600 transition" />
                     </span>
                     <AlertCircle size={16} className="text-red-500" />
                 </div>

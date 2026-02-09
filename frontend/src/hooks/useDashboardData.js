@@ -62,10 +62,31 @@ export const useDashboardData = () => {
 
     // Recent projects (sorted by createdAt, max 6)
     const recentProjects = useMemo(() => {
+        const now = new Date();
         return [...projects]
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0, 6)
-            .map((p) => ({ ...p, progress: getProjectProgress(p, allCards), label: getProjectLabel(p) }));
+            .map((p) => {
+                const progress = getProjectProgress(p, allCards);
+                const label = getProjectLabel(p);
+                
+                // Check if behind schedule
+                const dueDate = p.dueDate ? new Date(p.dueDate) : null;
+                const isOverdue = dueDate && dueDate < now && (p.status || '').toLowerCase() !== 'completed';
+                
+                // Check for overdue tasks
+                const projectCards = allCards.filter(c => {
+                    const cardProjectId = c.projectId?._id || c.projectId;
+                    return String(cardProjectId) === String(p._id);
+                });
+                const hasOverdueTasks = projectCards.some(c => {
+                    const cardDue = c.dueDate ? new Date(c.dueDate) : null;
+                    const isDone = (c.listId?.title || '').toLowerCase() === 'done';
+                    return cardDue && cardDue < now && !isDone;
+                });
+                
+                return { ...p, progress, label, behindSchedule: isOverdue || hasOverdueTasks };
+            });
     }, [projects, allCards]);
 
     // My Focus Today: due today + overdue, max 6

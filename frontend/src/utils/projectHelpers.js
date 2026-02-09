@@ -112,3 +112,29 @@ export const getProjectLabel = (project) => {
     // Return the first non-priority tag as the label
     return labelTags.length > 0 ? labelTags[0] : '';
 };
+
+// Helper to convert hex color to rgba with opacity
+export const hexToRgba = (hex, alpha = 1) => {
+    const cleanHex = hex.replace('#', '');
+    const r = parseInt(cleanHex.substring(0, 2), 16);
+    const g = parseInt(cleanHex.substring(2, 4), 16);
+    const b = parseInt(cleanHex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// Helper to generate label styles based on project color
+export const getProjectLabelStyles = (accentColor) => {
+    if (!accentColor) {
+        return {
+            backgroundColor: 'rgb(243, 244, 246)',
+            color: 'rgb(75, 85, 99)',
+            borderColor: 'rgb(229, 231, 235)'
+        };
+    }
+    
+    return {
+        backgroundColor: hexToRgba(accentColor, 0.1),
+        color: accentColor,
+        borderColor: hexToRgba(accentColor, 0.3)
+    };
+};

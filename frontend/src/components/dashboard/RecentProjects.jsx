@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, FolderKanban } from 'lucide-react';
+import { ArrowRight, FolderKanban, AlertTriangle } from 'lucide-react';
 import { getStatusColor, formatShortDate } from '../../utils/dashboardHelpers';
 
 const RecentProjects = ({ projects, onCreateProject }) => {
@@ -53,15 +53,32 @@ const RecentProjects = ({ projects, onCreateProject }) => {
                                 {project.name?.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <p className="text-sm font-semibold text-gray-900 truncate">{project.name}</p>
-                                    {project.label && (
-                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
-                                            {project.label}
-                                        </span>
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 truncate">{project.name}</p>
+                                        {project.label && (
+                                            <span 
+                                                className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-medium whitespace-nowrap border"
+                                                style={{
+                                                    backgroundColor: project.projectColor ? `${project.projectColor}15` : 'rgb(243, 244, 246)',
+                                                    color: project.projectColor || 'rgb(75, 85, 99)',
+                                                    borderColor: project.projectColor ? `${project.projectColor}30` : 'rgb(229, 231, 235)'
+                                                }}
+                                            >
+                                                {project.label}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {project.behindSchedule && (
+                                        <div 
+                                            className="flex items-center justify-center text-red-500"
+                                            title="Behind schedule: overdue end date or incomplete tasks past deadline"
+                                        >
+                                            <AlertTriangle size={14} />
+                                        </div>
                                     )}
                                 </div>
-                                <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5 flex-wrap">
                                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getStatusColor(project.status)}`}>
                                         {project.status || 'Planning'}
                                     </span>

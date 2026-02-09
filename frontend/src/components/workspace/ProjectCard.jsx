@@ -31,8 +31,15 @@ const ProjectCard = ({
             />
 
             <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0">
-                    <h3 className="text-base font-semibold text-gray-900 truncate">{project.name}</h3>
+                <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                        <h3 className="text-base font-semibold text-gray-900 truncate">{project.name}</h3>
+                        {project.label && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-medium bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
+                                {project.label}
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {showMenu && (
@@ -55,8 +62,9 @@ const ProjectCard = ({
                                         onEdit(project._id);
                                     }}
                                     className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+                                    title="Edit project settings"
                                 >
-                                    Edit
+                                    Edit Project
                                 </button>
 
                                 <button

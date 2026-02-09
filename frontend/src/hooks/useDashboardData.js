@@ -10,6 +10,7 @@ import {
     isDueThisWeek,
     groupUpcomingByDay,
 } from '../utils/dashboardHelpers';
+import { getProjectLabel } from '../utils/projectHelpers';
 
 export const useDashboardData = () => {
     const { userInfo } = useAuthStore();
@@ -64,7 +65,7 @@ export const useDashboardData = () => {
         return [...projects]
             .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
             .slice(0, 6)
-            .map((p) => ({ ...p, progress: getProjectProgress(p, allCards) }));
+            .map((p) => ({ ...p, progress: getProjectProgress(p, allCards), label: getProjectLabel(p) }));
     }, [projects, allCards]);
 
     // My Focus Today: due today + overdue, max 6

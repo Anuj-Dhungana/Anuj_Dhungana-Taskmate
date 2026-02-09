@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { addProjectDataChangedListener } from '../utils/projectEvents';
-import { normalizeStatus, getStatusUi, getProjectAccentColor, getPriority } from '../utils/projectHelpers';
+import { normalizeStatus, getStatusUi, getProjectAccentColor, getPriority, getProjectLabel } from '../utils/projectHelpers';
 
 export const useWorkspaceProjects = (effectiveWorkspaceId, setSelectedWorkspace) => {
     const [workspace, setWorkspace] = useState(null);
@@ -116,6 +116,7 @@ export const useWorkspaceProjects = (effectiveWorkspaceId, setSelectedWorkspace)
                 statusUi: getStatusUi(project.status),
                 priority: getPriority(project),
                 accentColor: getProjectAccentColor(project),
+                label: getProjectLabel(project),
                 progress,
                 tasksTotal: taskMeta.total,
                 tasksDone: taskMeta.done,

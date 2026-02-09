@@ -22,6 +22,7 @@ const WorkspaceDetail = () => {
     const { userInfo } = useAuthStore();
 
     const [showProjectModal, setShowProjectModal] = useState(false);
+    const [editingProject, setEditingProject] = useState(null);
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
     const [openMenuProjectId, setOpenMenuProjectId] = useState(null);
@@ -75,7 +76,11 @@ const WorkspaceDetail = () => {
         
         edit: (projectId) => {
             setOpenMenuProjectId(null);
-            navigate(`/projects/${projectId}`);
+            const projectToEdit = enrichedProjects.find(p => p._id === projectId);
+            if (projectToEdit) {
+                setEditingProject(projectToEdit);
+                setShowProjectModal(true);
+            }
         },
         
         delete: (project) => {
@@ -185,10 +190,15 @@ const WorkspaceDetail = () => {
             {showProjectModal && workspace && (
                 <CreateProjectModal
                     isOpen={showProjectModal}
-                    onClose={() => setShowProjectModal(false)}
+                    onClose={() => {
+                        setShowProjectModal(false);
+                        setEditingProject(null);
+                    }}
                     workspaceId={workspace._id}
                     onCreated={fetchWorkspaceDetails}
                     members={workspace.members || []}
+                    mode={editingProject ? 'edit' : 'create'}
+                    project={editingProject}
                 />
             )}
 

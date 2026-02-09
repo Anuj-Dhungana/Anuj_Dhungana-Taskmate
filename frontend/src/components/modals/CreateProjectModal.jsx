@@ -10,13 +10,14 @@ import ProjectAdvancedOptions from './ProjectAdvancedOptions';
 import { useProjectForm, STATUS_OPTIONS, PRIORITY_OPTIONS } from '../../hooks/useProjectForm';
 import { emitProjectDataChanged } from '../../utils/projectEvents';
 
-const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members = [] }) => {
+const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members = [], mode = 'create', project = null }) => {
     const navigate = useNavigate();
     const { userInfo } = useAuthStore();
     const modalRef = useRef(null);
     const nameInputRef = useRef(null);
 
-    const form = useProjectForm(members, userInfo);
+    const form = useProjectForm(members, userInfo, mode === 'edit' ? project : null);
+    const isEditMode = mode === 'edit' && project;
 
     const requestClose = useCallback(() => {
         if (form.hasUnsavedChanges) {
@@ -72,17 +73,32 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
         form.setLoading(true);
         try {
             const payload = form.buildPayload(workspaceId);
-            const res = await axios.post('/api/projects', payload);
-            const createdProject = res.data;
+            
+            if (isEditMode) {
+                // Update existing project
+                const res = await axios.put(`/api/projects/${project._id}`, payload);
+                const updatedProject = res.data;
+                
+                onCreated?.(updatedProject);
+                toast.success('Project updated successfully');
+                emitProjectDataChanged({ workspaceId, projectId: updatedProject?._id, source: 'edit-project-modal' });
+                form.resetForm();
+                onClose?.();
+            } else {
+                // Create new project
+                const res = await axios.post('/api/projects', payload);
+                const createdProject = res.data;
 
-            onCreated?.(createdProject);
-            toast.success('Project created successfully');
-            emitProjectDataChanged({ workspaceId, projectId: createdProject?._id, source: 'create-project-modal' });
-            form.resetForm();
-            onClose?.();
-            navigate(`/projects/${createdProject._id}`);
+                onCreated?.(createdProject);
+                toast.success('Project created successfully');
+                emitProjectDataChanged({ workspaceId, projectId: createdProject?._id, source: 'create-project-modal' });
+                form.resetForm();
+                onClose?.();
+                navigate(`/projects/${createdProject._id}`);
+            }
         } catch (err) {
-            form.setError(err?.response?.data?.message || 'Failed to create project. Please try again.');
+            const errorMsg = err?.response?.data?.message || `Failed to ${isEditMode ? 'update' : 'create'} project. Please try again.`;
+            form.setError(errorMsg);
             form.setLoading(false);
         }
     };
@@ -100,10 +116,10 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
                     className="w-full max-w-2xl bg-white rounded-2xl shadow-2xl max-h-[85vh] overflow-y-auto">
 
                     <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
-                        <h2 className="text-lg font-bold text-gray-900">Create Project</h2>
+                        <h2 className="text-lg font-bold text-gray-900">{isEditMode ? 'Edit Project' : 'Create Project'}</h2>
                         <button type="button" onClick={requestClose}
                             className="w-8 h-8 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 flex items-center justify-center"
-                            aria-label="Close create project modal">
+                            aria-label={`Close ${isEditMode ? 'edit' : 'create'} project modal`}>
                             <X size={18} />
                         </button>
                     </div>
@@ -212,7 +228,10 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
                                 className={`px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition ${
                                     form.canSubmit ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-300 cursor-not-allowed'
                                 }`}>
-                                {form.loading ? 'Creating...' : 'Create Project'}
+                                {form.loading 
+                                    ? (isEditMode ? 'Saving...' : 'Creating...') 
+                                    : (isEditMode ? 'Save Changes' : 'Create Project')
+                                }
                             </button>
                         </div>
                     </form>

@@ -98,3 +98,17 @@ export const calculateProjectStats = (projects) => {
 
     return { totalProjects, active, completed, behindSchedule };
 };
+
+export const getProjectLabel = (project) => {
+    const tags = Array.isArray(project?.tags) ? project.tags : [];
+    
+    // Filter out priority tags (low, medium, high)
+    const priorityWords = ['low', 'medium', 'high'];
+    const labelTags = tags.filter((tag) => {
+        const normalized = String(tag || '').trim().toLowerCase();
+        return normalized && !priorityWords.includes(normalized);
+    });
+
+    // Return the first non-priority tag as the label
+    return labelTags.length > 0 ? labelTags[0] : '';
+};

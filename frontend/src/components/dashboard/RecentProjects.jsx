@@ -53,8 +53,15 @@ const RecentProjects = ({ projects, onCreateProject }) => {
                                 {project.name?.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 mb-1">
                                     <p className="text-sm font-semibold text-gray-900 truncate">{project.name}</p>
+                                    {project.label && (
+                                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[9px] font-medium bg-gray-100 text-gray-600 border border-gray-200 whitespace-nowrap">
+                                            {project.label}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex items-center gap-1.5">
                                     <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${getStatusColor(project.status)}`}>
                                         {project.status || 'Planning'}
                                     </span>

@@ -1,8 +1,15 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 const COLOR_OPTIONS = ['#6366F1', '#3B82F6', '#14B8A6', '#22C55E', '#F59E0B', '#EF4444'];
 
-export const useProjectForm = (members, userInfo) => {
+const formatDateForInput = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return '';
+    return d.toISOString().split('T')[0];
+};
+
+export const useProjectForm = (members, userInfo, initialProject = null) => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [status, setStatus] = useState('Planning');
@@ -19,6 +26,40 @@ export const useProjectForm = (members, userInfo) => {
     const [error, setError] = useState('');
     const [attemptedSubmit, setAttemptedSubmit] = useState(false);
     const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+    const [isInitialized, setIsInitialized] = useState(false);
+
+    // Initialize form with project data in edit mode
+    useEffect(() => {
+        if (initialProject && !isInitialized) {
+            setName(initialProject.name || '');
+            setDescription(initialProject.description || '');
+            setStatus(initialProject.status || 'Planning');
+            setPriority(initialProject.priority || 'Medium');
+            setStartDate(formatDateForInput(initialProject.startDate));
+            setEndDate(formatDateForInput(initialProject.dueDate));
+            setProjectColor(initialProject.projectColor || COLOR_OPTIONS[0]);
+            setCalendarEnabled(initialProject.calendarEnabled !== false);
+            
+            // Initialize selected members
+            const membersMap = {};
+            if (Array.isArray(initialProject.members)) {
+                initialProject.members.forEach((m) => {
+                    const userId = m?.user?._id || m?.user;
+                    if (userId) {
+                        membersMap[userId] = m.role || 'Contributor';
+                    }
+                });
+            }
+            setSelectedMembers(membersMap);
+            
+            // Show advanced if customized
+            if (initialProject.projectColor !== COLOR_OPTIONS[0] || !initialProject.calendarEnabled) {
+                setShowAdvanced(true);
+            }
+            
+            setIsInitialized(true);
+        }
+    }, [initialProject, isInitialized]);
 
     const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
     const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
@@ -42,6 +83,28 @@ export const useProjectForm = (members, userInfo) => {
     }, [selectedMembers, members]);
 
     const hasUnsavedChanges = useMemo(() => {
+        // In edit mode, check if any field changed from initial values
+        if (initialProject && isInitialized) {
+            return (
+                name.trim() !== (initialProject.name || '') ||
+                description.trim() !== (initialProject.description || '') ||
+                status !== (initialProject.status || 'Planning') ||
+                priority !== (initialProject.priority || 'Medium') ||
+                startDate !== formatDateForInput(initialProject.startDate) ||
+                endDate !== formatDateForInput(initialProject.dueDate) ||
+                projectColor !== (initialProject.projectColor || COLOR_OPTIONS[0]) ||
+                calendarEnabled !== (initialProject.calendarEnabled !== false) ||
+                JSON.stringify(selectedMembers) !== JSON.stringify(
+                    (initialProject.members || []).reduce((acc, m) => {
+                        const userId = m?.user?._id || m?.user;
+                        if (userId) acc[userId] = m.role || 'Contributor';
+                        return acc;
+                    }, {})
+                )
+            );
+        }
+        
+        // In create mode, check if any field has a value
         return (
             name.trim() !== '' ||
             description.trim() !== '' ||
@@ -55,7 +118,7 @@ export const useProjectForm = (members, userInfo) => {
             projectLabel.trim() !== '' ||
             calendarEnabled !== true
         );
-    }, [name, description, status, priority, startDate, endDate, selectedMembers, showAdvanced, projectColor, projectLabel, calendarEnabled]);
+    }, [name, description, status, priority, startDate, endDate, selectedMembers, showAdvanced, projectColor, projectLabel, calendarEnabled, initialProject, isInitialized]);
 
     const canSubmit = name.trim().length > 0 && !dateError && !loading;
 
@@ -75,6 +138,7 @@ export const useProjectForm = (members, userInfo) => {
         setLoading(false);
         setError('');
         setAttemptedSubmit(false);
+        setIsInitialized(false);
     }, []);
 
     const toggleMember = (userId) => {

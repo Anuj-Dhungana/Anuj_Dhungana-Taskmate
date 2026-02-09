@@ -159,6 +159,102 @@ export const getProjectById = async (req, res) => {
 
 
 
+export const updateProject = async (req, res) => {
+    try {
+        const projectId = req.params.id;
+        const project = await Project.findById(projectId);
+        
+        if (!project) {
+            return res.status(404).json({ message: "Project not found" });
+        }
+
+        // Check: Are you a Workspace Owner or Admin?
+        const workspace = await Workspace.findById(project.workspace);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        const member = workspace.members.find(m => m.user.toString() === req.user._id.toString());
+        const isAdminOrOwner = member && (member.role === 'owner' || member.role === 'admin');
+
+        if (!isAdminOrOwner) {
+            return res.status(403).json({ message: "Only admins can edit project settings" });
+        }
+
+        // Extract and sanitize update data
+        const {
+            name,
+            description,
+            status,
+            startDate,
+            dueDate,
+            tags = [],
+            members = [],
+            projectColor,
+            calendarEnabled,
+            priority
+        } = req.body;
+
+        // Sanitize members to include only existing workspace users
+        const workspaceMemberIds = workspace.members.map((m) => m.user.toString());
+        const sanitizedMembers = Array.isArray(members)
+            ? members
+                  .filter((m) => m?.user && workspaceMemberIds.includes(m.user.toString()))
+                  .map((m) => ({
+                      user: m.user,
+                      role: ['Manager', 'Contributor', 'Viewer'].includes(m.role) ? m.role : 'Contributor'
+                  }))
+            : project.members;
+
+        // Normalize tags
+        const normalizedTags = Array.isArray(tags)
+            ? tags
+                  .map((t) => (typeof t === 'string' ? t.trim() : ''))
+                  .filter(Boolean)
+            : project.tags;
+
+        // Validate projectColor if provided
+        const safeProjectColor =
+            typeof projectColor === 'string' && /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(projectColor.trim())
+                ? projectColor.trim()
+                : project.projectColor;
+
+        const safeCalendarEnabled =
+            typeof calendarEnabled === 'boolean' ? calendarEnabled : project.calendarEnabled;
+
+        // Update project fields
+        if (name !== undefined) project.name = name.trim();
+        if (description !== undefined) project.description = description.trim();
+        if (status !== undefined) project.status = status;
+        if (priority !== undefined) project.priority = priority;
+        if (startDate !== undefined) project.startDate = startDate ? new Date(startDate) : undefined;
+        if (dueDate !== undefined) project.dueDate = dueDate ? new Date(dueDate) : undefined;
+        project.tags = normalizedTags;
+        project.members = sanitizedMembers;
+        project.projectColor = safeProjectColor;
+        project.calendarEnabled = safeCalendarEnabled;
+
+        await project.save();
+
+        // Populate members for response
+        const updatedProject = await Project.findById(projectId).populate('members.user', 'fullname email avatar');
+
+        // Real-time sync via Socket.IO
+        const io = req.app.get('io');
+        const workspaceRoom = `workspace_${workspace._id.toString()}`;
+        io?.to(workspaceRoom).emit('project_updated', {
+            workspaceId: workspace._id.toString(),
+            project: updatedProject,
+            action: 'updated',
+        });
+
+        res.json(updatedProject);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
 export const deleteProject = async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);

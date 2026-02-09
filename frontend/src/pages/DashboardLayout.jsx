@@ -42,10 +42,12 @@ const DashboardLayout = () => {
                 isCollapsed={isCollapsed}
                 onToggleCollapse={() => setIsCollapsed((v) => !v)}
                 workspaceProps={workspaceProps}
+                userInfo={userInfo}
+                onLogout={handleLogout}
             />
 
             <div className="flex-1 flex flex-col min-w-0">
-                <TopBar userInfo={userInfo} onLogout={handleLogout} />
+                <TopBar onLogout={handleLogout} />
 
                 <main className="flex-1 overflow-y-auto bg-gray-50">
                     <Outlet />

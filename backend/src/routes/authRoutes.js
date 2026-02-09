@@ -9,6 +9,7 @@ import { resetPassword } from '../controllers/authController.js';
 import { updateProfile } from '../controllers/authController.js';
 import { toggle2FA } from '../controllers/authController.js';
 import { verify2FALogin } from '../controllers/authController.js';
+import upload from '../config/cloudinary.js';
 
 // Validators
 import {
@@ -33,7 +34,7 @@ router.post('/logout', logoutUser);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password', passwordResetLimiter, forgotPasswordValidation, validate, forgotPassword);
 router.put('/reset-password/:token', resetPasswordValidation, validate, resetPassword);
-router.put('/profile', protect, updateProfileValidation, validate, updateProfile); 
+router.put('/profile', protect, upload.single('avatar'), updateProfile); 
 router.put('/2fa/toggle', protect, toggle2FA);  
 router.post('/login-2fa', authLimiter, twoFAValidation, validate, verify2FALogin);    
 

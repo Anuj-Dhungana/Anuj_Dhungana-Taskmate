@@ -1,4 +1,5 @@
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import WorkspaceSelector from './WorkspaceSelector';
 import NavigationGroup from './NavigationGroup';
 import { NAV_GROUPS, SYSTEM_ITEMS } from '../../utils/navigationConfig';
@@ -8,8 +9,14 @@ const DashboardSidebar = ({
     isCollapsed,
     onToggleCollapse,
     workspaceProps,
+    userInfo,
+    onLogout,
 }) => {
+    const navigate = useNavigate();
     const iconSize = 20;
+
+    const avatarSrc = userInfo?.avatar;
+    const avatarInitial = userInfo?.fullname?.[0]?.toUpperCase() || 'U';
 
     return (
         <aside
@@ -67,6 +74,50 @@ const DashboardSidebar = ({
                     isCollapsed={isCollapsed}
                     iconSize={iconSize}
                 />
+            </div>
+
+            {/* User Profile Section */}
+            <div className="border-t border-gray-800/60 p-3">
+                {isCollapsed ? (
+                    <button
+                        onClick={() => navigate('/profile')}
+                        className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-gray-800/70 transition-colors group"
+                        title={userInfo?.fullname || 'Profile'}
+                    >
+                        {avatarSrc ? (
+                            <img
+                                src={avatarSrc}
+                                alt="Profile"
+                                className="w-9 h-9 rounded-full object-cover border-2 border-gray-700 group-hover:border-blue-500 transition-colors"
+                            />
+                        ) : (
+                            <div className="w-9 h-9 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold border-2 border-gray-700 group-hover:border-blue-500 transition-colors">
+                                {avatarInitial}
+                            </div>
+                        )}
+                    </button>
+                ) : (
+                    <button
+                        onClick={() => navigate('/profile')}
+                        className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-gray-800/70 transition-colors group"
+                    >
+                        {avatarSrc ? (
+                            <img
+                                src={avatarSrc}
+                                alt="Profile"
+                                className="w-10 h-10 rounded-full object-cover border-2 border-gray-700 group-hover:border-blue-500 transition-colors shrink-0"
+                            />
+                        ) : (
+                            <div className="w-10 h-10 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-base font-bold border-2 border-gray-700 group-hover:border-blue-500 transition-colors shrink-0">
+                                {avatarInitial}
+                            </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">{userInfo?.fullname || 'User'}</p>
+                            <p className="text-xs text-gray-400 truncate">{userInfo?.email || ''}</p>
+                        </div>
+                    </button>
+                )}
             </div>
         </aside>
     );

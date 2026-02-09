@@ -1,133 +1,170 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
-import useAuthStore from '../store/useAuthStore';
 import { toast } from 'react-hot-toast';
-import { User, Lock, ShieldCheck, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Upload, Camera } from 'lucide-react';
+import useAuthStore from '../store/useAuthStore';
 
 const Profile = () => {
-    const { userInfo, setCredentials } = useAuthStore();
-    const navigate = useNavigate();
-
+    const { userInfo, setUserInfo } = useAuthStore();
+    
     const [fullname, setFullname] = useState('');
-    const [password, setPassword] = useState('');
-    const [is2FA, setIs2FA] = useState(false);
+    const [email, setEmail] = useState('');
+    const [avatar, setAvatar] = useState('');
+    const [avatarFile, setAvatarFile] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState('');
+    const [loading, setLoading] = useState(false);
+    const fileInputRef = useRef(null);
 
-    // Load initial data
     useEffect(() => {
         if (userInfo) {
-            setFullname(userInfo.fullname);
-            setIs2FA(userInfo.twoFactorEnabled || false);
+            setFullname(userInfo.fullname || '');
+            setEmail(userInfo.email || '');
+            setAvatar(userInfo.avatar || '');
         }
     }, [userInfo]);
 
-    const handleUpdateProfile = async (e) => {
-        e.preventDefault();
-        try {
-            const res = await axios.put('/api/auth/profile', { fullname, password });
-            setCredentials({ ...userInfo, ...res.data }); // Update store
-            toast.success('Profile updated!');
-            setPassword(''); // Clear password field
-        } catch (err) {
-            toast.error(err?.response?.data?.message || 'Update failed');
+    const handleAvatarChange = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('File size should be less than 5MB');
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                toast.error('Please upload an image file');
+                return;
+            }
+            setAvatarFile(file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
         }
     };
 
-    const handleToggle2FA = async () => {
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
         try {
-            const res = await axios.put('/api/auth/2fa/toggle');
-            setIs2FA(res.data.twoFactorEnabled);
+            const formData = new FormData();
+            formData.append('fullname', fullname);
+            formData.append('email', email);
+            if (avatarFile) {
+                formData.append('avatar', avatarFile);
+            }
+
+            const res = await axios.put('/api/auth/profile', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
             
-            // Update local storage so we remember 2FA is on
-            const updatedUser = { ...userInfo, twoFactorEnabled: res.data.twoFactorEnabled };
-            setCredentials(updatedUser);
-            
-            toast.success(res.data.message);
+            setUserInfo(res.data);
+            setAvatar(res.data.avatar || '');
+            setAvatarFile(null);
+            setAvatarPreview('');
+            toast.success('Profile updated successfully');
         } catch (err) {
-            toast.error('Could not update 2FA settings');
+            toast.error(err?.response?.data?.message || 'Failed to update profile');
         }
+        setLoading(false);
     };
+
+    const displayAvatar = avatarPreview || avatar;
+    const avatarInitial = fullname?.charAt(0)?.toUpperCase() || 'U';
 
     return (
-        <div className="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 flex flex-col items-center pt-10 px-4">
-            <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
-                
-                <button onClick={() => navigate('/dashboard')} className="flex items-center text-gray-500 hover:text-blue-600 mb-6 font-medium transition-colors">
-                    <ArrowLeft size={20} className="mr-2"/> Back to Dashboard
-                </button>
+        <div className="px-8 py-10">
+            <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
+                <p className="text-gray-500 mt-2">Manage your personal information and avatar.</p>
+            </div>
 
-                <h1 className="text-3xl font-bold mb-8 flex items-center gap-3 text-gray-900">
-                    <User className="text-blue-600" size={32}/> Profile Settings
-                </h1>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    
-                    {/* Left: Edit Details */}
-                    <form onSubmit={handleUpdateProfile}>
-                        <h3 className="text-lg font-bold mb-4 text-gray-800">Personal Details</h3>
-                        
-                        <div className="mb-5">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-                            <input 
-                                type="text" 
-                                className="w-full p-3 border-2 border-gray-200 rounded-xl mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                value={fullname} 
-                                onChange={(e) => setFullname(e.target.value)}
-                            />
-                        </div>
-
-                        <div className="mb-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">New Password</label>
-                            <input 
-                                type="password" 
-                                placeholder="Leave blank to keep current"
-                                className="w-full p-3 border-2 border-gray-200 rounded-xl mt-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                value={password} 
-                                onChange={(e) => setPassword(e.target.value)}
-                            />
-                        </div>
-
-                        <button className="bg-linear-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 shadow-lg shadow-blue-500/30 transition-all">
-                            Save Changes
-                        </button>
-                    </form>
-
-                    {/* Right: Security Settings (2FA) */}
-                    <div className="border-l-2 border-gray-200 pl-8">
-                        <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-gray-800">
-                            <ShieldCheck className="text-green-600" size={24}/> Security
-                        </h3>
-                        
-                        <div className="bg-linear-to-br from-gray-50 to-gray-100 p-5 rounded-xl border-2 border-gray-200 shadow-sm">
-                            <div className="flex justify-between items-center">
-                                <div>
-                                    <p className="font-bold text-gray-800">Two-Factor Auth</p>
-                                    <p className="text-xs text-gray-600 mt-1">Secure your account with Email OTP.</p>
-                                </div>
-                                <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                                    <input 
-                                        type="checkbox" 
-                                        name="toggle" 
-                                        id="toggle" 
-                                        checked={is2FA}
-                                        onChange={handleToggle2FA}
-                                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer checked:right-0 right-6"
+            <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl">
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Avatar Section */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-3">Profile Picture</label>
+                        <div className="flex items-center gap-6">
+                            <div className="relative">
+                                {displayAvatar ? (
+                                    <img
+                                        src={displayAvatar}
+                                        alt="Profile"
+                                        className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
                                     />
-                                    <label 
-                                        htmlFor="toggle" 
-                                        className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${is2FA ? 'bg-green-500' : 'bg-gray-300'}`}
-                                    ></label>
-                                </div>
+                                ) : (
+                                    <div className="w-24 h-24 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold border-2 border-gray-200">
+                                        {avatarInitial}
+                                    </div>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors shadow-lg"
+                                    title="Change avatar"
+                                >
+                                    <Camera size={16} />
+                                </button>
+                            </div>
+                            <div className="flex-1">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleAvatarChange}
+                                    className="hidden"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="flex items-center gap-2 px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                                >
+                                    <Upload size={16} />
+                                    Upload Photo
+                                </button>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    JPG, PNG or GIF. Max size 5MB.
+                                </p>
                             </div>
                         </div>
-
-                        <div className="mt-4 text-sm">
-                            <p className="text-gray-600">Status: <span className={is2FA ? "text-green-600 font-bold" : "text-red-500 font-bold"}>
-                                {is2FA ? 'Enabled' : 'Disabled'}
-                            </span></p>
-                        </div>
                     </div>
-                </div>
+
+                    {/* Full Name */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                        <input
+                            type="text"
+                            value={fullname}
+                            onChange={(e) => setFullname(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                        />
+                    </div>
+
+                    {/* Email */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            required
+                        />
+                    </div>
+
+                    <div className="pt-2">
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50"
+                        >
+                            {loading ? 'Saving...' : 'Save Changes'}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

@@ -54,6 +54,7 @@ function App() {
           <Route path="/calls" element={<WorkspaceCalls />} />
           <Route path="/members" element={<WorkspaceMembers />} />
           <Route path="/settings" element={<WorkspaceSettings />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/workspaces" element={<WorkspaceList />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail />} />
         </Route>
@@ -61,14 +62,7 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
-        <Route 
-          path="/profile" 
-          element={
-            <PrivateRoute>
-              <Profile />
-            </PrivateRoute>
-          } 
-        />
+
       </Routes>
     </>
   );

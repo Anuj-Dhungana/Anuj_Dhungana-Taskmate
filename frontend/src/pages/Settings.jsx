@@ -8,6 +8,7 @@ import ConfirmModal from '../components/modals/ConfirmModal';
 const Settings = () => {
     const { currentWorkspaceId, selectedWorkspace, setSelectedWorkspace, setCurrentWorkspaceId } = useWorkspaceStore();
     const { userInfo } = useAuthStore();
+    
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [color, setColor] = useState('#F97316');

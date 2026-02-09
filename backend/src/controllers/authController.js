@@ -258,6 +258,11 @@ export const updateProfile = async (req, res) => {
             user.fullname = req.body.fullname || user.fullname;
             user.email = req.body.email || user.email;
             
+            // Update avatar if file is uploaded
+            if (req.file) {
+                user.avatar = req.file.path; // Cloudinary URL
+            }
+            
             // If password is sent, hash and update it
             if (req.body.password) {
                 const salt = await bcrypt.genSalt(10);
@@ -270,6 +275,7 @@ export const updateProfile = async (req, res) => {
                 _id: updatedUser._id,
                 fullname: updatedUser.fullname,
                 email: updatedUser.email,
+                avatar: updatedUser.avatar,
                 twoFactorEnabled: updatedUser.twoFactorEnabled // Return this status
             });
         } else {

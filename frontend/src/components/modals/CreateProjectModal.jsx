@@ -15,6 +15,7 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
     const { userInfo } = useAuthStore();
     const modalRef = useRef(null);
     const nameInputRef = useRef(null);
+    const hasAutoFocusedRef = useRef(false);
 
     const form = useProjectForm(members, userInfo, mode === 'edit' ? project : null);
     const isEditMode = mode === 'edit' && project;
@@ -27,7 +28,7 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
         form.setShowDiscardConfirm(false);
         form.resetForm();
         onClose?.();
-    }, [form.hasUnsavedChanges, onClose, form]);
+    }, [form.hasUnsavedChanges, form.setShowDiscardConfirm, form.resetForm, onClose]);
 
     const confirmDiscardAndClose = () => {
         form.setShowDiscardConfirm(false);
@@ -36,7 +37,10 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
     };
 
     useEffect(() => {
-        if (!isOpen) return;
+        if (!isOpen) {
+            hasAutoFocusedRef.current = false;
+            return;
+        }
 
         const trapFocus = (event) => {
             if (event.key !== 'Tab' || !modalRef.current) return;
@@ -58,7 +62,13 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
         };
 
         document.addEventListener('keydown', keyHandler);
-        nameInputRef.current?.focus();
+        
+        // Only auto-focus once when modal opens
+        if (!hasAutoFocusedRef.current) {
+            nameInputRef.current?.focus();
+            hasAutoFocusedRef.current = true;
+        }
+        
         return () => document.removeEventListener('keydown', keyHandler);
     }, [isOpen, requestClose]);
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const COLOR_OPTIONS = ['#6366F1', '#3B82F6', '#14B8A6', '#22C55E', '#F59E0B', '#EF4444'];
 
@@ -26,11 +26,13 @@ export const useProjectForm = (members, userInfo, initialProject = null) => {
     const [error, setError] = useState('');
     const [attemptedSubmit, setAttemptedSubmit] = useState(false);
     const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
+    const initializedProjectIdRef = useRef(null);
 
     // Initialize form with project data in edit mode
+    // Use ref to track initialization by project ID to avoid reinitializing on object reference changes
     useEffect(() => {
-        if (initialProject && !isInitialized) {
+        const projectId = initialProject?._id;
+        if (initialProject && projectId && initializedProjectIdRef.current !== projectId) {
             setName(initialProject.name || '');
             setDescription(initialProject.description || '');
             setStatus(initialProject.status || 'Planning');
@@ -57,9 +59,9 @@ export const useProjectForm = (members, userInfo, initialProject = null) => {
                 setShowAdvanced(true);
             }
             
-            setIsInitialized(true);
+            initializedProjectIdRef.current = projectId;
         }
-    }, [initialProject, isInitialized]);
+    }, [initialProject]);
 
     const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
     const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
@@ -84,7 +86,7 @@ export const useProjectForm = (members, userInfo, initialProject = null) => {
 
     const hasUnsavedChanges = useMemo(() => {
         // In edit mode, check if any field changed from initial values
-        if (initialProject && isInitialized) {
+        if (initialProject && initializedProjectIdRef.current === initialProject._id) {
             return (
                 name.trim() !== (initialProject.name || '') ||
                 description.trim() !== (initialProject.description || '') ||
@@ -118,7 +120,7 @@ export const useProjectForm = (members, userInfo, initialProject = null) => {
             projectLabel.trim() !== '' ||
             calendarEnabled !== true
         );
-    }, [name, description, status, priority, startDate, endDate, selectedMembers, showAdvanced, projectColor, projectLabel, calendarEnabled, initialProject, isInitialized]);
+    }, [name, description, status, priority, startDate, endDate, selectedMembers, showAdvanced, projectColor, projectLabel, calendarEnabled, initialProject]);
 
     const canSubmit = name.trim().length > 0 && !dateError && !loading;
 
@@ -138,10 +140,10 @@ export const useProjectForm = (members, userInfo, initialProject = null) => {
         setLoading(false);
         setError('');
         setAttemptedSubmit(false);
-        setIsInitialized(false);
+        initializedProjectIdRef.current = null;
     }, []);
 
-    const toggleMember = (userId) => {
+    const toggleMember = useCallback((userId) => {
         if (!isAdminOrOwner) return;
         setSelectedMembers((prev) => {
             const next = { ...prev };
@@ -149,14 +151,14 @@ export const useProjectForm = (members, userInfo, initialProject = null) => {
             else next[userId] = 'Contributor';
             return next;
         });
-    };
+    }, [isAdminOrOwner]);
 
-    const updateMemberRole = (userId, role) => {
+    const updateMemberRole = useCallback((userId, role) => {
         if (!isAdminOrOwner) return;
         setSelectedMembers((prev) => ({ ...prev, [userId]: role }));
-    };
+    }, [isAdminOrOwner]);
 
-    const buildPayload = (workspaceId) => {
+    const buildPayload = useCallback((workspaceId) => {
         const tags = Array.from(
             new Set(
                 [priority.toLowerCase(), projectLabel.trim()]
@@ -180,7 +182,7 @@ export const useProjectForm = (members, userInfo, initialProject = null) => {
             projectColor,
             calendarEnabled,
         };
-    };
+    }, [name, description, status, priority, projectLabel, startDate, endDate, isAdminOrOwner, selectedMembers, projectColor, calendarEnabled]);
 
     return {
         // Fields

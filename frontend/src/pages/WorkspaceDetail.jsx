@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Plus } from 'lucide-react';
@@ -66,6 +66,11 @@ const WorkspaceDetail = () => {
             return name.includes(term) || description.includes(term);
         });
     }, [enrichedProjects, search, activeFilter]);
+
+    const handleCloseModal = useCallback(() => {
+        setShowProjectModal(false);
+        setEditingProject(null);
+    }, []);
 
     const handlers = {
         projectClick: (projectId) => navigate(`/projects/${projectId}`),
@@ -190,10 +195,7 @@ const WorkspaceDetail = () => {
             {showProjectModal && workspace && (
                 <CreateProjectModal
                     isOpen={showProjectModal}
-                    onClose={() => {
-                        setShowProjectModal(false);
-                        setEditingProject(null);
-                    }}
+                    onClose={handleCloseModal}
                     workspaceId={workspace._id}
                     onCreated={fetchWorkspaceDetails}
                     members={workspace.members || []}

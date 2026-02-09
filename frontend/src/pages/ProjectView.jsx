@@ -46,6 +46,15 @@ const ProjectView = () => {
         navigate(-1); // Go back to previous page
     };
 
+    const handleCloseEditModal = useCallback(() => {
+        setShowEditModal(false);
+    }, []);
+
+    const handleProjectUpdated = useCallback(() => {
+        fetchProject();
+        setShowEditModal(false);
+    }, [fetchProject]);
+
     if (loading) {
         return (
             <div className="px-8 py-10">
@@ -142,12 +151,9 @@ const ProjectView = () => {
             {showEditModal && workspace && project && (
                 <CreateProjectModal
                     isOpen={showEditModal}
-                    onClose={() => setShowEditModal(false)}
+                    onClose={handleCloseEditModal}
                     workspaceId={workspace._id}
-                    onCreated={() => {
-                        fetchProject();
-                        setShowEditModal(false);
-                    }}
+                    onCreated={handleProjectUpdated}
                     members={workspace.members || []}
                     mode="edit"
                     project={project}

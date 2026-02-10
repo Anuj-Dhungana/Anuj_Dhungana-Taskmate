@@ -12,6 +12,14 @@ const useAuthStore = create((set) => ({
     set({ userInfo: data });
   },
 
+  // Action: Update current user profile fields while preserving other auth payload keys
+  setUserInfo: (data) =>
+    set((state) => {
+      const merged = { ...(state.userInfo || {}), ...(data || {}) };
+      localStorage.setItem('userInfo', JSON.stringify(merged));
+      return { userInfo: merged };
+    }),
+
   // Action: Logout
   logout: () => {
     localStorage.removeItem('userInfo');

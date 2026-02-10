@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { Upload, Camera, LogOut } from 'lucide-react';
+import { Upload, Camera, LogOut, ShieldCheck, ShieldOff } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
@@ -16,7 +16,11 @@ const Profile = () => {
     const [avatar, setAvatar] = useState('');
     const [avatarFile, setAvatarFile] = useState(null);
     const [avatarPreview, setAvatarPreview] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [toggling2FA, setToggling2FA] = useState(false);
     const fileInputRef = useRef(null);
 
     useEffect(() => {
@@ -24,8 +28,26 @@ const Profile = () => {
             setFullname(userInfo.fullname || '');
             setEmail(userInfo.email || '');
             setAvatar(userInfo.avatar || '');
+            setTwoFactorEnabled(!!userInfo.twoFactorEnabled);
         }
     }, [userInfo]);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await axios.get('/api/auth/profile');
+                const profile = res.data || {};
+                setFullname(profile.fullname || '');
+                setEmail(profile.email || '');
+                setAvatar(profile.avatar || '');
+                setTwoFactorEnabled(!!profile.twoFactorEnabled);
+                setUserInfo(profile);
+            } catch (err) {
+                // keep local state fallback from store
+            }
+        };
+        fetchProfile();
+    }, [setUserInfo]);
 
     const handleAvatarChange = (e) => {
         const file = e.target.files?.[0];
@@ -49,6 +71,14 @@ const Profile = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if ((newPassword || confirmPassword) && newPassword !== confirmPassword) {
+            toast.error('Passwords do not match');
+            return;
+        }
+        if (newPassword && newPassword.length < 6) {
+            toast.error('Password must be at least 6 characters');
+            return;
+        }
         setLoading(true);
         try {
             const formData = new FormData();
@@ -56,6 +86,9 @@ const Profile = () => {
             formData.append('email', email);
             if (avatarFile) {
                 formData.append('avatar', avatarFile);
+            }
+            if (newPassword) {
+                formData.append('password', newPassword);
             }
 
             const res = await axios.put('/api/auth/profile', formData, {
@@ -66,13 +99,32 @@ const Profile = () => {
             
             setUserInfo(res.data);
             setAvatar(res.data.avatar || '');
+            setTwoFactorEnabled(!!res.data.twoFactorEnabled);
             setAvatarFile(null);
             setAvatarPreview('');
+            setNewPassword('');
+            setConfirmPassword('');
             toast.success('Profile updated successfully');
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to update profile');
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
+    };
+
+    const handleToggle2FA = async () => {
+        setToggling2FA(true);
+        try {
+            const res = await axios.put('/api/auth/2fa/toggle');
+            const enabled = !!res.data?.twoFactorEnabled;
+            setTwoFactorEnabled(enabled);
+            setUserInfo({ twoFactorEnabled: enabled });
+            toast.success(enabled ? '2FA enabled' : '2FA disabled');
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Failed to update 2FA');
+        } finally {
+            setToggling2FA(false);
+        }
     };
 
     const handleLogout = async () => {
@@ -170,6 +222,28 @@ const Profile = () => {
                         />
                     </div>
 
+                    {/* Password */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                        <input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Leave blank to keep current password"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                        <input
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="Re-enter new password"
+                        />
+                    </div>
+
                     <div className="pt-2">
                         <button
                             type="submit"
@@ -180,6 +254,46 @@ const Profile = () => {
                         </button>
                     </div>
                 </form>
+
+                {/* 2FA Section */}
+                <div className="mt-8 pt-6 border-t border-gray-200">
+                    <h3 className="text-gray-900 font-bold mb-2 text-sm uppercase tracking-wide">
+                        Two-Factor Authentication
+                    </h3>
+                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <div className="flex items-start gap-3">
+                            <div
+                                className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                                    twoFactorEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-600'
+                                }`}
+                            >
+                                {twoFactorEnabled ? <ShieldCheck size={18} /> : <ShieldOff size={18} />}
+                            </div>
+                            <div>
+                                <p className="font-semibold text-gray-800 text-sm">
+                                    {twoFactorEnabled ? '2FA Enabled' : '2FA Disabled'}
+                                </p>
+                                <p className="text-xs text-gray-600 mt-0.5">
+                                    {twoFactorEnabled
+                                        ? 'You will receive a verification code on login.'
+                                        : 'Enable 2FA for extra account security.'}
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleToggle2FA}
+                            disabled={toggling2FA}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${
+                                twoFactorEnabled
+                                    ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
+                                    : 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700'
+                            } disabled:opacity-60`}
+                        >
+                            {toggling2FA ? 'Updating...' : twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
+                        </button>
+                    </div>
+                </div>
 
                 {/* Logout Section */}
                 <div className="mt-10 pt-6 border-t border-gray-200">

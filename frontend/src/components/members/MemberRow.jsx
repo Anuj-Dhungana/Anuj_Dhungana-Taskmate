@@ -39,6 +39,7 @@ const MemberRow = ({
     const roleActionValue = getRoleActionValue(member.role);
     const buttonRef = useRef(null);
     const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+    const [avatarError, setAvatarError] = useState(false);
     const isMenuOpen = openMenuId === user._id && canManage;
 
     useEffect(() => {
@@ -78,9 +79,18 @@ const MemberRow = ({
         <tr className="hover:bg-gray-50">
             <td className="px-6 py-4">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold">
-                        {initials}
-                    </div>
+                    {user.avatar && !avatarError ? (
+                        <img
+                            src={user.avatar}
+                            alt={user.fullname}
+                            onError={() => setAvatarError(true)}
+                            className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold">
+                            {initials}
+                        </div>
+                    )}
                     <div>
                         <div className="text-sm font-semibold text-gray-900">{user.fullname}</div>
                         <div className="text-xs text-gray-500">{user.email}</div>

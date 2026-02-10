@@ -16,7 +16,6 @@ const ProjectCard = ({
     onMenuToggle,
     onEdit,
     onDelete,
-    onSettings,
 }) => {
     const moreMembers = Math.max(0, (project.resolvedMembers || []).length - 3);
 
@@ -94,15 +93,6 @@ const ProjectCard = ({
                                         Delete
                                     </button>
 
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            onSettings(project);
-                                        }}
-                                        className="w-full text-left px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
-                                    >
-                                        Settings
-                                    </button>
                                 </div>
                             )}
                         </div>

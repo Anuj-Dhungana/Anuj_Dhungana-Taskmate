@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CalendarDays, Paperclip, MoreHorizontal, MessageSquare } from 'lucide-react';
+import { CalendarDays, Paperclip, MoreHorizontal, MessageSquare, AlertTriangle } from 'lucide-react';
 
 const priorityStyles = {
   High: 'bg-red-50 text-red-600 border border-red-200',
@@ -34,6 +34,10 @@ const TaskCard = ({ card, onDelete, onClick, canDrag = true, canEdit = false }) 
     ? Math.round((completedSubtasks / subtasks.length) * 100)
     : 0;
   const hasDueDate = !!card.dueDate;
+  const dueTime = hasDueDate ? new Date(card.dueDate).getTime() : NaN;
+  const listTitle = String(card?.listId?.title || '').toLowerCase();
+  const isCompleted = listTitle.includes('done') || listTitle.includes('complete');
+  const isOverdue = hasDueDate && !Number.isNaN(dueTime) && dueTime < Date.now() && !isCompleted;
   const dueDateStr = hasDueDate
     ? new Date(card.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null;
@@ -98,8 +102,8 @@ const TaskCard = ({ card, onDelete, onClick, canDrag = true, canEdit = false }) 
           {/* Left: Icons */}
           <div className="flex items-center gap-3 text-gray-400">
             {hasDueDate && (
-              <span className="flex items-center gap-1 text-[11px]">
-                <CalendarDays size={12} />
+              <span className={`flex items-center gap-1 text-[11px] ${isOverdue ? 'text-red-600' : ''}`}>
+                {isOverdue ? <AlertTriangle size={12} /> : <CalendarDays size={12} />}
                 {dueDateStr}
               </span>
             )}

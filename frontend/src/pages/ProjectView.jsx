@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Layout, Calendar as CalendarIcon, MoreHorizontal, Users, CalendarDays, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Layout, Calendar as CalendarIcon, Users, CalendarDays, ClipboardList } from 'lucide-react';
 import BoardView from '../components/board/BoardView';
 import ProjectCalendar from '../components/calendar/ProjectCalendar';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
 import { addProjectDataChangedListener } from '../utils/projectEvents';
-import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 
 const statusColors = {
@@ -25,13 +24,11 @@ const priorityColors = {
 const ProjectView = () => {
     const { projectId } = useParams();
     const navigate = useNavigate();
-    const { userInfo } = useAuthStore();
     const { selectedWorkspace } = useWorkspaceStore();
     const [project, setProject] = useState(null);
     const [viewMode, setViewMode] = useState('board');
     const [loading, setLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
-    const [showMenu, setShowMenu] = useState(false);
     const [boardStats, setBoardStats] = useState({ total: 0, done: 0 });
 
     const fetchProject = useCallback(async () => {
@@ -72,10 +69,7 @@ const ProjectView = () => {
         setBoardStats(stats);
     }, []);
 
-    // Permissions
     const workspace = selectedWorkspace?.workspace;
-    const myRole = workspace?.members?.find((m) => m.user?._id === userInfo?._id)?.role;
-    const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
 
     // KPI Data
     const progress = boardStats.total === 0 ? 0 : Math.round((boardStats.done / boardStats.total) * 100);
@@ -132,35 +126,8 @@ const ProjectView = () => {
                     </div>
                 </div>
 
-                {/* Right: Menu + View Toggle */}
+                {/* Right: View Toggle */}
                 <div className="flex items-center gap-3">
-                    {isAdminOrOwner && (
-                        <div className="relative">
-                            <button
-                                onClick={() => setShowMenu((v) => !v)}
-                                className="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition"
-                            >
-                                <MoreHorizontal size={18} />
-                            </button>
-                            {showMenu && (
-                                <div className="absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-gray-100 py-1 z-50">
-                                    <button
-                                        onClick={() => { setShowEditModal(true); setShowMenu(false); }}
-                                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
-                                    >
-                                        Edit Project
-                                    </button>
-                                    <button
-                                        onClick={() => setShowMenu(false)}
-                                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition"
-                                    >
-                                        Members
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
                     <div className="flex items-center bg-gray-100 p-1 rounded-lg">
                         <button
                             onClick={() => setViewMode('board')}

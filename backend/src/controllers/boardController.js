@@ -596,6 +596,44 @@ export const toggleCardSubtask = async (req, res) => {
     }
 };
 
+export const deleteCardSubtask = async (req, res) => {
+    try {
+        const { id, subtaskId } = req.params;
+
+        const card = await Card.findById(id);
+        if (!card || card.archived) {
+            return res.status(404).json({ message: "Card not found" });
+        }
+
+        const context = await getProjectContext(card.projectId, req.user._id);
+        if (context.status !== 200) {
+            return res.status(context.status).json({ message: context.message });
+        }
+        if (!canEditTask(context.member, card, req.user._id)) {
+            return res.status(403).json({ message: "Not authorized to edit this task" });
+        }
+
+        const subtask = card.subtasks.id(subtaskId);
+        if (!subtask) {
+            return res.status(404).json({ message: "Subtask not found" });
+        }
+
+        card.subtasks.pull(subtaskId);
+        appendActivity(card, {
+            type: 'subtask_deleted',
+            message: `${req.user?.fullname || 'Someone'} deleted a subtask`,
+            actor: req.user._id,
+        });
+
+        await card.save();
+        emitTaskChanged(req, context, card, 'task_subtask_deleted');
+        res.json({ message: "Subtask deleted" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
 export const archiveCard = async (req, res) => {
     try {
         const { id } = req.params;

@@ -12,6 +12,7 @@ import {
     deleteCardComment,
     addCardSubtask,
     toggleCardSubtask,
+    deleteCardSubtask,
     archiveCard,
 } from '../controllers/boardController.js';
 import protect from '../middleware/authMiddleware.js';
@@ -32,6 +33,7 @@ router.post('/cards/:id/comments', protect, addCardComment);
 router.delete('/cards/:id/comments/:commentId', protect, deleteCardComment);
 router.post('/cards/:id/subtasks', protect, addCardSubtask);
 router.put('/cards/:id/subtasks/:subtaskId', protect, toggleCardSubtask);
+router.delete('/cards/:id/subtasks/:subtaskId', protect, deleteCardSubtask);
 router.put('/cards/:id/archive', protect, archiveCard);
 router.put('/cards/reorder', protect, updateCardOrder);
 router.delete('/cards/:id', protect, deleteCard);

@@ -6,10 +6,8 @@ import {
     CheckSquare,
     ChevronDown,
     Clock3,
-    MessageSquare,
     Paperclip,
     Plus,
-    Send,
     Trash2,
     X,
 } from 'lucide-react';
@@ -321,6 +319,17 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
         }
     };
 
+    const handleDeleteSubtask = async (subtaskId) => {
+        if (!canEditTask) return;
+        try {
+            await axios.delete(`/api/board/cards/${cardId}/subtasks/${subtaskId}`);
+            setSubtasks((prev) => prev.filter((item) => String(item._id) !== String(subtaskId)));
+            syncTaskChanged('task-detail-subtask-delete');
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Failed to delete subtask');
+        }
+    };
+
     const handleSendComment = async () => {
         if (!canAddComment) return;
         const content = commentDraft.trim();
@@ -533,11 +542,10 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                                         {completedSubtasks}/{subtasks.length}
                                     </span>
                                 </div>
-                                <div className="text-xs text-gray-500">{subtaskProgress}%</div>
                             </div>
                             <div className="p-4 space-y-2">
                                 {subtasks.map((subtask) => (
-                                    <label
+                                    <div
                                         key={subtask._id}
                                         className={`flex items-center gap-2 px-2 py-1.5 rounded-md ${
                                             canEditTask ? 'hover:bg-gray-50 cursor-pointer' : 'opacity-70'
@@ -557,7 +565,17 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                                         >
                                             {subtask.text}
                                         </span>
-                                    </label>
+                                        {canEditTask && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDeleteSubtask(subtask._id)}
+                                                className="ml-auto p-1 rounded text-red-400 hover:text-red-600 hover:bg-red-50"
+                                                title="Delete subtask"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
                                 ))}
                                 {subtasks.length === 0 && <p className="text-sm text-gray-400">No subtasks yet.</p>}
                                 <div className="pt-2 flex items-center gap-2">
@@ -586,87 +604,80 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                             </div>
                         </section>
 
-                        <section className="rounded-xl border border-gray-100 bg-white overflow-hidden">
-                            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <MessageSquare size={16} className="text-gray-500" />
-                                    <h3 className="text-sm font-semibold text-gray-800">
-                                        Comments ({sortedComments.length})
-                                    </h3>
-                                </div>
+                        <section className="rounded-xl border border-gray-100 bg-white h-[440px] flex flex-col overflow-hidden">
+                            <div className="px-4 py-3 border-b border-gray-100">
+                                <h3 className="text-sm font-semibold text-gray-800">Comments</h3>
                             </div>
-                            <div className="max-h-[360px] overflow-y-auto px-4 py-3 space-y-3">
-                                {sortedComments.map((comment) => {
-                                    const author = toCommentAuthor(comment);
-                                    const authorName = author?.fullname || 'User';
-                                    const authorId = String(author?._id || '');
-                                    const canDelete =
-                                        isAdminOrOwner || authorId === String(userInfo?._id || '');
-                                    return (
-                                        <div key={comment._id} className="rounded-lg bg-gray-50 px-3 py-2.5">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="flex items-start gap-2.5 min-w-0">
-                                                    {author?.avatar ? (
-                                                        <img
-                                                            src={author.avatar}
-                                                            alt={authorName}
-                                                            className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center shrink-0 mt-0.5">
-                                                            {initialsFromName(authorName)}
+                            <div className="flex-1 overflow-y-auto px-4 py-3">
+                                {sortedComments.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {sortedComments.map((comment) => {
+                                            const author = toCommentAuthor(comment);
+                                            const authorName = author?.fullname || 'User';
+                                            const authorId = String(author?._id || '');
+                                            const canDelete =
+                                                isAdminOrOwner || authorId === String(userInfo?._id || '');
+                                            return (
+                                                <div key={comment._id} className="rounded-lg bg-gray-50 px-3 py-2.5">
+                                                    <div className="flex items-start justify-between gap-3">
+                                                        <div className="flex items-start gap-2.5 min-w-0">
+                                                            {author?.avatar ? (
+                                                                <img
+                                                                    src={author.avatar}
+                                                                    alt={authorName}
+                                                                    className="w-6 h-6 rounded-full object-cover shrink-0 mt-0.5"
+                                                                />
+                                                            ) : (
+                                                                <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center shrink-0 mt-0.5">
+                                                                    {initialsFromName(authorName)}
+                                                                </div>
+                                                            )}
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-semibold text-gray-900">{authorName}</p>
+                                                                <div
+                                                                    className="mt-0.5 text-sm text-gray-700 leading-5 break-words"
+                                                                    dangerouslySetInnerHTML={{ __html: renderCommentLite(comment.content) }}
+                                                                />
+                                                            </div>
                                                         </div>
-                                                    )}
-                                                    <div className="min-w-0">
-                                                        <p className="text-xs font-semibold text-gray-900">{authorName}</p>
-                                                        <div
-                                                            className="mt-0.5 text-sm text-gray-700 leading-5 break-words"
-                                                            dangerouslySetInnerHTML={{ __html: renderCommentLite(comment.content) }}
-                                                        />
+                                                        {canDelete && (
+                                                            <button
+                                                                onClick={() => handleDeleteComment(comment._id)}
+                                                                title={`Delete comment - ${formatRelativeTime(comment.createdAt)}`}
+                                                                className="text-[11px] text-red-500 hover:text-red-600 shrink-0"
+                                                            >
+                                                                Delete
+                                                            </button>
+                                                        )}
                                                     </div>
                                                 </div>
-                                                {canDelete && (
-                                                    <button
-                                                        onClick={() => handleDeleteComment(comment._id)}
-                                                        title={`Delete comment • ${formatRelativeTime(comment.createdAt)}`}
-                                                        className="text-[11px] text-red-500 hover:text-red-600 shrink-0"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                {sortedComments.length === 0 && (
-                                    <p className="text-sm text-gray-400">No comments yet. Start the discussion.</p>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="h-full flex items-center justify-center">
+                                        <p className="text-sm text-gray-400">No comments yet</p>
+                                    </div>
                                 )}
                             </div>
-                            <div className="border-t border-gray-100 p-3 bg-white sticky bottom-0">
-                                <div className="flex items-end gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-700 text-xs font-semibold flex items-center justify-center shrink-0">
-                                        {initialsFromName(userInfo?.fullname || '')}
-                                    </div>
-                                    <textarea
-                                        value={commentDraft}
-                                        onChange={(event) => setCommentDraft(event.target.value)}
-                                        onKeyDown={handleCommentKeyDown}
-                                        placeholder="Write a comment..."
-                                        rows={1}
-                                        className="min-w-0 w-full max-w-[360px] px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                    />
+                            <div className="border-t border-gray-100 p-3 bg-white">
+                                <textarea
+                                    value={commentDraft}
+                                    onChange={(event) => setCommentDraft(event.target.value)}
+                                    onKeyDown={handleCommentKeyDown}
+                                    placeholder="Add a comment... (use @ to mention people)"
+                                    rows={2}
+                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                />
+                                <div className="mt-2 flex justify-end">
                                     <button
                                         onClick={handleSendComment}
                                         disabled={!canAddComment || commentSubmitting || !commentDraft.trim()}
-                                        className="h-9 px-3 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 inline-flex items-center gap-1"
+                                        className="h-9 px-4 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60 text-sm font-medium"
                                     >
-                                        <Send size={14} />
-                                        Send
+                                        {commentSubmitting ? 'Posting...' : 'Post Comment'}
                                     </button>
                                 </div>
-                                <p className="text-[11px] text-gray-400 mt-1">
-                                    Enter to send, Shift+Enter for new line.
-                                </p>
                             </div>
                         </section>
 
@@ -829,3 +840,4 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
 };
 
 export default TaskDetailModal;
+

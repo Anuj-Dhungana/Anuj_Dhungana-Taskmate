@@ -282,7 +282,7 @@ const BoardView = ({ projectId, project, onStatsChange }) => {
                 </div>
 
                 {/* ─── Kanban Columns ─── */}
-                <div className="flex items-start gap-4 overflow-x-auto pb-4">
+                <div className="w-full flex items-start gap-4 overflow-x-auto pb-4">
                     {visibleLists.map(list => (
                         <BoardList 
                             key={list._id} 

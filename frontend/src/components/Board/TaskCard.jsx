@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { CalendarDays, MessageSquare, Paperclip, MoreHorizontal } from 'lucide-react';
+import { CalendarDays, Paperclip, MoreHorizontal, MessageSquare } from 'lucide-react';
 
 const priorityStyles = {
   High: 'bg-red-50 text-red-600 border border-red-200',
@@ -27,6 +27,12 @@ const TaskCard = ({ card, onDelete, onClick, canDrag = true, canEdit = false }) 
   const priority = card.priority || 'Medium';
   const assignees = card.assignees || [];
   const attachmentCount = card.attachments?.length || 0;
+  const commentCount = card.comments?.length || 0;
+  const subtasks = card.subtasks || [];
+  const completedSubtasks = subtasks.filter((s) => !!s?.done).length;
+  const subtaskProgress = subtasks.length
+    ? Math.round((completedSubtasks / subtasks.length) * 100)
+    : 0;
   const hasDueDate = !!card.dueDate;
   const dueDateStr = hasDueDate
     ? new Date(card.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -68,8 +74,26 @@ const TaskCard = ({ card, onDelete, onClick, canDrag = true, canEdit = false }) 
         <p className="text-xs text-gray-400 mt-1 line-clamp-1">{card.description}</p>
       )}
 
+      {/* Subtask Progress */}
+      {subtasks.length > 0 && (
+        <div className="mt-3">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[11px] font-medium text-indigo-600">Subtasks</span>
+            <span className="text-[11px] font-semibold text-gray-600">
+              {completedSubtasks}/{subtasks.length}
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-gray-200 overflow-hidden">
+            <div
+              className="h-full bg-violet-500 transition-all"
+              style={{ width: `${subtaskProgress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Bottom Meta Row */}
-      {(hasDueDate || attachmentCount > 0 || assignees.length > 0) && (
+      {(hasDueDate || attachmentCount > 0 || commentCount > 0 || assignees.length > 0) && (
         <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-gray-100">
           {/* Left: Icons */}
           <div className="flex items-center gap-3 text-gray-400">
@@ -83,6 +107,12 @@ const TaskCard = ({ card, onDelete, onClick, canDrag = true, canEdit = false }) 
               <span className="flex items-center gap-1 text-[11px]">
                 <Paperclip size={12} />
                 {attachmentCount}
+              </span>
+            )}
+            {commentCount > 0 && (
+              <span className="flex items-center gap-1 text-[11px]">
+                <MessageSquare size={12} />
+                {commentCount}
               </span>
             )}
           </div>

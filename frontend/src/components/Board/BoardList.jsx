@@ -44,7 +44,7 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick, canDra
   };
 
   return (
-    <div className="w-80 bg-gray-50/80 rounded-2xl p-3 shrink-0 flex flex-col max-h-full border border-gray-200/60">
+    <div className="min-w-[280px] flex-1 bg-gray-50/80 rounded-2xl p-3 shrink-0 flex flex-col max-h-full border border-gray-200/60">
       {/* ─── Column Header ─── */}
       <div className="flex items-center justify-between px-1.5 mb-3">
         <div className="flex items-center gap-2">

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { ArrowRight, CheckCircle2, MessageSquare } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,6 @@ const Analytics = () => {
     const { currentWorkspaceId, selectedWorkspace } = useWorkspaceStore();
     const { userInfo } = useAuthStore();
     const [projectProgress, setProjectProgress] = useState([]);
-    const [activity, setActivity] = useState([]);
     const [stats, setStats] = useState({ totalProjects: 0, activeTasks: 0, completedTasks: 0 });
     const members = selectedWorkspace?.workspace?.members || [];
     const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
@@ -27,7 +26,6 @@ const Analytics = () => {
             const res = await axios.get(`/api/board/workspace-analytics?workspaceId=${currentWorkspaceId}`);
             const data = res.data || {};
             setProjectProgress(data.projects || []);
-            setActivity(data.activity || []);
             setStats(data.stats || { totalProjects: 0, activeTasks: 0, completedTasks: 0 });
         } catch (err) {
             console.error('Failed to fetch analytics', err);
@@ -41,18 +39,6 @@ const Analytics = () => {
         if (Number.isNaN(d.getTime())) return 'No due date';
         return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
     };
-    const activityLabel = (item) => {
-        if (item.type === 'message') {
-            const who = item.user?.fullname || 'Someone';
-            return `${who} posted in #${item.channelName}`;
-        }
-        if (item.type === 'project') {
-            const who = item.user?.fullname ? `${item.user.fullname} created` : 'Project created';
-            return item.user?.fullname ? `${who} ${item.title}` : `Project created: ${item.title}`;
-        }
-        return `New task: ${item.title} (${item.projectName || 'Project'})`;
-    };
-
     if (!currentWorkspaceId) {
         return (
             <div className="px-8 py-10">
@@ -86,7 +72,7 @@ const Analytics = () => {
                 <p className="text-gray-500 mt-2">Project progress and activity for this workspace.</p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div className="grid grid-cols-1 gap-6 mb-8">
                 <div className="bg-white rounded-2xl shadow-lg border-0 p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold text-gray-900">Project Progress</h2>
@@ -118,33 +104,6 @@ const Analytics = () => {
                                             className="h-full bg-blue-600 transition-all"
                                             style={{ width: `${project.progress || 0}%` }}
                                         ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-lg border-0 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">Activity Feed</h2>
-                        <div className="text-sm text-gray-500">Latest updates</div>
-                    </div>
-
-                    {activity.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8">No recent activity.</div>
-                    ) : (
-                        <div className="space-y-4">
-                            {activity.map((item, idx) => (
-                                <div key={`${item.type}-${idx}`} className="flex items-start gap-3">
-                                    <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                                        {item.type === 'message' ? <MessageSquare size={16} /> : <CheckCircle2 size={16} />}
-                                    </div>
-                                    <div className="flex-1">
-                                        <div className="text-sm text-gray-800">{activityLabel(item)}</div>
-                                        <div className="text-[11px] text-gray-400 mt-1">
-                                            {item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}
-                                        </div>
                                     </div>
                                 </div>
                             ))}

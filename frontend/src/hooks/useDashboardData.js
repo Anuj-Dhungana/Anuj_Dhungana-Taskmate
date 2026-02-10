@@ -20,6 +20,7 @@ export const useDashboardData = () => {
     const [allCards, setAllCards] = useState([]);
     const [myTasks, setMyTasks] = useState([]);
     const [notifications, setNotifications] = useState([]);
+    const [analyticsActivity, setAnalyticsActivity] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const workspace = selectedWorkspace?.workspace;
@@ -28,21 +29,46 @@ export const useDashboardData = () => {
     const canInvite = myRole === 'owner' || myRole === 'admin';
     const canAccessAnalytics = myRole === 'owner' || myRole === 'admin';
 
+    const formatAnalyticsActivity = useCallback((item, index) => {
+        const sender = item?.user || { fullname: 'System' };
+        let message = 'updated the workspace';
+
+        if (item?.type === 'message') {
+            message = `posted in #${item.channelName || 'general'}`;
+        } else if (item?.type === 'project') {
+            message = item?.title ? `created ${item.title}` : 'created a project';
+        } else if (item?.type === 'task') {
+            message = `added task ${item?.title || 'Untitled'}${item?.projectName ? ` in ${item.projectName}` : ''}`;
+        }
+
+        return {
+            _id: item?._id || `${item?.type || 'activity'}-${item?.createdAt || index}-${index}`,
+            sender,
+            type: item?.type || 'activity',
+            message,
+            createdAt: item?.createdAt || new Date().toISOString(),
+        };
+    }, []);
+
     const fetchData = useCallback(async () => {
         if (!currentWorkspaceId) return;
         setLoading(true);
         try {
-            const [projectsRes, cardsRes, myTasksRes, notifRes] = await Promise.allSettled([
+            const [projectsRes, cardsRes, myTasksRes, notifRes, analyticsRes] = await Promise.allSettled([
                 axios.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
                 axios.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`),
                 axios.get(`/api/board/my-tasks?workspaceId=${currentWorkspaceId}`),
                 axios.get('/api/notifications'),
+                axios.get(`/api/board/workspace-analytics?workspaceId=${currentWorkspaceId}`),
             ]);
 
             setProjects(projectsRes.status === 'fulfilled' ? projectsRes.value.data || [] : []);
             setAllCards(cardsRes.status === 'fulfilled' ? cardsRes.value.data || [] : []);
             setMyTasks(myTasksRes.status === 'fulfilled' ? myTasksRes.value.data || [] : []);
             setNotifications(notifRes.status === 'fulfilled' ? notifRes.value.data || [] : []);
+            setAnalyticsActivity(
+                analyticsRes.status === 'fulfilled' ? analyticsRes.value.data?.activity || [] : []
+            );
         } catch (err) {
             console.error('Dashboard data error', err);
         } finally {
@@ -137,10 +163,13 @@ export const useDashboardData = () => {
         return groupUpcomingByDay(all);
     }, [projects, allCards]);
 
-    // Activity Feed (from notifications, max 8)
+    // Activity Feed (prefer analytics activity, fallback to notifications)
     const activityFeed = useMemo(() => {
+        if (analyticsActivity.length > 0) {
+            return analyticsActivity.slice(0, 8).map((item, index) => formatAnalyticsActivity(item, index));
+        }
         return notifications.slice(0, 8);
-    }, [notifications]);
+    }, [analyticsActivity, notifications, formatAnalyticsActivity]);
 
     return {
         loading,

@@ -1,7 +1,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import TaskCard from './TaskCard';
-import { Plus, Circle, Loader, CheckCircle2 } from 'lucide-react';
+import { Plus, Circle, Clock3, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
 import axios from 'axios';
 import { emitProjectDataChanged } from '../../utils/projectEvents';
@@ -9,7 +9,8 @@ import { emitProjectDataChanged } from '../../utils/projectEvents';
 /* Column icon + accent colour by list title */
 const columnMeta = {
   'To Do':       { icon: Circle,       color: 'text-gray-400',  dot: 'bg-gray-400' },
-  'In Progress': { icon: Loader,       color: 'text-blue-500',  dot: 'bg-blue-500' },
+  'In Progress': { icon: Clock3,       color: 'text-blue-500',  dot: 'bg-blue-500' },
+  'Done':        { icon: CheckCircle2, color: 'text-green-500', dot: 'bg-green-500' },
   'Completed':   { icon: CheckCircle2, color: 'text-green-500', dot: 'bg-green-500' },
 };
 
@@ -48,7 +49,7 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick, canDra
       {/* ─── Column Header ─── */}
       <div className="flex items-center justify-between px-1.5 mb-3">
         <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${meta.dot}`} />
+          <Icon size={14} className={meta.color} />
           <h3 className="text-[13px] font-semibold text-gray-700">{list.title}</h3>
           <span className="text-[11px] font-medium text-gray-400 bg-gray-200/60 px-1.5 py-0.5 rounded-md">
             {cards.length}

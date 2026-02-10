@@ -1,4 +1,5 @@
 import { timeAgo } from '../../utils/dashboardHelpers';
+import { CheckCircle2, MessageSquare } from 'lucide-react';
 
 const ActivityFeed = ({ activities }) => {
     if (activities.length === 0) {
@@ -16,9 +17,8 @@ const ActivityFeed = ({ activities }) => {
             <div className="space-y-3">
                 {activities.map((item) => (
                     <div key={item._id} className="flex items-start gap-2.5">
-                        {/* Avatar */}
-                        <div className="w-7 h-7 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                            {item.sender?.fullname?.charAt(0)?.toUpperCase() || '?'}
+                        <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                            {item.type === 'message' ? <MessageSquare size={14} /> : <CheckCircle2 size={14} />}
                         </div>
 
                         {/* Content */}

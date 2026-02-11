@@ -1,11 +1,11 @@
-import { Grid, TrendingUp, ListChecks, Calendar, Users, BarChart3, MessageSquare, Phone, Settings } from 'lucide-react';
+import { Folder, TrendingUp, ListChecks, Calendar, Users, BarChart3, MessageSquare, Phone, Settings } from 'lucide-react';
 
 export const NAV_GROUPS = [
     {
         label: 'Workspace',
         items: [
             { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-            { to: '/projects', label: 'Projects', icon: Grid },
+            { to: '/projects', label: 'Projects', icon: Folder },
             { to: '/tasks', label: 'My Tasks', icon: ListChecks },
             { to: '/calendar', label: 'Calendar', icon: Calendar },
             { to: '/members', label: 'Members', icon: Users },

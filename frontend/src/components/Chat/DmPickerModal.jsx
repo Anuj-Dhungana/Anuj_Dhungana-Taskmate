@@ -37,8 +37,25 @@ const DmPickerModal = ({ isOpen, members, searchTerm, onSearchChange, onSelectMe
                             onClick={() => onSelectMember(user._id)}
                             className="w-full flex items-center gap-3 px-3 py-3 text-left hover:bg-gray-50"
                         >
-                            <div className="w-9 h-9 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold">
-                                {user.fullname?.substring(0, 1).toUpperCase() || 'U'}
+                            <div className="relative w-9 h-9 shrink-0">
+                                {user.avatar ? (
+                                    <img
+                                        src={user.avatar}
+                                        alt={user.fullname || 'User'}
+                                        className="w-9 h-9 rounded-full object-cover border border-gray-200"
+                                        onError={(event) => {
+                                            event.currentTarget.style.display = 'none';
+                                            const fallback = event.currentTarget.nextElementSibling;
+                                            if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <div
+                                    className="w-9 h-9 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 text-white hidden items-center justify-center text-xs font-semibold"
+                                    style={{ display: user.avatar ? 'none' : 'flex' }}
+                                >
+                                    {user.fullname?.substring(0, 1).toUpperCase() || 'U'}
+                                </div>
                             </div>
                             <div>
                                 <div className="text-sm font-medium text-gray-800">{user.fullname}</div>

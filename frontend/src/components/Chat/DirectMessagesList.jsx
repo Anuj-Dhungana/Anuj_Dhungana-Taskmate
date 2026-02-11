@@ -30,8 +30,25 @@ const DirectMessagesList = ({ dmThreads, selectedChannel, onSelectChannel, onCre
                                     : 'text-gray-700 border-transparent hover:bg-white'
                             }`}
                         >
-                            <div className="w-8 h-8 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs font-semibold">
-                                {dm.displayName?.substring(0, 1).toUpperCase() || 'U'}
+                            <div className="relative w-8 h-8 shrink-0">
+                                {dm.displayAvatar ? (
+                                    <img
+                                        src={dm.displayAvatar}
+                                        alt={dm.displayName || 'User'}
+                                        className="w-8 h-8 rounded-full object-cover border border-gray-200"
+                                        onError={(event) => {
+                                            event.currentTarget.style.display = 'none';
+                                            const fallback = event.currentTarget.nextElementSibling;
+                                            if (fallback) fallback.style.display = 'flex';
+                                        }}
+                                    />
+                                ) : null}
+                                <div
+                                    className="w-8 h-8 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 text-white hidden items-center justify-center text-xs font-semibold"
+                                    style={{ display: dm.displayAvatar ? 'none' : 'flex' }}
+                                >
+                                    {dm.displayName?.substring(0, 1).toUpperCase() || 'U'}
+                                </div>
                             </div>
                             <div className="min-w-0">
                                 <div className="text-sm font-medium truncate">{dm.displayName}</div>

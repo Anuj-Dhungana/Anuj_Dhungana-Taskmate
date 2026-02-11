@@ -160,10 +160,21 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                         isGroupStart ? 'mt-4' : 'mt-1'
                                     }`}
                                 >
-                                    {!isMe && isGroupStart && !isDM && (
-                                        <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold mr-3 text-blue-600">
-                                            {msg.sender?.fullname?.substring(0, 1) || 'U'}
-                                        </div>
+                                    {!isMe && isGroupStart && (
+                                        msg.sender?.avatar ? (
+                                            <img
+                                                src={msg.sender.avatar}
+                                                alt={msg.sender?.fullname || 'User'}
+                                                className="w-9 h-9 rounded-full object-cover mr-3 border border-gray-200"
+                                                onError={(event) => {
+                                                    event.currentTarget.style.display = 'none';
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold mr-3 text-blue-600">
+                                                {msg.sender?.fullname?.substring(0, 1) || 'U'}
+                                            </div>
+                                        )
                                     )}
 
                                     <div className={`max-w-[70%] group relative ${isMe ? 'items-end' : ''}`}>

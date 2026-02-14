@@ -23,6 +23,7 @@ const [otp, setOtp] = useState('');
 
   const submitHandler = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
         // Normal Login Attempt
         const res = await axios.post('/api/auth/login', { email, password });
@@ -40,18 +41,23 @@ const [otp, setOtp] = useState('');
 
     } catch (err) {
         toast.error(err?.response?.data?.message || err.message);
+    } finally {
+        setIsLoading(false);
     }
 };
 
 const handle2FASubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
         const res = await axios.post('/api/auth/login-2fa', { email, code: otp });
         setCredentials(res.data);
         toast.success('Login Successful!');
         navigate('/dashboard');
     } catch (err) {
-        toast.error('Invalid Code');
+        toast.error(err?.response?.data?.message || 'Invalid Code');
+    } finally {
+        setIsLoading(false);
     }
 }
 if (show2FA) {

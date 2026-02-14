@@ -43,6 +43,7 @@ const Profile = () => {
                 setTwoFactorEnabled(!!profile.twoFactorEnabled);
                 setUserInfo(profile);
             } catch (err) {
+                console.error('Failed to fetch profile', err);
                 // keep local state fallback from store
             }
         };
@@ -134,7 +135,7 @@ const Profile = () => {
             resetWorkspaceState();
             navigate('/login');
         } catch (err) {
-            toast.error('Logout failed');
+            toast.error(err?.response?.data?.message || 'Logout failed');
         }
     };
 

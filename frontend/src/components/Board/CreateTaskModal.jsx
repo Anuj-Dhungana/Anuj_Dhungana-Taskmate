@@ -67,23 +67,33 @@ const CreateTaskModal = ({
     }, [normalizedProjectMembers, selfId]);
 
     useEffect(() => {
-        setListId(defaultListId);
+        const timer = setTimeout(() => {
+            setListId(defaultListId);
+        }, 0);
+        return () => clearTimeout(timer);
     }, [defaultListId, isOpen]);
 
     useEffect(() => {
-        if (!canAssign && selfId && isOpen && isSelfProjectMember) {
-            setAssignees([selfId]);
-            return;
-        }
-        if (!canAssign && isOpen) {
-            setAssignees([]);
-        }
+        if (!isOpen) return;
+        const timer = setTimeout(() => {
+            if (!canAssign && selfId && isSelfProjectMember) {
+                setAssignees([selfId]);
+                return;
+            }
+            if (!canAssign) {
+                setAssignees([]);
+            }
+        }, 0);
+        return () => clearTimeout(timer);
     }, [canAssign, selfId, isOpen, isSelfProjectMember]);
 
     useEffect(() => {
         if (!isOpen) return;
-        const allowed = new Set(normalizedProjectMembers.map((m) => m._id));
-        setAssignees((prev) => prev.filter((id) => allowed.has(String(id))));
+        const timer = setTimeout(() => {
+            const allowed = new Set(normalizedProjectMembers.map((m) => m._id));
+            setAssignees((prev) => prev.filter((id) => allowed.has(String(id))));
+        }, 0);
+        return () => clearTimeout(timer);
     }, [normalizedProjectMembers, isOpen]);
 
     if (!isOpen) return null;

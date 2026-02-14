@@ -157,7 +157,6 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
             .join(', ');
     }, [assignees, normalizedProjectMembers]);
     const completedSubtasks = subtasks.filter((s) => !!s?.done).length;
-    const subtaskProgress = subtasks.length ? Math.round((completedSubtasks / subtasks.length) * 100) : 0;
     const isOverdue = dueDate && new Date(dueDate) < new Date() && !Number.isNaN(new Date(dueDate).getTime());
 
     const hydrateFromCard = (nextCard) => {

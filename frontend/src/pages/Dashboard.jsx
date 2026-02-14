@@ -16,11 +16,8 @@ const Dashboard = () => {
         loading,
         currentWorkspaceId,
         workspace,
-        userInfo,
         members,
-        myRole,
         canInvite,
-        canAccessAnalytics,
         stats,
         recentProjects,
         focusTasks,
@@ -125,5 +122,4 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
 

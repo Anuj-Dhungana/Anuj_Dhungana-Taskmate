@@ -28,7 +28,7 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
         form.setShowDiscardConfirm(false);
         form.resetForm();
         onClose?.();
-    }, [form.hasUnsavedChanges, form.setShowDiscardConfirm, form.resetForm, onClose]);
+    }, [form, onClose]);
 
     const confirmDiscardAndClose = () => {
         form.setShowDiscardConfirm(false);

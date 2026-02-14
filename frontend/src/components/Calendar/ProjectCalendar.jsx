@@ -153,7 +153,10 @@ const ProjectCalendar = ({ projectId }) => {
   }, [projectId]);
 
   useEffect(() => {
-    fetchCalendarData();
+    const timer = setTimeout(() => {
+      fetchCalendarData();
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchCalendarData]);
 
   useEffect(() => {

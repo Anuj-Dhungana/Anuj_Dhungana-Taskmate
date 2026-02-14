@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { ArrowRight } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
@@ -10,27 +10,28 @@ const Analytics = () => {
     const { currentWorkspaceId, selectedWorkspace } = useWorkspaceStore();
     const { userInfo } = useAuthStore();
     const [projectProgress, setProjectProgress] = useState([]);
-    const [stats, setStats] = useState({ totalProjects: 0, activeTasks: 0, completedTasks: 0 });
     const members = selectedWorkspace?.workspace?.members || [];
     const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
     const canViewAnalytics = myRole === 'owner' || myRole === 'admin';
 
-    useEffect(() => {
-        if (currentWorkspaceId && canViewAnalytics) {
-            fetchAnalytics();
-        }
-    }, [currentWorkspaceId, canViewAnalytics]);
-
-    const fetchAnalytics = async () => {
+    const fetchAnalytics = useCallback(async () => {
         try {
             const res = await axios.get(`/api/board/workspace-analytics?workspaceId=${currentWorkspaceId}`);
             const data = res.data || {};
             setProjectProgress(data.projects || []);
-            setStats(data.stats || { totalProjects: 0, activeTasks: 0, completedTasks: 0 });
         } catch (err) {
             console.error('Failed to fetch analytics', err);
         }
-    };
+    }, [currentWorkspaceId]);
+
+    useEffect(() => {
+        if (currentWorkspaceId && canViewAnalytics) {
+            const timer = setTimeout(() => {
+                fetchAnalytics();
+            }, 0);
+            return () => clearTimeout(timer);
+        }
+    }, [currentWorkspaceId, canViewAnalytics, fetchAnalytics]);
 
     const projectBadgeColor = (project) => project?.status === 'Completed' ? 'bg-green-500' : 'bg-blue-500';
     const formatDate = (value) => {

@@ -94,7 +94,7 @@ const MembersTable = ({
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
-                            onClick={() => setCurrentPage((prev) => Math.max(1, safeCurrentPage - 1))}
+                            onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
                             disabled={safeCurrentPage === 1}
                             className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -105,7 +105,7 @@ const MembersTable = ({
                         </span>
                         <button
                             type="button"
-                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, safeCurrentPage + 1))}
+                            onClick={() => setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))}
                             disabled={safeCurrentPage >= totalPages}
                             className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >

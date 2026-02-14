@@ -17,7 +17,6 @@ const DashboardLayout = () => {
         setShowWorkspaceModal,
         workspaceMenuOpen,
         setWorkspaceMenuOpen,
-        handleLogout,
         handleWorkspaceSelect,
         handleWorkspaceCreated,
     } = useDashboard();

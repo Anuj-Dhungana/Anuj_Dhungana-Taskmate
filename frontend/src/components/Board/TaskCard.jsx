@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CalendarDays, Paperclip, MoreHorizontal, MessageSquare, AlertTriangle } from 'lucide-react';
@@ -8,7 +9,7 @@ const priorityStyles = {
   Low: 'bg-gray-50 text-gray-500 border border-gray-200',
 };
 
-const TaskCard = ({ card, onDelete, onClick, canDrag = true, canEdit = false }) => {
+const TaskCard = ({ card, onClick, canDrag = true, canEdit = false }) => {
   const {
     attributes,
     listeners,
@@ -25,6 +26,7 @@ const TaskCard = ({ card, onDelete, onClick, canDrag = true, canEdit = false }) 
   };
 
   const priority = card.priority || 'Medium';
+  const [now, setNow] = useState(() => Date.now());
   const assignees = card.assignees || [];
   const attachmentCount = card.attachments?.length || 0;
   const commentCount = card.comments?.length || 0;
@@ -37,10 +39,17 @@ const TaskCard = ({ card, onDelete, onClick, canDrag = true, canEdit = false }) 
   const dueTime = hasDueDate ? new Date(card.dueDate).getTime() : NaN;
   const listTitle = String(card?.listId?.title || '').toLowerCase();
   const isCompleted = listTitle.includes('done') || listTitle.includes('complete');
-  const isOverdue = hasDueDate && !Number.isNaN(dueTime) && dueTime < Date.now() && !isCompleted;
+  const isOverdue = hasDueDate && !Number.isNaN(dueTime) && dueTime < now && !isCompleted;
   const dueDateStr = hasDueDate
     ? new Date(card.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : null;
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div

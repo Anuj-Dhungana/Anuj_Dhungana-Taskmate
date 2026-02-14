@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
-import { toast } from 'react-hot-toast';
 import {
     createMemberLookup,
     processDmThreads,
@@ -65,7 +64,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
     }, [loadConversations]);
 
     // Computed values
-    const members = workspace?.workspace?.members || [];
+    const members = useMemo(() => workspace?.workspace?.members ?? [], [workspace?.workspace?.members]);
     const memberLookup = useMemo(() => createMemberLookup(members), [members]);
     const dmWithMeta = useMemo(() => processDmThreads(dmThreads, memberLookup, userId), [dmThreads, memberLookup, userId]);
     const filteredChannels = useMemo(() => filterChannels(channels, search), [channels, search]);

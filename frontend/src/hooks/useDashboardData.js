@@ -7,7 +7,6 @@ import {
     getProjectProgress,
     isOverdue,
     isDueToday,
-    isDueThisWeek,
     groupUpcomingByDay,
 } from '../utils/dashboardHelpers';
 import { getProjectLabel } from '../utils/projectHelpers';
@@ -24,7 +23,7 @@ export const useDashboardData = () => {
     const [loading, setLoading] = useState(true);
 
     const workspace = selectedWorkspace?.workspace;
-    const members = workspace?.members || [];
+    const members = useMemo(() => workspace?.members ?? [], [workspace?.members]);
     const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
     const canInvite = myRole === 'owner' || myRole === 'admin';
     const canAccessAnalytics = myRole === 'owner' || myRole === 'admin';

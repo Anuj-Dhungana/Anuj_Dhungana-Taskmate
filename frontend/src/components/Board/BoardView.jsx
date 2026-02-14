@@ -68,7 +68,10 @@ const BoardView = ({ projectId, project, onStatsChange }) => {
     }, [projectId]);
 
     useEffect(() => {
-        fetchBoard();
+        const timer = setTimeout(() => {
+            fetchBoard();
+        }, 0);
+        return () => clearTimeout(timer);
     }, [fetchBoard]);
 
     useEffect(() => {

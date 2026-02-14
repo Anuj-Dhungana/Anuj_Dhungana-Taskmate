@@ -50,7 +50,7 @@ export const useWorkspaceMembers = () => {
     }, [refreshWorkspace]);
 
     const workspace = selectedWorkspace?.workspace;
-    const members = workspace?.members || [];
+    const members = useMemo(() => workspace?.members ?? [], [workspace?.members]);
 
     const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
     const isOwner = myRole === 'owner';

@@ -150,6 +150,7 @@ const MyTasks = () => {
                 setProjectMembersById((prev) => ({ ...prev, [projectId]: members }));
                 return members;
             } catch (err) {
+                console.error('Failed to load project members', err);
                 setProjectMembersById((prev) => ({ ...prev, [projectId]: [] }));
                 return [];
             }

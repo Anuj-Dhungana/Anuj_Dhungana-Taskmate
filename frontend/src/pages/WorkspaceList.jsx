@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Grid, Plus, Users } from 'lucide-react';
@@ -14,7 +14,7 @@ const WorkspaceList = () => {
         [workspaces]
     );
 
-    const fetchWorkspaces = async () => {
+    const fetchWorkspaces = useCallback(async () => {
         try {
             const res = await axios.get('/api/workspaces');
             setWorkspaces(res.data);
@@ -23,11 +23,11 @@ const WorkspaceList = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [setWorkspaces]);
 
     useEffect(() => {
         fetchWorkspaces();
-    }, []);
+    }, [fetchWorkspaces]);
 
     const handleSelectWorkspace = async (workspaceId) => {
         setCurrentWorkspaceId(workspaceId);

@@ -21,6 +21,8 @@ const ChannelList = ({ channels, selectedChannel, onSelectChannel, canManageChan
                 )}
                 {channels.map((ch) => {
                     const isActive = selectedChannel?._id === ch._id;
+                    const hasUnread = Number(ch.unreadCount) > 0;
+                    const badgeLabel = ch.unreadCount > 99 ? '99+' : ch.unreadCount;
                     return (
                         <button
                             key={ch._id}
@@ -33,8 +35,17 @@ const ChannelList = ({ channels, selectedChannel, onSelectChannel, canManageChan
                         >
                             <Hash size={14} className={isActive ? 'text-indigo-600' : 'text-gray-400'} />
                             <span className="truncate">{ch.name}</span>
-                            {ch.isGeneral && (
-                                <span className="ml-auto text-[10px] text-gray-400">default</span>
+                            {(hasUnread || ch.isGeneral) && (
+                                <div className="ml-auto flex items-center gap-1">
+                                    {ch.isGeneral && (
+                                        <span className="text-[10px] text-gray-400">default</span>
+                                    )}
+                                    {hasUnread && (
+                                        <span className="min-w-5 h-5 px-1 rounded-full bg-indigo-600 text-white text-[10px] font-semibold flex items-center justify-center">
+                                            {badgeLabel}
+                                        </span>
+                                    )}
+                                </div>
                             )}
                         </button>
                     );

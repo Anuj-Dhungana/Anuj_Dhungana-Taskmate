@@ -2,7 +2,7 @@ import { Search } from 'lucide-react';
 
 const ChatSidebar = ({ search, onSearchChange, children }) => {
     return (
-        <aside className="w-72 border-r bg-gray-50/80 p-4 flex flex-col">
+        <aside className="w-72 shrink-0 min-h-0 border-r bg-gray-50/80 p-4 flex flex-col">
             <div className="relative mb-4">
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
@@ -13,7 +13,7 @@ const ChatSidebar = ({ search, onSearchChange, children }) => {
                 />
             </div>
 
-            <div className="flex-1 overflow-y-auto pr-1 space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1 space-y-4">
                 {children}
             </div>
         </aside>

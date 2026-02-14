@@ -1,6 +1,9 @@
 import { NavLink } from 'react-router-dom';
 
 const NavigationItem = ({ item, isCollapsed, iconSize }) => {
+    const hasBadge = Number(item.badgeCount) > 0;
+    const badgeLabel = item.badgeCount > 99 ? '99+' : item.badgeCount;
+
     return (
         <NavLink
             to={item.to}
@@ -22,6 +25,16 @@ const NavigationItem = ({ item, isCollapsed, iconSize }) => {
                 <>
                     <item.icon size={iconSize} />
                     {!isCollapsed && <span className="text-base">{item.label}</span>}
+                    {!isCollapsed && hasBadge && (
+                        <span className="ml-auto min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center">
+                            {badgeLabel}
+                        </span>
+                    )}
+                    {isCollapsed && hasBadge && (
+                        <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[10px] font-semibold flex items-center justify-center border border-gray-900">
+                            {badgeLabel}
+                        </span>
+                    )}
                     {isCollapsed && (
                         <span className="absolute left-full top-1/2 -translate-y-1/2 ml-3 hidden group-hover:block z-50">
                             <span className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl border border-gray-800 whitespace-nowrap">

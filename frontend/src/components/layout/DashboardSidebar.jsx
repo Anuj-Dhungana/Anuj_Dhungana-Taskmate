@@ -1,9 +1,13 @@
+import { useEffect, useMemo } from 'react';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import WorkspaceSelector from './WorkspaceSelector';
 import NavigationGroup from './NavigationGroup';
 import { NAV_GROUPS, SYSTEM_ITEMS } from '../../utils/navigationConfig';
 import logo from '../../assets/logo.png';
+import socket from '../../lib/socket';
+import useChatUnreadStore from '../../store/useChatUnreadStore';
 
 const DashboardSidebar = ({
     isCollapsed,
@@ -12,10 +16,88 @@ const DashboardSidebar = ({
     userInfo,
 }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const iconSize = 22;
+    const currentWorkspaceId = workspaceProps?.currentWorkspaceId;
+    const setWorkspaceChannels = useChatUnreadStore((state) => state.setWorkspaceChannels);
+    const incrementUnread = useChatUnreadStore((state) => state.incrementUnread);
+    const isWorkspaceChannel = useChatUnreadStore((state) => state.isWorkspaceChannel);
+    const unreadByWorkspace = useChatUnreadStore((state) => state.unreadByWorkspace);
+    const activeChannelByWorkspace = useChatUnreadStore((state) => state.activeChannelByWorkspace);
+
+    const totalChatUnread = useMemo(() => {
+        const wid = String(currentWorkspaceId || '');
+        if (!wid) return 0;
+        const unreadMap = unreadByWorkspace[wid] || {};
+        return Object.values(unreadMap).reduce((sum, value) => sum + (Number(value) || 0), 0);
+    }, [currentWorkspaceId, unreadByWorkspace]);
+
+    const navGroups = useMemo(
+        () =>
+            NAV_GROUPS.map((group) => ({
+                ...group,
+                items: group.items.map((item) =>
+                    item.to === '/chat'
+                        ? { ...item, badgeCount: totalChatUnread }
+                        : item
+                ),
+            })),
+        [totalChatUnread]
+    );
 
     const avatarSrc = userInfo?.avatar;
     const avatarInitial = userInfo?.fullname?.[0]?.toUpperCase() || 'U';
+
+    useEffect(() => {
+        if (!currentWorkspaceId) return;
+
+        const loadDmChannels = async () => {
+            try {
+                const [chRes, dmRes] = await Promise.all([
+                    axios.get(`/api/channels/workspace/${currentWorkspaceId}`),
+                    axios.get(`/api/channels/workspace/${currentWorkspaceId}/dms`),
+                ]);
+                const channels = chRes.data || [];
+                const dms = dmRes.data || [];
+                const allChannels = [...channels, ...dms];
+                setWorkspaceChannels(currentWorkspaceId, allChannels);
+
+                socket.emit('join_workspace', `workspace_${currentWorkspaceId}`);
+                allChannels.forEach((channel) => {
+                    const channelId = channel?._id;
+                    if (!channelId) return;
+                    socket.emit('join_channel', channelId);
+                });
+            } catch (err) {
+                console.error('Failed to load channels for unread counts', err);
+            }
+        };
+
+        loadDmChannels();
+    }, [currentWorkspaceId, setWorkspaceChannels]);
+
+    useEffect(() => {
+        if (!currentWorkspaceId || !userInfo?._id) return;
+
+        const handleReceiveMessage = (msg) => {
+            const messageWorkspaceId = String(msg?.workspaceId || '');
+            const channelId = String(msg?.channelId?._id || msg?.channelId || '');
+            const senderId = String(msg?.sender?._id || msg?.sender || '');
+            if (!messageWorkspaceId || !channelId || !senderId) return;
+            if (senderId === String(userInfo._id)) return;
+            if (messageWorkspaceId !== String(currentWorkspaceId)) return;
+            if (!isWorkspaceChannel(messageWorkspaceId, channelId)) return;
+
+            const isChatPage = location.pathname === '/chat';
+            const activeChannelId = String(activeChannelByWorkspace[messageWorkspaceId] || '');
+            if (isChatPage && activeChannelId && activeChannelId === channelId) return;
+
+            incrementUnread({ workspaceId: messageWorkspaceId, channelId });
+        };
+
+        socket.on('receive_message', handleReceiveMessage);
+        return () => socket.off('receive_message', handleReceiveMessage);
+    }, [currentWorkspaceId, userInfo?._id, incrementUnread, isWorkspaceChannel, location.pathname, activeChannelByWorkspace]);
 
     return (
         <aside
@@ -50,7 +132,7 @@ const DashboardSidebar = ({
 
             {/* Navigation Groups */}
             <nav className={`flex-1 py-6 text-base ${isCollapsed ? 'px-2 space-y-2' : 'px-3 space-y-5'} overflow-hidden`}>
-                {NAV_GROUPS.map((group, index) => (
+                {navGroups.map((group, index) => (
                     <NavigationGroup
                         key={group.label}
                         group={group}

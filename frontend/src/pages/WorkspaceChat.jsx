@@ -8,6 +8,7 @@ import ChannelList from '../components/chat/ChannelList';
 import DirectMessagesList from '../components/chat/DirectMessagesList';
 import ChatHeader from '../components/chat/ChatHeader';
 import DmPickerModal from '../components/chat/DmPickerModal';
+import ChannelEditorModal from '../components/chat/ChannelEditorModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useWorkspaceChat } from '../hooks/useWorkspaceChat';
 
@@ -16,6 +17,11 @@ const WorkspaceChat = () => {
     const { userInfo } = useAuthStore();
     const [channelToDelete, setChannelToDelete] = useState(null);
     const [deletingChannel, setDeletingChannel] = useState(false);
+    const [showChannelEditor, setShowChannelEditor] = useState(false);
+    const [channelEditorMode, setChannelEditorMode] = useState('create');
+    const [channelName, setChannelName] = useState('');
+    const [channelEditorError, setChannelEditorError] = useState('');
+    const [savingChannel, setSavingChannel] = useState(false);
 
     const {
         workspace,
@@ -47,6 +53,53 @@ const WorkspaceChat = () => {
     const canManageChannels = myRole === 'owner' || myRole === 'admin';
     const selectedIsDM = selectedConversation?.type === 'dm';
     const canManageSelectedChannel = canManageChannels && !selectedIsDM;
+
+    const openCreateChannelModal = () => {
+        setShowChannelMenu(false);
+        setChannelEditorMode('create');
+        setChannelName('');
+        setChannelEditorError('');
+        setShowChannelEditor(true);
+    };
+
+    const openRenameChannelModal = () => {
+        if (!selectedConversation || selectedIsDM) return;
+        setShowChannelMenu(false);
+        setChannelEditorMode('rename');
+        setChannelName(selectedConversation.name || '');
+        setChannelEditorError('');
+        setShowChannelEditor(true);
+    };
+
+    const closeChannelEditorModal = () => {
+        if (savingChannel) return;
+        setShowChannelEditor(false);
+        setChannelEditorError('');
+    };
+
+    const submitChannelEditor = async () => {
+        const trimmedName = channelName.trim();
+        if (!trimmedName) {
+            setChannelEditorError('Channel name is required');
+            return;
+        }
+
+        setSavingChannel(true);
+        setChannelEditorError('');
+        try {
+            if (channelEditorMode === 'rename') {
+                await handleRenameChannel(trimmedName);
+            } else {
+                await handleCreateChannel(trimmedName);
+            }
+            setShowChannelEditor(false);
+            setChannelName('');
+        } catch (err) {
+            setChannelEditorError(err?.response?.data?.message || 'Failed to save channel');
+        } finally {
+            setSavingChannel(false);
+        }
+    };
 
     const handleDeleteChannel = async () => {
         if (!selectedConversation) return;
@@ -85,15 +138,15 @@ const WorkspaceChat = () => {
     }
 
     return (
-        <div className="h-[calc(100vh-64px)]">
-            <div className="h-full flex overflow-hidden">
+        <div className="h-full min-h-0">
+            <div className="h-full min-h-0 flex overflow-hidden">
                 <ChatSidebar search={search} onSearchChange={setSearch}>
                     <ChannelList
                         channels={filteredChannels}
                         selectedChannel={selectedConversation}
                         onSelectChannel={setSelectedChannel}
                         canManageChannels={canManageChannels}
-                        onCreateChannel={handleCreateChannel}
+                        onCreateChannel={openCreateChannelModal}
                     />
                     <DirectMessagesList
                         dmThreads={filteredDMs}
@@ -103,7 +156,7 @@ const WorkspaceChat = () => {
                     />
                 </ChatSidebar>
 
-                <main className="flex-1 flex flex-col">
+                <main className="flex-1 min-h-0 flex flex-col">
                     {selectedConversation ? (
                         <>
                             <ChatHeader
@@ -114,10 +167,10 @@ const WorkspaceChat = () => {
                                 canManage={canManageSelectedChannel}
                                 showMenu={showChannelMenu}
                                 onMenuToggle={() => setShowChannelMenu((v) => !v)}
-                                onRename={handleRenameChannel}
+                                onRename={openRenameChannelModal}
                                 onDelete={handleDeleteChannel}
                             />
-                            <div className="flex-1">
+                            <div className="flex-1 min-h-0">
                                 <ChatArea
                                     channel={selectedConversation}
                                     workspaceId={currentWorkspaceId}
@@ -129,7 +182,7 @@ const WorkspaceChat = () => {
                             </div>
                         </>
                     ) : (
-                        <div className="h-full flex items-center justify-center text-gray-500">
+                        <div className="flex-1 min-h-0 flex items-center justify-center text-gray-500">
                             <div className="text-center">
                                 <div className="text-lg font-semibold text-gray-700">Select a channel to start chatting</div>
                                 <div className="text-sm text-gray-400 mt-1">Your conversations will appear here.</div>
@@ -149,6 +202,20 @@ const WorkspaceChat = () => {
                     setShowDmPicker(false);
                     setDmSearch('');
                 }}
+            />
+
+            <ChannelEditorModal
+                isOpen={showChannelEditor}
+                mode={channelEditorMode}
+                value={channelName}
+                error={channelEditorError}
+                loading={savingChannel}
+                onChange={(value) => {
+                    setChannelName(value);
+                    if (channelEditorError) setChannelEditorError('');
+                }}
+                onClose={closeChannelEditorModal}
+                onSubmit={submitChannelEditor}
             />
 
             <ConfirmModal

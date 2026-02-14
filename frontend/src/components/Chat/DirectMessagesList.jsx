@@ -54,6 +54,14 @@ const DirectMessagesList = ({ dmThreads, selectedChannel, onSelectChannel, onCre
                                 <div className="text-sm font-medium truncate">{dm.displayName}</div>
                                 <div className="text-[11px] text-gray-400 truncate">{dm.displayEmail}</div>
                             </div>
+                            {dm.unreadCount > 0 && (
+                                <span
+                                    className="ml-auto min-w-5 h-5 px-1 rounded-full bg-indigo-600 text-white text-[10px] font-semibold flex items-center justify-center"
+                                    title={`${dm.unreadCount} unread message${dm.unreadCount > 1 ? 's' : ''}`}
+                                >
+                                    {dm.unreadCount > 99 ? '99+' : dm.unreadCount}
+                                </span>
+                            )}
                         </button>
                     );
                 })}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
+import useChatUnreadStore from '../store/useChatUnreadStore';
 import {
     createMemberLookup,
     processDmThreads,
@@ -19,6 +20,13 @@ export const useWorkspaceChat = (workspaceId, userId) => {
     const [showChannelMenu, setShowChannelMenu] = useState(false);
     const [showDmPicker, setShowDmPicker] = useState(false);
     const [dmSearch, setDmSearch] = useState('');
+    const unreadByWorkspace = useChatUnreadStore(
+        useCallback((state) => state.unreadByWorkspace[workspaceId] || {}, [workspaceId])
+    );
+    const setWorkspaceChannels = useChatUnreadStore((state) => state.setWorkspaceChannels);
+    const clearUnread = useChatUnreadStore((state) => state.clearUnread);
+    const setActiveChannel = useChatUnreadStore((state) => state.setActiveChannel);
+    const clearActiveChannel = useChatUnreadStore((state) => state.clearActiveChannel);
 
     const loadConversations = useCallback(async (preferred) => {
         if (!workspaceId) return;
@@ -34,6 +42,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
             const nextDms = dmRes.data || [];
             setChannels(nextChannels);
             setDmThreads(nextDms);
+            setWorkspaceChannels(workspaceId, [...nextChannels, ...nextDms]);
 
             setSelectedChannel((prev) => selectPreferredChannel(nextChannels, nextDms, preferred, prev));
         } catch (err) {
@@ -41,7 +50,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
         } finally {
             setLoading(false);
         }
-    }, [workspaceId]);
+    }, [workspaceId, setWorkspaceChannels]);
 
     const refreshChannels = useCallback(async () => {
         if (!workspaceId) return;
@@ -53,21 +62,57 @@ export const useWorkspaceChat = (workspaceId, userId) => {
         const nextDms = dmRes.data || [];
         setChannels(nextChannels);
         setDmThreads(nextDms);
+        setWorkspaceChannels(workspaceId, [...nextChannels, ...nextDms]);
         setSelectedChannel((prev) => selectPreferredChannel(nextChannels, nextDms, null, prev));
         if (workspace) {
             setWorkspace({ ...workspace, channels: nextChannels });
         }
-    }, [workspaceId, workspace]);
+    }, [workspaceId, workspace, setWorkspaceChannels]);
 
     useEffect(() => {
         loadConversations();
     }, [loadConversations]);
 
+    useEffect(() => {
+        if (!workspaceId) return;
+        setActiveChannel({
+            workspaceId,
+            channelId: selectedChannel?._id || '',
+        });
+    }, [workspaceId, selectedChannel?._id, setActiveChannel]);
+
+    useEffect(
+        () => () => {
+            if (workspaceId) {
+                clearActiveChannel(workspaceId);
+            }
+        },
+        [workspaceId, clearActiveChannel]
+    );
+
     // Computed values
     const members = useMemo(() => workspace?.workspace?.members ?? [], [workspace?.workspace?.members]);
     const memberLookup = useMemo(() => createMemberLookup(members), [members]);
-    const dmWithMeta = useMemo(() => processDmThreads(dmThreads, memberLookup, userId), [dmThreads, memberLookup, userId]);
-    const filteredChannels = useMemo(() => filterChannels(channels, search), [channels, search]);
+    const dmWithMeta = useMemo(
+        () =>
+            processDmThreads(dmThreads, memberLookup, userId).map((dm) => ({
+                ...dm,
+                unreadCount: unreadByWorkspace[dm._id] || 0,
+            })),
+        [dmThreads, memberLookup, userId, unreadByWorkspace]
+    );
+    const channelsWithUnread = useMemo(
+        () =>
+            channels.map((channel) => ({
+                ...channel,
+                unreadCount: unreadByWorkspace[channel._id] || 0,
+            })),
+        [channels, unreadByWorkspace]
+    );
+    const filteredChannels = useMemo(
+        () => filterChannels(channelsWithUnread, search),
+        [channelsWithUnread, search]
+    );
     const filteredDMs = useMemo(() => filterDMs(dmWithMeta, search), [dmWithMeta, search]);
     const dmOptions = useMemo(() => filterMembersForDm(members, dmSearch, userId), [members, dmSearch, userId]);
 
@@ -80,27 +125,34 @@ export const useWorkspaceChat = (workspaceId, userId) => {
     }, [selectedChannel, dmWithMeta]);
 
     // Handler functions
-    const handleCreateChannel = async () => {
-        const name = prompt('Channel name');
-        if (!name) return;
+    const handleCreateChannel = async (name) => {
+        const trimmedName = String(name || '').trim();
+        if (!trimmedName) {
+            throw new Error('Channel name is required');
+        }
         try {
-            await axios.post('/api/channels', { workspaceId, name });
-            refreshChannels();
+            await axios.post('/api/channels', { workspaceId, name: trimmedName });
+            await refreshChannels();
         } catch (err) {
             console.error('Failed to create channel', err);
+            throw err;
         }
     };
 
-    const handleRenameChannel = async () => {
+    const handleRenameChannel = async (name) => {
         if (!selectedChannel) return;
-        const name = prompt('New channel name', selectedChannel.name);
-        if (!name || name === selectedChannel.name) return;
+        const trimmedName = String(name || '').trim();
+        if (!trimmedName) {
+            throw new Error('Channel name is required');
+        }
+        if (trimmedName === selectedChannel.name) return;
         try {
-            await axios.put(`/api/channels/${selectedChannel._id}`, { name });
+            await axios.put(`/api/channels/${selectedChannel._id}`, { name: trimmedName });
             setShowChannelMenu(false);
-            refreshChannels();
+            await refreshChannels();
         } catch (err) {
             console.error('Failed to rename channel', err);
+            throw err;
         }
     };
 
@@ -118,6 +170,17 @@ export const useWorkspaceChat = (workspaceId, userId) => {
     const handleSelectChannel = (channel) => {
         setSelectedChannel(channel);
         setShowChannelMenu(false);
+        if (channel?.type === 'dm' && channel?._id) {
+            clearUnread({
+                workspaceId,
+                channelId: channel._id,
+            });
+        } else if (channel?._id) {
+            clearUnread({
+                workspaceId,
+                channelId: channel._id,
+            });
+        }
     };
 
     return {

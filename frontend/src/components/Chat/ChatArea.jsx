@@ -129,7 +129,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const conversationName = displayName || channel?.name || '';
 
     return (
-        <div className="flex flex-col h-full bg-white">
+        <div className="flex flex-col h-full min-h-0 bg-white">
             {showHeader && channel && (
                 <div className="p-4 border-b flex items-center shadow-sm">
                     <Hash className="text-gray-500 mr-2" size={20} />
@@ -137,7 +137,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                 </div>
             )}
 
-            <div className="flex-1 overflow-y-auto px-6 py-5 bg-white">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 bg-white">
                 {messagesWithGrouping.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-gray-400">
                         <div className="text-center">
@@ -297,7 +297,6 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                         <Send size={16} />
                     </button>
                 </div>
-                <div className="mt-2 text-[11px] text-gray-400">Enter to send • Shift+Enter for new line</div>
             </form>
         </div>
     );

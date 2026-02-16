@@ -1,119 +1,173 @@
-import { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
-import { ArrowRight } from 'lucide-react';
-import useWorkspaceStore from '../store/useWorkspaceStore';
-import useAuthStore from '../store/useAuthStore';
-import { useNavigate } from 'react-router-dom';
+import { useRef, useCallback } from 'react';
+import {
+  BarChart3,
+  RefreshCw,
+  ChevronDown,
+  FolderKanban,
+  MessageSquare,
+  Users,
+  ShieldAlert,
+} from 'lucide-react';
+import useAnalytics, { DATE_RANGES } from '../hooks/useAnalytics';
+import KPIStrip from '../components/analytics/KPIStrip';
+import ProjectHealthTab from '../components/analytics/ProjectHealthTab';
+import CommunicationTab from '../components/analytics/CommunicationTab';
+import TeamWorkloadTab from '../components/analytics/TeamWorkloadTab';
+
+const TABS = [
+  { key: 'projectHealth', label: 'Project Health', icon: FolderKanban },
+  { key: 'communication', label: 'Communication', icon: MessageSquare },
+  { key: 'teamWorkload', label: 'Team Workload', icon: Users },
+];
 
 const Analytics = () => {
-    const navigate = useNavigate();
-    const { currentWorkspaceId, selectedWorkspace } = useWorkspaceStore();
-    const { userInfo } = useAuthStore();
-    const [projectProgress, setProjectProgress] = useState([]);
-    const members = selectedWorkspace?.workspace?.members || [];
-    const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
-    const canViewAnalytics = myRole === 'owner' || myRole === 'admin';
+  const {
+    data,
+    loading,
+    dateRange,
+    setDateRange,
+    activeTab,
+    setActiveTab,
+    canView,
+    workspace,
+    currentWorkspaceId,
+    refresh,
+  } = useAnalytics();
 
-    const fetchAnalytics = useCallback(async () => {
-        try {
-            const res = await axios.get(`/api/board/workspace-analytics?workspaceId=${currentWorkspaceId}`);
-            const data = res.data || {};
-            setProjectProgress(data.projects || []);
-        } catch (err) {
-            console.error('Failed to fetch analytics', err);
-        }
-    }, [currentWorkspaceId]);
+  const tabContentRef = useRef(null);
 
-    useEffect(() => {
-        if (currentWorkspaceId && canViewAnalytics) {
-            const timer = setTimeout(() => {
-                fetchAnalytics();
-            }, 0);
-            return () => clearTimeout(timer);
-        }
-    }, [currentWorkspaceId, canViewAnalytics, fetchAnalytics]);
+  const handleScrollTo = useCallback(
+    (tabKey) => {
+      setActiveTab(tabKey);
+      setTimeout(() => {
+        tabContentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 50);
+    },
+    [setActiveTab]
+  );
 
-    const projectBadgeColor = (project) => project?.status === 'Completed' ? 'bg-green-500' : 'bg-blue-500';
-    const formatDate = (value) => {
-        if (!value) return 'No due date';
-        const d = new Date(value);
-        if (Number.isNaN(d.getTime())) return 'No due date';
-        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    };
-    if (!currentWorkspaceId) {
-        return (
-            <div className="px-8 py-10">
-                <div className="text-center text-gray-500">Select a workspace to view analytics.</div>
-            </div>
-        );
-    }
-
-    if (!selectedWorkspace?.workspace) {
-        return (
-            <div className="px-8 py-10">
-                <div className="text-center text-gray-500">Loading analytics...</div>
-            </div>
-        );
-    }
-
-    if (!canViewAnalytics) {
-        return (
-            <div className="px-8 py-10">
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                    Analytics are available to workspace owners and admins only.
-                </div>
-            </div>
-        );
-    }
-
+  /* ── Guard states ── */
+  if (!currentWorkspaceId) {
     return (
-        <div className="px-8 py-10 bg-linear-to-br from-gray-50 to-white min-h-screen">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Analytics</h1>
-                <p className="text-gray-500 mt-2">Project progress and activity for this workspace.</p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 mb-8">
-                <div className="bg-white rounded-2xl shadow-lg border-0 p-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-xl font-bold text-gray-900">Project Progress</h2>
-                        <button
-                            onClick={() => navigate('/projects')}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1"
-                        >
-                            View All <ArrowRight size={16} />
-                        </button>
-                    </div>
-
-                    {projectProgress.length === 0 ? (
-                        <div className="text-center text-gray-500 py-8">No projects to display.</div>
-                    ) : (
-                        <div className="space-y-4">
-                            {projectProgress.slice(0, 8).map((project) => (
-                                <div key={project._id} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="font-semibold text-gray-900 text-sm">{project.name}</div>
-                                        <span className={`text-[11px] text-white px-2 py-1 rounded-full ${projectBadgeColor(project)}`}>
-                                            {project.status || 'Planning'}
-                                        </span>
-                                    </div>
-                                    <div className="text-[11px] text-gray-500 mb-2">
-                                        Due: {formatDate(project.dueDate)} • {project.doneCards}/{project.totalCards} done
-                                    </div>
-                                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                                        <div
-                                            className="h-full bg-blue-600 transition-all"
-                                            style={{ width: `${project.progress || 0}%` }}
-                                        ></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+      <div className="flex items-center justify-center h-[60vh]">
+        <p className="text-gray-400 text-sm">Select a workspace to view analytics.</p>
+      </div>
     );
+  }
+
+  if (!workspace) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="w-6 h-6 animate-spin text-indigo-400" />
+          <p className="text-gray-400 text-sm">Loading workspace…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!canView) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex items-center gap-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl px-5 py-4 text-sm">
+          <ShieldAlert className="w-5 h-5 shrink-0" />
+          Analytics are available to workspace owners and admins only.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-linear-to-br from-gray-50/80 to-white">
+      {/* ── Page Header ── */}
+      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div className="px-6 lg:px-8 py-4 flex items-center justify-between gap-4">
+          {/* Left */}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-indigo-600" />
+              <h1 className="text-xl font-bold text-gray-900">Analytics</h1>
+            </div>
+            <p className="text-xs text-gray-400 mt-0.5 truncate">
+              Workspace insights&nbsp;•&nbsp;{workspace.name}
+            </p>
+          </div>
+
+          {/* Right controls */}
+          <div className="flex items-center gap-2">
+            {/* Date range */}
+            <div className="relative">
+              <select
+                value={dateRange}
+                onChange={(e) => setDateRange(Number(e.target.value))}
+                className="appearance-none bg-gray-50 border border-gray-200 rounded-xl pl-3 pr-8 py-2 text-sm text-gray-700
+                           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent cursor-pointer"
+              >
+                {DATE_RANGES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            </div>
+
+            {/* Refresh */}
+            <button
+              onClick={refresh}
+              disabled={loading}
+              className="p-2 rounded-xl border border-gray-200 bg-gray-50 text-gray-500
+                         hover:bg-gray-100 transition-colors disabled:opacity-50"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div className="px-6 lg:px-8 py-6 space-y-6">
+        {/* ── KPI Strip ── */}
+        <KPIStrip kpi={data?.kpi} loading={loading} onScrollTo={handleScrollTo} />
+
+        {/* ── Tab Navigation ── */}
+        <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all
+                  ${
+                    isActive
+                      ? 'bg-white text-indigo-700 shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* ── Tab Content ── */}
+        <div ref={tabContentRef}>
+          {activeTab === 'projectHealth' && (
+            <ProjectHealthTab data={data} loading={loading} />
+          )}
+          {activeTab === 'communication' && (
+            <CommunicationTab data={data} loading={loading} />
+          )}
+          {activeTab === 'teamWorkload' && (
+            <TeamWorkloadTab data={data} loading={loading} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Analytics;

@@ -8,8 +8,9 @@ export const boardAPI = {
     // Get workspace stats
     getWorkspaceStats: (workspaceId) => api.get(`/api/board/workspace-stats?workspaceId=${workspaceId}`),
     
-    // Get workspace analytics
-    getWorkspaceAnalytics: (workspaceId) => api.get(`/api/board/workspace-analytics?workspaceId=${workspaceId}`),
+    // Get workspace analytics (supports days param for date range filtering)
+    getWorkspaceAnalytics: (workspaceId, days = 30) =>
+        api.get(`/api/board/workspace-analytics?workspaceId=${workspaceId}&days=${days}`),
     
     // Get my tasks
     getMyTasks: (workspaceId) => api.get(`/api/board/my-tasks?workspaceId=${workspaceId}`),

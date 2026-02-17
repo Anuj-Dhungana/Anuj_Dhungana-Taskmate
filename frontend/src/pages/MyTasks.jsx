@@ -534,8 +534,8 @@ const MyTasks = () => {
             </section>
 
             {tasks.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-emerald-300 bg-emerald-50 p-8 text-center text-emerald-700 font-medium">
-                    You&apos;re all caught up ??
+                <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-gray-600 font-medium">
+                    There are no tasks assigned to you.
                 </div>
             ) : visibleTasks.length === 0 ? (
                 <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-gray-500">

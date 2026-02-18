@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../store/useAuthStore';
+import { inviteAPI } from '../api/invites';
 
 const VerifyEmail = () => {
     const [code, setCode] = useState('');
@@ -13,6 +14,7 @@ const VerifyEmail = () => {
 
     const { state } = useLocation();
     const email = state?.email;
+    const inviteToken = state?.inviteToken;
 
     const handleVerify = async (e) => {
         e.preventDefault();
@@ -27,12 +29,29 @@ const VerifyEmail = () => {
             const res = await axios.post('/api/auth/verify-email', { email, code });
             setCredentials({ ...res.data });
             toast.success('Email Verified!');
-            navigate('/dashboard');
+            
+            // If there's an invite token, accept it
+            if (inviteToken) {
+              await handleInviteAcceptance(inviteToken);
+            } else {
+              navigate('/dashboard');
+            }
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Verification failed');
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleInviteAcceptance = async (token) => {
+      try {
+        const res = await inviteAPI.acceptInviteByToken(token);
+        toast.success('Successfully joined workspace!');
+        navigate(`/workspaces/${res.data.workspace._id}`);
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to accept invite');
+        navigate('/dashboard');
+      }
     };
 
     const handleResendCode = async () => {
@@ -63,6 +82,15 @@ const VerifyEmail = () => {
 
                 {/* Form Card */}
                 <div className="bg-white rounded-2xl shadow-2xl p-8">
+                    {/* Invite Banner */}
+                    {inviteToken && (
+                      <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                        <p className="text-sm text-indigo-800">
+                          📧 After verification, you'll automatically join the workspace
+                        </p>
+                      </div>
+                    )}
+                    
                     <div className="text-center mb-6">
                         <p className="text-gray-600">
                             We sent a 6-digit code to<br />

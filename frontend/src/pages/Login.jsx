@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import useAuthStore from '../store/useAuthStore';
 import { toast } from 'react-hot-toast';
+import { inviteAPI } from '../api/invites';
 
 const Login = () => {
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('inviteToken');
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -37,7 +41,13 @@ const [otp, setOtp] = useState('');
 
         // CASE 2: Success
         setCredentials(res.data);
-        navigate('/dashboard');
+        
+        // If there's an invite token, accept it
+        if (inviteToken) {
+          await handleInviteAcceptance(inviteToken);
+        } else {
+          navigate('/dashboard');
+        }
 
     } catch (err) {
         toast.error(err?.response?.data?.message || err.message);
@@ -53,12 +63,29 @@ const handle2FASubmit = async (e) => {
         const res = await axios.post('/api/auth/login-2fa', { email, code: otp });
         setCredentials(res.data);
         toast.success('Login Successful!');
-        navigate('/dashboard');
+        
+        // If there's an invite token, accept it
+        if (inviteToken) {
+          await handleInviteAcceptance(inviteToken);
+        } else {
+          navigate('/dashboard');
+        }
     } catch (err) {
         toast.error(err?.response?.data?.message || 'Invalid Code');
     } finally {
         setIsLoading(false);
     }
+}
+
+const handleInviteAcceptance = async (token) => {
+  try {
+    const res = await inviteAPI.acceptInviteByToken(token);
+    toast.success('Successfully joined workspace!');
+    navigate(`/workspaces/${res.data.workspace._id}`);
+  } catch (err) {
+    toast.error(err.response?.data?.message || 'Failed to accept invite');
+    navigate('/dashboard');
+  }
 }
 if (show2FA) {
     return (
@@ -93,6 +120,15 @@ if (show2FA) {
 
         {/* Login Form Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8">
+          {/* Invite Banner */}
+          {inviteToken && (
+            <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <p className="text-sm text-indigo-800">
+                📧 Login to accept your workspace invitation
+              </p>
+            </div>
+          )}
+          
           <form onSubmit={submitHandler} className="space-y-6">
             {/* Email Input */}
             <div>

@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { useNavigate, Link } from 'react-router-dom'; 
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'; 
 import useAuthStore from '../store/useAuthStore';
 
 const Register = () => {
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('inviteToken');
+  const inviteEmail = searchParams.get('email');
+  
   const [fullname, setFullname] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(inviteEmail || '');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -48,8 +52,13 @@ const Register = () => {
       
       toast.success(res.data.message);
       
-      // Navigate to verify email page
-      navigate('/verify-email', { state: { email } }); 
+      // Navigate to verify email page, pass inviteToken if present
+      navigate('/verify-email', { 
+        state: { 
+          email,
+          inviteToken: inviteToken || null
+        } 
+      }); 
       
     } catch (err) {
       toast.error(err?.response?.data?.message || err.message);
@@ -74,6 +83,15 @@ const Register = () => {
 
         {/* Register Form Card */}
         <div className="bg-white rounded-2xl shadow-2xl p-8">
+          {/* Invite Banner */}
+          {inviteToken && (
+            <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+              <p className="text-sm text-indigo-800">
+                📧 You're registering through a workspace invitation
+              </p>
+            </div>
+          )}
+          
           <form onSubmit={submitHandler} className="space-y-5">
             {/* Full Name Input */}
             <div>

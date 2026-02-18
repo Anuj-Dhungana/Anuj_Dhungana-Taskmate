@@ -13,9 +13,9 @@ const sendEmail = async (options) => {
     // 2. Define Email Options
     const mailOptions = {
         from: `"TaskMate Support" <${process.env.EMAIL_USER}>`,
-        to: options.to,
+        to: options.email || options.to,
         subject: options.subject,
-        html: options.text // We will send HTML formatted text
+        html: options.html || options.text
     };
 
     // 3. Send Email

@@ -20,6 +20,8 @@ import WorkspaceChat from './pages/WorkspaceChat';
 import WorkspaceCalls from './pages/WorkspaceCalls';
 import WorkspaceMembers from './pages/WorkspaceMembers';
 import Analytics from './pages/Analytics';
+import PendingInvitesPage from './pages/PendingInvitesPage';
+import InviteTokenPage from './pages/InviteTokenPage';
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {
@@ -55,6 +57,7 @@ function App() {
           <Route path="/members" element={<WorkspaceMembers />} />
           <Route path="/settings" element={<WorkspaceSettings />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/invites" element={<PendingInvitesPage />} />
           <Route path="/workspaces" element={<WorkspaceList />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail />} />
         </Route>
@@ -62,6 +65,7 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />
+        <Route path="/invite/:token" element={<InviteTokenPage />} />
 
       </Routes>
     </>

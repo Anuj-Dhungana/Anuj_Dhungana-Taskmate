@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { X, UserPlus } from 'lucide-react';
+import { X, UserPlus, Mail, Shield } from 'lucide-react';
+import { inviteAPI } from '../../api/invites';
 
 const InviteUserModal = ({ isOpen, onClose, workspaceId }) => {
     const [email, setEmail] = useState('');
+    const [role, setRole] = useState('member');
     const [loading, setLoading] = useState(false);
 
     if (!isOpen) return null;
@@ -13,12 +14,13 @@ const InviteUserModal = ({ isOpen, onClose, workspaceId }) => {
         e.preventDefault();
         setLoading(true);
         try {
-            const res = await axios.post(`/api/workspaces/${workspaceId}/invite`, { email });
+            const res = await inviteAPI.sendInvite({ workspaceId, email, role });
             toast.success(res.data.message);
             setEmail('');
+            setRole('member');
             onClose();
         } catch (err) {
-            toast.error(err?.response?.data?.message || 'Failed to invite user');
+            toast.error(err?.response?.data?.message || 'Failed to send invite');
         }
         setLoading(false);
     };
@@ -36,23 +38,45 @@ const InviteUserModal = ({ isOpen, onClose, workspaceId }) => {
                     </div>
                     Invite Member
                 </h2>
-                <p className="text-sm text-gray-500 mb-5">Add existing TaskMate users via email.</p>
+                <p className="text-sm text-gray-500 mb-5">Send a pending invite. User must accept to join.</p>
                 
                 <form onSubmit={handleInvite}>
-                    <input 
-                        type="email" 
-                        placeholder="Enter user email address" 
-                        className="w-full px-4 py-3 mb-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                        value={email} 
-                        onChange={e => setEmail(e.target.value)} 
-                        required
-                    />
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <Mail className="w-4 h-4 inline mr-1" />
+                            Email Address
+                        </label>
+                        <input 
+                            type="email" 
+                            placeholder="user@example.com" 
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                            value={email} 
+                            onChange={e => setEmail(e.target.value)} 
+                            required
+                        />
+                    </div>
+
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <Shield className="w-4 h-4 inline mr-1" />
+                            Role
+                        </label>
+                        <select
+                            value={role}
+                            onChange={e => setRole(e.target.value)}
+                            className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-white"
+                        >
+                            <option value="member">Member - Can view and work on projects</option>
+                            <option value="admin">Admin - Can manage workspace and invite others</option>
+                        </select>
+                    </div>
                     
                     <button 
+                        type="submit"
                         disabled={loading}
                         className="w-full bg-linear-to-r from-blue-600 to-blue-700 text-white py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition shadow-lg shadow-blue-500/30"
                     >
-                        {loading ? 'Sending...' : 'Add to Workspace'}
+                        {loading ? 'Sending Invite...' : 'Send Invite'}
                     </button>
                 </form>
             </div>

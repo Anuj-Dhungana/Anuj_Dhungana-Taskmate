@@ -107,7 +107,7 @@ export const sendInvite = async (req, res) => {
             });
 
             // Send email to existing user as well
-            const inviteLink = `${process.env.FRONTEND_URL}/invites`;
+            const inviteLink = `${process.env.FRONTEND_URL}/dashboard`;
             try {
                 await sendEmail({
                     email: existingUser.email,
@@ -120,7 +120,7 @@ export const sendInvite = async (req, res) => {
                             <p>Click the button below to view and accept your invitation:</p>
                             <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0;">View Invitation</a>
                             <p style="color: #666; font-size: 14px;">This invite will expire in 72 hours.</p>
-                            <p style="color: #666; font-size: 14px;">You can also find this invitation in your TaskMate dashboard under pending invitations.</p>
+                            <p style="color: #666; font-size: 14px;">You can also find this invitation in your TaskMate inbox.</p>
                             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
                             <p style="color: #999; font-size: 12px;">Or copy and paste this link: ${inviteLink}</p>
                         </div>

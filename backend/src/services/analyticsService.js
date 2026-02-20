@@ -22,7 +22,6 @@ export const calculateWorkspaceAnalytics = async (workspaceId, daysNum, workspac
     const projectIds = projects.map(p => p._id);
 
     const lists = await List.find({ projectId: { $in: projectIds } }).select('_id title projectId');
-    const listTitleMap = new Map(lists.map(l => [l._id.toString(), (l.title || '').toLowerCase()]));
     const listIsDone = new Map(lists.map(l => [l._id.toString(), (l.title || '').toLowerCase() === 'done']));
     const listIsInProgress = new Map(lists.map(l => [l._id.toString(), (l.title || '').toLowerCase() === 'in progress']));
 
@@ -43,7 +42,14 @@ export const calculateWorkspaceAnalytics = async (workspaceId, daysNum, workspac
 
     // Calculate all analytics sections
     const kpi = calculateKPI(allCards, projects, allMessages, listIsDone, daysNum, periodStart);
-    const projectHealth = calculateProjectHealth(allCards, projects, lists, listIsDone, listIsInProgress, daysNum);
+    const projectHealth = calculateProjectHealth(
+        allCards,
+        projects,
+        listIsDone,
+        listIsInProgress,
+        daysNum,
+        periodStart
+    );
     const communication = await calculateCommunication(allMessages, channels, allCards, listIsDone, daysNum, periodStart);
     const teamWorkload = calculateTeamWorkload(allCards, workspace, listIsDone, listIsInProgress);
 
@@ -84,10 +90,20 @@ function calculateKPI(allCards, projects, allMessages, listIsDone, daysNum, peri
     };
 }
 
+const PRIORITY_LEVELS = ['High', 'Medium', 'Low'];
+const WORKLOAD_PROJECT_STATUSES = new Set(['active', 'planning']);
+
+const toPriority = (value) => {
+    const normalized = String(value || '').trim().toLowerCase();
+    if (normalized === 'high') return 'High';
+    if (normalized === 'low') return 'Low';
+    return 'Medium';
+};
+
 /**
  * Calculate project health metrics
  */
-function calculateProjectHealth(allCards, projects, lists, listIsDone, listIsInProgress, daysNum) {
+function calculateProjectHealth(allCards, projects, listIsDone, listIsInProgress, daysNum, periodStart) {
     const now = new Date();
     const weeksInPeriod = Math.max(1, Math.ceil(daysNum / 7));
 
@@ -123,6 +139,40 @@ function calculateProjectHealth(allCards, projects, lists, listIsDone, listIsInP
         });
         cumulativeFlow.push({ week: label, 'To Do': todo, 'In Progress': inProgress, 'Done': done });
     }
+
+    // Project priority distribution (current workload projects only)
+    const workloadProjects = projects.filter((project) =>
+        WORKLOAD_PROJECT_STATUSES.has(String(project?.status || '').trim().toLowerCase())
+    );
+    const priorityDistribution = PRIORITY_LEVELS.map((priority) => ({
+        priority,
+        count: workloadProjects.filter((project) => toPriority(project?.priority) === priority)
+            .length,
+    }));
+
+    // Task priority completion metrics (selected date range)
+    const cardsCreatedInRange = allCards.filter(
+        (card) => new Date(card.createdAt).getTime() >= periodStart.getTime()
+    );
+
+    const completionRateByPriority = PRIORITY_LEVELS.map((priority) => {
+        const cardsForPriority = cardsCreatedInRange.filter(
+            (card) => toPriority(card.priority) === priority
+        );
+        const completed = cardsForPriority.filter((card) => {
+            if (!listIsDone.get(card.listId.toString())) return false;
+            return new Date(card.updatedAt).getTime() >= periodStart.getTime();
+        }).length;
+        const total = cardsForPriority.length;
+        const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+        return {
+            priority,
+            total,
+            completed,
+            completionRate,
+        };
+    });
 
     // Project progress comparison
     const projectProgress = projects.map(p => {
@@ -160,6 +210,8 @@ function calculateProjectHealth(allCards, projects, lists, listIsDone, listIsInP
     return {
         velocity,
         cumulativeFlow,
+        priorityDistribution,
+        completionRateByPriority,
         projectProgress,
         stuckTasks
     };

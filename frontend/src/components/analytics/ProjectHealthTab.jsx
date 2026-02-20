@@ -1,17 +1,62 @@
-import { useState } from 'react';
+import { useMemo } from 'react';
 import {
-  BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, Legend, ResponsiveContainer,
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  LabelList,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
 import { AlertTriangle } from 'lucide-react';
 import ChartCard from './ChartCard';
-import { CHART_COLORS, STATUS_COLORS, stuckSeverity } from './analyticsHelpers';
+import {
+  CHART_COLORS,
+  PRIORITY_COLORS,
+  STATUS_COLORS,
+  stuckSeverity,
+} from './analyticsHelpers';
 
-/* ─── Velocity / Throughput ─── */
+const PRIORITY_ORDER = ['High', 'Medium', 'Low'];
+
+const normalizeDistributionData = (data = []) => {
+  const byPriority = new Map(
+    (data || []).map((item) => [item?.priority, Number(item?.count) || 0])
+  );
+
+  return PRIORITY_ORDER.map((priority) => ({
+    priority,
+    count: byPriority.get(priority) || 0,
+  }));
+};
+
+const normalizeCompletionData = (data = []) => {
+  const byPriority = new Map(
+    (data || []).map((item) => [item?.priority, item || {}])
+  );
+
+  return PRIORITY_ORDER.map((priority) => {
+    const item = byPriority.get(priority) || {};
+    return {
+      priority,
+      total: Number(item?.total) || 0,
+      completed: Number(item?.completed) || 0,
+      completionRate: Number(item?.completionRate) || 0,
+    };
+  });
+};
+
 function VelocityChart({ data, loading }) {
   return (
     <ChartCard
-      title="Velocity / Throughput"
+      title="Velocity (Tasks per week)"
       subtitle="Tasks completed per week"
       loading={loading}
       empty={!data?.length}
@@ -22,21 +67,28 @@ function VelocityChart({ data, loading }) {
           <XAxis dataKey="week" tick={{ fontSize: 11 }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
           <Tooltip
-            contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}
+            contentStyle={{
+              borderRadius: 12,
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(0,0,0,.08)',
+            }}
           />
-          <Bar dataKey="completed" fill={CHART_COLORS.indigo} radius={[6, 6, 0, 0]} name="Completed" />
+          <Bar
+            dataKey="completed"
+            fill={CHART_COLORS.indigo}
+            radius={[6, 6, 0, 0]}
+            name="Completed"
+          />
         </BarChart>
       </ResponsiveContainer>
-      <p className="text-[11px] text-gray-400 mt-2">Based on task updatedAt timestamps</p>
     </ChartCard>
   );
 }
 
-/* ─── Cumulative Flow ─── */
 function CumulativeFlowChart({ data, loading }) {
   return (
     <ChartCard
-      title="Cumulative Flow"
+      title="Cumulative Flow Diagram"
       subtitle="Task distribution over time"
       loading={loading}
       empty={!data?.length}
@@ -47,71 +99,135 @@ function CumulativeFlowChart({ data, loading }) {
           <XAxis dataKey="week" tick={{ fontSize: 11 }} />
           <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
           <Tooltip
-            contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}
+            contentStyle={{
+              borderRadius: 12,
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(0,0,0,.08)',
+            }}
           />
           <Legend iconType="circle" iconSize={8} />
-          <Area type="monotone" dataKey="Done" stackId="1" fill={STATUS_COLORS.Done} stroke={STATUS_COLORS.Done} fillOpacity={0.7} />
-          <Area type="monotone" dataKey="In Progress" stackId="1" fill={STATUS_COLORS['In Progress']} stroke={STATUS_COLORS['In Progress']} fillOpacity={0.7} />
-          <Area type="monotone" dataKey="To Do" stackId="1" fill={STATUS_COLORS['To Do']} stroke={STATUS_COLORS['To Do']} fillOpacity={0.7} />
+          <Area
+            type="monotone"
+            dataKey="Done"
+            stackId="1"
+            fill={STATUS_COLORS.Done}
+            stroke={STATUS_COLORS.Done}
+            fillOpacity={0.7}
+          />
+          <Area
+            type="monotone"
+            dataKey="In Progress"
+            stackId="1"
+            fill={STATUS_COLORS['In Progress']}
+            stroke={STATUS_COLORS['In Progress']}
+            fillOpacity={0.7}
+          />
+          <Area
+            type="monotone"
+            dataKey="To Do"
+            stackId="1"
+            fill={STATUS_COLORS['To Do']}
+            stroke={STATUS_COLORS['To Do']}
+            fillOpacity={0.7}
+          />
         </AreaChart>
       </ResponsiveContainer>
-      <p className="text-[11px] text-gray-400 mt-2">
-        Thick &quot;In Progress&quot; band may indicate a bottleneck
-      </p>
     </ChartCard>
   );
 }
 
-/* ─── Project Progress Comparison ─── */
-function ProjectProgressChart({ data, loading }) {
-  const [showActiveOnly, setShowActiveOnly] = useState(false);
-
-  const filtered = showActiveOnly
-    ? (data || []).filter((p) => (p.status || '').toLowerCase() !== 'completed')
-    : data || [];
-
-  const sorted = [...filtered].sort((a, b) => a.progress - b.progress);
+function PriorityDistributionChart({ data, loading }) {
+  const chartData = useMemo(() => normalizeDistributionData(data), [data]);
+  const totalCount = chartData.reduce((sum, item) => sum + item.count, 0);
 
   return (
     <ChartCard
-      title="Project Progress Comparison"
-      subtitle="Sorted by lowest progress"
+      title="Project Priority Distribution"
+      subtitle="Active and planning projects"
       loading={loading}
-      empty={!sorted.length}
-      action={
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={showActiveOnly}
-            onChange={() => setShowActiveOnly(!showActiveOnly)}
-            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-3.5 w-3.5"
-          />
-          Active only
-        </label>
-      }
+      empty={totalCount === 0}
     >
-      <ResponsiveContainer width="100%" height={Math.max(200, sorted.length * 36)}>
-        <BarChart data={sorted} layout="vertical" barSize={16}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" horizontal={false} />
-          <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
-          <YAxis
-            dataKey="name"
-            type="category"
-            width={120}
-            tick={{ fontSize: 11 }}
-          />
+      <ResponsiveContainer width="100%" height={250}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey="count"
+            nameKey="priority"
+            cx="50%"
+            cy="50%"
+            innerRadius={58}
+            outerRadius={86}
+            paddingAngle={4}
+          >
+            {chartData.map((item) => (
+              <Cell
+                key={item.priority}
+                fill={PRIORITY_COLORS[item.priority] || CHART_COLORS.slate}
+              />
+            ))}
+          </Pie>
           <Tooltip
-            formatter={(v) => `${v}%`}
-            contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}
+            formatter={(value) => [`${value}`, 'Projects']}
+            contentStyle={{
+              borderRadius: 12,
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(0,0,0,.08)',
+            }}
           />
-          <Bar dataKey="progress" fill={CHART_COLORS.indigo} radius={[0, 6, 6, 0]} name="Progress" />
+          <Legend verticalAlign="bottom" iconType="circle" iconSize={8} />
+        </PieChart>
+      </ResponsiveContainer>
+    </ChartCard>
+  );
+}
+
+function CompletionRateByPriorityChart({ data, loading }) {
+  const chartData = useMemo(() => normalizeCompletionData(data), [data]);
+  const hasData = chartData.some((item) => item.total > 0);
+
+  return (
+    <ChartCard
+      title="Completion Rate by Priority"
+      subtitle="Based on selected date range"
+      loading={loading}
+      empty={!hasData}
+    >
+      <ResponsiveContainer width="100%" height={250}>
+        <BarChart data={chartData} barSize={34}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
+          <XAxis dataKey="priority" tick={{ fontSize: 11 }} />
+          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} unit="%" />
+          <Tooltip
+            formatter={(value, _name, item) => [
+              `${value}%`,
+              `${item?.payload?.completed || 0}/${item?.payload?.total || 0} completed`,
+            ]}
+            contentStyle={{
+              borderRadius: 12,
+              border: 'none',
+              boxShadow: '0 4px 20px rgba(0,0,0,.08)',
+            }}
+          />
+          <Bar dataKey="completionRate" radius={[6, 6, 0, 0]} name="Completion %">
+            {chartData.map((item) => (
+              <Cell
+                key={item.priority}
+                fill={PRIORITY_COLORS[item.priority] || CHART_COLORS.indigo}
+              />
+            ))}
+            <LabelList
+              dataKey="completionRate"
+              position="top"
+              formatter={(value) => `${value}%`}
+              style={{ fontSize: 11, fill: '#475569' }}
+            />
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>
   );
 }
 
-/* ─── Stuck Tasks Table ─── */
 function StuckTasksTable({ data, loading, onTaskClick }) {
   return (
     <ChartCard
@@ -119,7 +235,7 @@ function StuckTasksTable({ data, loading, onTaskClick }) {
       subtitle="Tasks in progress for 3+ days"
       loading={loading}
       empty={!data?.length}
-      emptyText="No stuck tasks — great job!"
+      emptyText="No stuck tasks - great job!"
     >
       <div className="overflow-x-auto -mx-5 px-5">
         <table className="w-full text-sm">
@@ -133,30 +249,35 @@ function StuckTasksTable({ data, loading, onTaskClick }) {
             </tr>
           </thead>
           <tbody>
-            {(data || []).map((t) => {
-              const sev = stuckSeverity(t.daysStuck);
+            {(data || []).map((task) => {
+              const severity = stuckSeverity(task.daysStuck);
+
               return (
                 <tr
-                  key={t._id}
-                  onClick={() => onTaskClick?.(t)}
+                  key={task._id}
+                  onClick={() => onTaskClick?.(task)}
                   className="border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors"
                 >
                   <td className="py-2.5 pr-3 font-medium text-gray-900 max-w-50 truncate">
-                    {t.title}
+                    {task.title}
                   </td>
-                  <td className="py-2.5 pr-3 text-gray-500">{t.project}</td>
+                  <td className="py-2.5 pr-3 text-gray-500">{task.project}</td>
                   <td className="py-2.5 pr-3">
                     <div className="flex -space-x-1">
-                      {(t.assignees || []).slice(0, 3).map((a, i) => (
+                      {(task.assignees || []).slice(0, 3).map((assignee, index) => (
                         <div
-                          key={i}
+                          key={`${task._id}-assignee-${index}`}
                           className="w-6 h-6 rounded-full bg-indigo-100 border-2 border-white flex items-center justify-center text-[10px] font-medium text-indigo-600"
-                          title={a.fullname}
+                          title={assignee.fullname}
                         >
-                          {a.avatar ? (
-                            <img src={a.avatar} className="w-full h-full rounded-full object-cover" alt="" />
+                          {assignee.avatar ? (
+                            <img
+                              src={assignee.avatar}
+                              className="w-full h-full rounded-full object-cover"
+                              alt=""
+                            />
                           ) : (
-                            (a.fullname || '?')[0]
+                            (assignee.fullname || '?')[0]
                           )}
                         </div>
                       ))}
@@ -164,14 +285,14 @@ function StuckTasksTable({ data, loading, onTaskClick }) {
                   </td>
                   <td className="py-2.5 pr-3">
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ring-1 ${sev.bg} ${sev.text} ${sev.ring}`}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ring-1 ${severity.bg} ${severity.text} ${severity.ring}`}
                     >
                       <AlertTriangle className="w-3 h-3" />
-                      {t.daysStuck}d
+                      {task.daysStuck}d
                     </span>
                   </td>
                   <td className="py-2.5 text-gray-400 text-xs">
-                    {new Date(t.lastUpdated).toLocaleDateString('en', {
+                    {new Date(task.lastUpdated).toLocaleDateString('en', {
                       month: 'short',
                       day: 'numeric',
                     })}
@@ -186,23 +307,32 @@ function StuckTasksTable({ data, loading, onTaskClick }) {
   );
 }
 
-/* ─── Tab 1 Composed ─── */
 export default function ProjectHealthTab({ data, loading, onTaskClick }) {
-  const ph = data?.projectHealth;
+  const projectHealth = data?.projectHealth;
 
   return (
     <div className="space-y-6">
-      {/* Row 1: velocity + cumulative flow */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <VelocityChart data={ph?.velocity} loading={loading} />
-        <CumulativeFlowChart data={ph?.cumulativeFlow} loading={loading} />
+        <VelocityChart data={projectHealth?.velocity} loading={loading} />
+        <CumulativeFlowChart data={projectHealth?.cumulativeFlow} loading={loading} />
       </div>
 
-      {/* Row 2: project progress comparison */}
-      <ProjectProgressChart data={ph?.projectProgress} loading={loading} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <PriorityDistributionChart
+          data={projectHealth?.priorityDistribution}
+          loading={loading}
+        />
+        <CompletionRateByPriorityChart
+          data={projectHealth?.completionRateByPriority}
+          loading={loading}
+        />
+      </div>
 
-      {/* Row 3: stuck tasks table */}
-      <StuckTasksTable data={ph?.stuckTasks} loading={loading} onTaskClick={onTaskClick} />
+      <StuckTasksTable
+        data={projectHealth?.stuckTasks}
+        loading={loading}
+        onTaskClick={onTaskClick}
+      />
     </div>
   );
 }

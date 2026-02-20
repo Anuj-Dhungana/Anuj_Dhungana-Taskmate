@@ -22,7 +22,7 @@ export const STATUS_COLORS = {
 export const PRIORITY_COLORS = {
   High: CHART_COLORS.rose,
   Medium: CHART_COLORS.amber,
-  Low: CHART_COLORS.emerald,
+  Low: CHART_COLORS.blue,
 };
 
 export const PIE_COLORS = [

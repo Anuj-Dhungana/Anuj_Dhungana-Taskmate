@@ -3,6 +3,8 @@ import Project from '../models/Project.js';
 import Channel from '../models/Channel.js';
 import User from '../models/User.js';
 
+const ALLOWED_INVITE_ROLES = ['member', 'admin'];
+
 
 export const createWorkspace = async (req, res) => {
     try {
@@ -266,7 +268,7 @@ export const deleteWorkspace = async (req, res) => {
 
 export const updateWorkspace = async (req, res) => {
     try {
-        const { name, description, color } = req.body;
+        const { name, description, color, settings } = req.body;
         const workspace = req.workspace;
 
         if (!workspace) {
@@ -277,6 +279,28 @@ export const updateWorkspace = async (req, res) => {
         if (description !== undefined) workspace.description = description;
         if (color !== undefined) workspace.color = color;
 
+        if (settings && typeof settings === 'object') {
+            const access = settings.access && typeof settings.access === 'object' ? settings.access : {};
+
+            workspace.settings = workspace.settings || {};
+            workspace.settings.access = workspace.settings.access || {};
+
+            if (access.defaultInviteRole !== undefined) {
+                if (!ALLOWED_INVITE_ROLES.includes(access.defaultInviteRole)) {
+                    return res.status(400).json({ message: "Invalid default invite role" });
+                }
+                workspace.settings.access.defaultInviteRole = access.defaultInviteRole;
+            }
+
+            if (access.requireInviteAcceptance !== undefined) {
+                workspace.settings.access.requireInviteAcceptance = Boolean(access.requireInviteAcceptance);
+            }
+
+            if (access.membersCanViewMemberList !== undefined) {
+                workspace.settings.access.membersCanViewMemberList = Boolean(access.membersCanViewMemberList);
+            }
+        }
+
         const saved = await workspace.save();
         const updated = await Workspace.findById(saved._id).populate('members.user', 'fullname email avatar');
         const io = req.app.get('io');
@@ -286,6 +310,83 @@ export const updateWorkspace = async (req, res) => {
         });
         res.json(updated);
     } catch (error) {
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const transferWorkspaceOwnership = async (req, res) => {
+    try {
+        const workspace = req.workspace;
+        const { newOwnerId } = req.body;
+        const requesterId = String(req.user?._id || '');
+        const targetOwnerId = String(newOwnerId || '');
+
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        if (!targetOwnerId) {
+            return res.status(400).json({ message: "newOwnerId is required" });
+        }
+
+        if (targetOwnerId === requesterId) {
+            return res.status(400).json({ message: "You are already the owner" });
+        }
+
+        const currentOwnerIndex = workspace.members.findIndex(
+            (member) => String(member.user) === requesterId && member.role === 'owner'
+        );
+
+        if (currentOwnerIndex === -1) {
+            return res.status(403).json({ message: "Only the current owner can transfer ownership" });
+        }
+
+        const targetOwnerIndex = workspace.members.findIndex(
+            (member) => String(member.user) === targetOwnerId
+        );
+
+        if (targetOwnerIndex === -1) {
+            return res.status(404).json({ message: "Target user must be a workspace member" });
+        }
+
+        const targetMember = workspace.members[targetOwnerIndex];
+        if (targetMember.role === 'owner') {
+            return res.status(400).json({ message: "Selected member is already the owner" });
+        }
+
+        workspace.members[currentOwnerIndex].role = 'admin';
+        workspace.members[targetOwnerIndex].role = 'owner';
+        await workspace.save();
+
+        const updatedWorkspace = await Workspace.findById(workspace._id).populate('members.user', 'fullname email avatar');
+        const io = req.app.get('io');
+        const workspaceId = workspace._id.toString();
+
+        io?.to(`workspace_${workspaceId}`).emit('role_changed', {
+            workspaceId,
+            member: {
+                user: requesterId,
+                role: 'admin',
+            },
+        });
+        io?.to(`workspace_${workspaceId}`).emit('role_changed', {
+            workspaceId,
+            member: {
+                user: targetOwnerId,
+                role: 'owner',
+            },
+        });
+        io?.to(`workspace_${workspaceId}`).emit('workspace_updated', {
+            workspaceId,
+            workspace: updatedWorkspace,
+        });
+
+        res.json({
+            message: "Ownership transferred successfully",
+            workspace: updatedWorkspace,
+        });
+    } catch (error) {
+        console.error('transferWorkspaceOwnership Error:', error);
         res.status(500).json({ message: "Server Error" });
     }
 };

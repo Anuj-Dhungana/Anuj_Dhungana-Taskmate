@@ -115,6 +115,7 @@ const Dashboard = () => {
                         refreshData();
                     }}
                     workspaceId={currentWorkspaceId}
+                    defaultRole={workspace?.settings?.access?.defaultInviteRole || 'member'}
                 />
             )}
         </div>
@@ -122,4 +123,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-

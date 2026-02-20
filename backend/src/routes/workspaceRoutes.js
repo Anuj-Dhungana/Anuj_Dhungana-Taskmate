@@ -1,5 +1,5 @@
 import express from 'express';
-import { createWorkspace, getMyWorkspaces, getWorkspaceDetails, updateWorkspace } from '../controllers/workspaceController.js';
+import { createWorkspace, getMyWorkspaces, getWorkspaceDetails, updateWorkspace, transferWorkspaceOwnership } from '../controllers/workspaceController.js';
 import protect from '../middleware/authMiddleware.js';
 import { inviteUserToWorkspace } from '../controllers/workspaceController.js';
 import { updateMemberRole } from '../controllers/workspaceController.js';
@@ -20,6 +20,7 @@ router.route('/:id')
     .delete(protect, checkWorkspaceRole(['owner']), deleteWorkspace);
 router.post('/:id/invite', protect, checkWorkspaceRole(['owner', 'admin']), inviteUserToWorkspace);
 router.put('/:id/role', protect, checkWorkspaceRole(['owner']), updateMemberRole);
+router.post('/:id/transfer-ownership', protect, checkWorkspaceRole(['owner']), transferWorkspaceOwnership);
 router.delete('/:id/members/:memberId', protect, checkWorkspaceRole(['owner', 'admin']), removeMember);
 
 export default router;

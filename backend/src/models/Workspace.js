@@ -24,6 +24,30 @@ const workspaceSchema = new mongoose.Schema({
         },
         joinedAt: { type: Date, default: Date.now }
     }],
+    settings: {
+        access: {
+            defaultInviteRole: {
+                type: String,
+                enum: ['member', 'admin'],
+                default: 'member',
+            },
+            requireInviteAcceptance: {
+                type: Boolean,
+                default: true,
+            },
+            membersCanViewMemberList: {
+                type: Boolean,
+                default: true,
+            },
+        },
+        billing: {
+            currentPlan: {
+                type: String,
+                enum: ['free', 'premium'],
+                default: 'free',
+            },
+        },
+    },
     
 }, {
     timestamps: true

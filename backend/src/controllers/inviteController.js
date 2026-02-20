@@ -7,21 +7,21 @@ import sendEmail from '../utils/sendEmail.js';
 // Send invite to join workspace
 export const sendInvite = async (req, res) => {
     try {
-        const { workspaceId, email, role = 'member' } = req.body;
+        const { workspaceId, email, role } = req.body;
 
         if (!workspaceId || !email) {
             return res.status(400).json({ message: "workspaceId and email are required" });
-        }
-
-        // Validate role
-        if (!['member', 'admin'].includes(role)) {
-            return res.status(400).json({ message: "Invalid role. Must be 'member' or 'admin'" });
         }
 
         // Check workspace exists
         const workspace = await Workspace.findById(workspaceId).populate('members.user', 'fullname email');
         if (!workspace) {
             return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        const inviteRole = role || workspace.settings?.access?.defaultInviteRole || 'member';
+        if (!['member', 'admin'].includes(inviteRole)) {
+            return res.status(400).json({ message: "Invalid role. Must be 'member' or 'admin'" });
         }
 
         // Check if requester is owner or admin
@@ -31,7 +31,7 @@ export const sendInvite = async (req, res) => {
         }
 
         // Admins can only invite as 'member' — only owners can invite as 'admin'
-        if (requester.role === 'admin' && role === 'admin') {
+        if (requester.role === 'admin' && inviteRole === 'admin') {
             return res.status(403).json({ message: "Only owners can invite members with admin role" });
         }
 
@@ -59,7 +59,7 @@ export const sendInvite = async (req, res) => {
             workspace: workspaceId,
             email: email.toLowerCase(),
             invitedBy: req.user._id,
-            role,
+            role: inviteRole,
             invitedUser: existingUser?._id || null,
         });
 
@@ -121,7 +121,7 @@ export const sendInvite = async (req, res) => {
                         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                             <h2 style="color: #6366F1;">Workspace Invitation</h2>
                             <p>Hi ${existingUser.fullname},</p>
-                            <p>${req.user.fullname} has invited you to join <strong>${workspace.name}</strong> on TaskMate as a <strong>${role}</strong>.</p>
+                            <p>${req.user.fullname} has invited you to join <strong>${workspace.name}</strong> on TaskMate as a <strong>${inviteRole}</strong>.</p>
                             <p>Click the button below to view and accept your invitation:</p>
                             <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0;">View Invitation</a>
                             <p style="color: #666; font-size: 14px;">This invite will expire in 72 hours.</p>

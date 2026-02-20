@@ -3,9 +3,9 @@ import { toast } from 'react-hot-toast';
 import { X, UserPlus, Mail, Shield } from 'lucide-react';
 import { inviteAPI } from '../../api/invites';
 
-const InviteUserModal = ({ isOpen, onClose, workspaceId }) => {
+const InviteUserModal = ({ isOpen, onClose, workspaceId, defaultRole = 'member' }) => {
     const [email, setEmail] = useState('');
-    const [role, setRole] = useState('member');
+    const [role, setRole] = useState(defaultRole || 'member');
     const [loading, setLoading] = useState(false);
 
     if (!isOpen) return null;
@@ -17,7 +17,7 @@ const InviteUserModal = ({ isOpen, onClose, workspaceId }) => {
             const res = await inviteAPI.sendInvite({ workspaceId, email, role });
             toast.success(res.data.message);
             setEmail('');
-            setRole('member');
+            setRole(defaultRole || 'member');
             onClose();
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to send invite');

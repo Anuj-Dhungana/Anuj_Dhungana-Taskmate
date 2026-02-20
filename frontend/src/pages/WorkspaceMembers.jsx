@@ -103,6 +103,7 @@ const WorkspaceMembers = () => {
                         refreshWorkspace();
                     }}
                     workspaceId={workspace?._id}
+                    defaultRole={workspace?.settings?.access?.defaultInviteRole || 'member'}
                 />
             )}
 

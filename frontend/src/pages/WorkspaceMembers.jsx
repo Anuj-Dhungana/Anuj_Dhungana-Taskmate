@@ -1,4 +1,4 @@
-import { UserPlus } from 'lucide-react';
+import { ShieldAlert, UserPlus } from 'lucide-react';
 import { useWorkspaceMembers } from '../hooks/useWorkspaceMembers';
 import InviteUserModal from '../components/modals/InviteUserModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -44,6 +44,17 @@ const WorkspaceMembers = () => {
         return (
             <div className="px-8 py-10">
                 <div className="text-gray-500">Loading members...</div>
+            </div>
+        );
+    }
+
+    if (!canInvite) {
+        return (
+            <div className="flex items-center justify-center h-[60vh]">
+                <div className="flex items-center gap-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl px-5 py-4 text-sm">
+                    <ShieldAlert className="w-5 h-5 shrink-0" />
+                    Team member management is available to workspace owners and admins only.
+                </div>
             </div>
         );
     }

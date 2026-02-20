@@ -4,7 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import WorkspaceSelector from './WorkspaceSelector';
 import NavigationGroup from './NavigationGroup';
-import { NAV_GROUPS, SYSTEM_ITEMS } from '../../utils/navigationConfig';
+import { NAV_GROUPS, SYSTEM_ITEMS, filterNavByRole, filterSystemByRole } from '../../utils/navigationConfig';
 import logo from '../../assets/logo.png';
 import socket from '../../lib/socket';
 import useChatUnreadStore from '../../store/useChatUnreadStore';
@@ -14,6 +14,7 @@ const DashboardSidebar = ({
     onToggleCollapse,
     workspaceProps,
     userInfo,
+    myRole,
 }) => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -34,7 +35,7 @@ const DashboardSidebar = ({
 
     const navGroups = useMemo(
         () =>
-            NAV_GROUPS.map((group) => ({
+            filterNavByRole(NAV_GROUPS, myRole).map((group) => ({
                 ...group,
                 items: group.items.map((item) =>
                     item.to === '/chat'
@@ -42,7 +43,12 @@ const DashboardSidebar = ({
                         : item
                 ),
             })),
-        [totalChatUnread]
+        [totalChatUnread, myRole]
+    );
+
+    const systemItems = useMemo(
+        () => filterSystemByRole(SYSTEM_ITEMS, myRole),
+        [myRole]
     );
 
     const avatarSrc = userInfo?.avatar;
@@ -144,6 +150,7 @@ const DashboardSidebar = ({
             </nav>
 
             {/* System Items */}
+            {systemItems.length > 0 && (
             <div className={`border-t border-gray-800/60 py-3 text-base ${isCollapsed ? 'px-2 space-y-2' : 'px-3 space-y-2'}`}>
                 {!isCollapsed && (
                     <div className="px-3 text-xs uppercase tracking-wider text-gray-500">
@@ -151,11 +158,12 @@ const DashboardSidebar = ({
                     </div>
                 )}
                 <NavigationGroup
-                    group={{ items: SYSTEM_ITEMS }}
+                    group={{ items: systemItems }}
                     isCollapsed={isCollapsed}
                     iconSize={iconSize}
                 />
             </div>
+            )}
 
             {/* User Profile Section */}
             <div className="border-t border-gray-800/60 p-2.5">

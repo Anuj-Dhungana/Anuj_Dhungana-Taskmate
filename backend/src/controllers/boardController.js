@@ -699,8 +699,8 @@ export const getWorkspaceAnalytics = async (req, res) => {
         if (!member) {
             return res.status(403).json({ message: "Not authorized to view this workspace" });
         }
-        if (!isAdminOrOwner(member)) {
-            return res.status(403).json({ message: "Only admins can access analytics" });
+        if (member.role !== 'owner') {
+            return res.status(403).json({ message: "Only workspace owners can access analytics" });
         }
 
         const daysNum = parseInt(days, 10) || 30;

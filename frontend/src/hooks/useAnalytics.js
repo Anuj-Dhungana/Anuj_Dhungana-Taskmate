@@ -24,7 +24,7 @@ export default function useAnalytics() {
   const myRole = members.find(
     (m) => (m.user?._id || m.user) === userInfo?._id
   )?.role;
-  const canView = myRole === 'owner' || myRole === 'admin';
+  const canView = myRole === 'owner';
 
   const fetchAnalytics = useCallback(async () => {
     if (!currentWorkspaceId || !canView) return;

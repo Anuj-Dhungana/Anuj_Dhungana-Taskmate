@@ -4,6 +4,7 @@ import { toast } from 'react-hot-toast';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import { ShieldAlert } from 'lucide-react';
 
 const Settings = () => {
     const { currentWorkspaceId, selectedWorkspace, setSelectedWorkspace, setCurrentWorkspaceId } = useWorkspaceStore();
@@ -95,18 +96,23 @@ const Settings = () => {
         );
     }
 
+    if (!isOwner) {
+        return (
+            <div className="flex items-center justify-center h-[60vh]">
+                <div className="flex items-center gap-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl px-5 py-4 text-sm">
+                    <ShieldAlert className="w-5 h-5 shrink-0" />
+                    Workspace settings are available to the workspace owner only.
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="px-8 py-10">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900">Workspace Settings</h1>
                 <p className="text-gray-500 mt-2">Manage the selected workspace.</p>
             </div>
-
-            {!isOwner && (
-                <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                    Only workspace owners can edit settings or delete the workspace.
-                </div>
-            )}
 
             <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl">
                 <form onSubmit={handleSave} className="space-y-5">

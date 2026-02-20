@@ -3,6 +3,7 @@ import { useDashboard } from '../hooks/useDashboard';
 import DashboardSidebar from '../components/layout/DashboardSidebar';
 import TopBar from '../components/layout/TopBar';
 import CreateWorkspaceModal from '../components/modals/CreateWorkspaceModal';
+import { getUserRoleRaw } from '../utils/navigationConfig';
 
 const DashboardLayout = () => {
     const {
@@ -10,6 +11,7 @@ const DashboardLayout = () => {
         workspaces,
         currentWorkspace,
         currentWorkspaceId,
+        selectedWorkspace,
         myRole,
         isCollapsed,
         setIsCollapsed,
@@ -20,6 +22,8 @@ const DashboardLayout = () => {
         handleWorkspaceSelect,
         handleWorkspaceCreated,
     } = useDashboard();
+
+    const rawRole = getUserRoleRaw(selectedWorkspace, userInfo?._id);
 
     const workspaceProps = {
         currentWorkspace,
@@ -42,6 +46,7 @@ const DashboardLayout = () => {
                 onToggleCollapse={() => setIsCollapsed((v) => !v)}
                 workspaceProps={workspaceProps}
                 userInfo={userInfo}
+                myRole={rawRole}
             />
 
             <div className="flex-1 flex flex-col min-w-0">

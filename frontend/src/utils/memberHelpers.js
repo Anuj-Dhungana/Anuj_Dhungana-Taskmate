@@ -47,7 +47,7 @@ export const getMemberStatus = (user) => {
 export const canChangeRole = (myRole, memberRole, isMe) => {
     if (isMe) return false;
     if (myRole === 'owner' && memberRole !== 'owner') return true;
-    if (myRole === 'admin' && memberRole === 'member') return true;
+    // Admins cannot change any roles — only owners can promote/demote
     return false;
 };
 

@@ -30,6 +30,11 @@ export const sendInvite = async (req, res) => {
             return res.status(403).json({ message: "Only owners and admins can invite members" });
         }
 
+        // Admins can only invite as 'member' — only owners can invite as 'admin'
+        if (requester.role === 'admin' && role === 'admin') {
+            return res.status(403).json({ message: "Only owners can invite members with admin role" });
+        }
+
         // Check if user is already a member
         const existingMember = workspace.members.find(m => m.user && m.user.email === email.toLowerCase());
         if (existingMember) {

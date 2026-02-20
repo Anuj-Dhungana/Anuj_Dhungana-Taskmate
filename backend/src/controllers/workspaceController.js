@@ -58,8 +58,15 @@ export const getWorkspaceDetails = async (req, res) => {
             return res.status(404).json({ message: "Workspace not found" });
         }
 
+        // Clean out any members whose user no longer exists in the database
+        const validMembers = workspace.members.filter(m => m.user != null);
+        if (validMembers.length !== workspace.members.length) {
+            workspace.members = validMembers;
+            await workspace.save();
+        }
+
         // 2. Check if user is a member (Security)
-        const isMember = workspace.members.some(m => m.user._id.toString() === req.user._id.toString());
+        const isMember = workspace.members.some(m => m.user?._id?.toString() === req.user._id.toString());
         if (!isMember) {
             return res.status(403).json({ message: "Not authorized to view this workspace" });
         }
@@ -78,6 +85,7 @@ export const getWorkspaceDetails = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("getWorkspaceDetails Error:", error);
         res.status(500).json({ message: "Server Error" });
     }
 };
@@ -169,8 +177,9 @@ export const updateMemberRole = async (req, res) => {
             return res.status(400).json({ message: "Cannot change the Owner's role" });
         }
 
-        if (requester.role === 'admin' && workspace.members[memberIndex].role !== 'member') {
-            return res.status(403).json({ message: "Admins can only change member roles" });
+        // Admins cannot change any roles — only owners can promote/demote
+        if (requester.role === 'admin') {
+            return res.status(403).json({ message: "Only owners can change member roles" });
         }
 
         // 3. Update the role

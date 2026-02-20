@@ -71,7 +71,7 @@ const Analytics = () => {
       <div className="flex items-center justify-center h-[60vh]">
         <div className="flex items-center gap-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl px-5 py-4 text-sm">
           <ShieldAlert className="w-5 h-5 shrink-0" />
-          Analytics are available to workspace owners and admins only.
+          Analytics are available to workspace owners only.
         </div>
       </div>
     );

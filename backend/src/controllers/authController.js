@@ -3,6 +3,9 @@ import bcrypt from 'bcryptjs';
 import generateToken from '../utils/generateToken.js';
 import sendEmail from '../utils/sendEmail.js';
 import crypto from 'crypto';
+import Workspace from '../models/Workspace.js';
+import Project from '../models/Project.js';
+import Card from '../models/Card.js';
 
 
 
@@ -252,35 +255,46 @@ export const resetPassword = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
+        const user = await User.findById(req.user._id).select('+password');
 
-        if (user) {
-            user.fullname = req.body.fullname || user.fullname;
-            user.email = req.body.email || user.email;
-            
-            // Update avatar if file is uploaded
-            if (req.file) {
-                user.avatar = req.file.path; // Cloudinary URL
-            }
-            
-            // If password is sent, hash and update it
-            if (req.body.password) {
-                const salt = await bcrypt.genSalt(10);
-                user.password = await bcrypt.hash(req.body.password, salt);
-            }
+        if (!user) return res.status(404).json({ message: 'User not found' });
 
-            const updatedUser = await user.save();
+        // Update name
+        if (req.body.fullname) user.fullname = req.body.fullname;
 
-            res.json({
-                _id: updatedUser._id,
-                fullname: updatedUser.fullname,
-                email: updatedUser.email,
-                avatar: updatedUser.avatar,
-                twoFactorEnabled: updatedUser.twoFactorEnabled // Return this status
-            });
-        } else {
-            res.status(404).json({ message: 'User not found' });
+        // Avatar upload
+        if (req.file) {
+            user.avatar = req.file.path; // Cloudinary URL
         }
+
+        // Remove avatar
+        if (req.body.removeAvatar === 'true') {
+            user.avatar = '';
+        }
+
+        // Password change — requires currentPassword
+        if (req.body.password) {
+            if (!req.body.currentPassword) {
+                return res.status(400).json({ message: 'Current password is required' });
+            }
+            const isMatch = await bcrypt.compare(req.body.currentPassword, user.password);
+            if (!isMatch) {
+                return res.status(400).json({ message: 'Current password is incorrect' });
+            }
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(req.body.password, salt);
+        }
+
+        const updatedUser = await user.save();
+
+        res.json({
+            _id: updatedUser._id,
+            fullname: updatedUser.fullname,
+            email: updatedUser.email,
+            avatar: updatedUser.avatar,
+            isVerified: updatedUser.isVerified,
+            twoFactorEnabled: updatedUser.twoFactorEnabled,
+        });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
@@ -328,6 +342,26 @@ export const verify2FALogin = async (req, res) => {
         } else {
             res.status(401).json({ message: "Invalid or expired 2FA code" });
         }
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+};
+
+export const getActivityStats = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+        const [workspacesCount, projectsCount, tasksCount] = await Promise.all([
+            Workspace.countDocuments({ 'members.user': userId }),
+            Project.countDocuments({ 'members.user': userId }),
+            Card.countDocuments({
+                assignees: userId,
+                updatedAt: { $gte: thirtyDaysAgo },
+            }),
+        ]);
+
+        res.json({ workspacesCount, projectsCount, tasksCount });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }

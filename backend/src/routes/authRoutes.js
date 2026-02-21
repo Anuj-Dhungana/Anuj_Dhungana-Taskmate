@@ -9,6 +9,7 @@ import { resetPassword } from '../controllers/authController.js';
 import { updateProfile } from '../controllers/authController.js';
 import { toggle2FA } from '../controllers/authController.js';
 import { verify2FALogin } from '../controllers/authController.js';
+import { getActivityStats } from '../controllers/authController.js';
 import upload from '../config/cloudinary.js';
 
 // Validators
@@ -41,5 +42,7 @@ router.post('/login-2fa', authLimiter, twoFAValidation, validate, verify2FALogin
 router.get('/profile', protect, (req, res) => {
     res.json(req.user);
 });
+
+router.get('/activity-stats', protect, getActivityStats);
 
 export default router;

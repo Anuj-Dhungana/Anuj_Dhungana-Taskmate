@@ -1,119 +1,249 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState, useCallback } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { Upload, Camera, LogOut, ShieldCheck, ShieldOff } from 'lucide-react';
+import {
+    Camera, Trash2, ShieldCheck, ShieldOff,
+    User, Lock, BarChart3, Loader2,
+    Building2, FolderKanban, CheckSquare,
+    Eye, EyeOff, Save, LogOut,
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 
+/* ─── tiny helpers ─────────────────────────────────────── */
+const InputField = ({ label, id, type = 'text', value, onChange, readOnly, placeholder, rightSlot }) => (
+    <div>
+        <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+        <div className="relative">
+            <input
+                id={id}
+                type={type}
+                value={value}
+                onChange={onChange}
+                readOnly={readOnly}
+                placeholder={placeholder}
+                className={`w-full px-4 py-2.5 text-sm border rounded-lg outline-none transition
+                    ${readOnly
+                        ? 'bg-gray-50 text-gray-500 border-gray-200 cursor-not-allowed'
+                        : 'bg-white border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent'
+                    }
+                    ${rightSlot ? 'pr-10' : ''}`}
+            />
+            {rightSlot && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightSlot}</div>
+            )}
+        </div>
+    </div>
+);
+
+const Card = ({ children, className = '' }) => (
+    <div className={`bg-white rounded-xl border border-gray-200 shadow-sm p-6 ${className}`}>
+        {children}
+    </div>
+);
+
+const CardHeader = ({ icon, title, iconColor = 'text-indigo-600', iconBg = 'bg-indigo-50' }) => {
+    const Icon = icon;
+    return (
+        <div className="flex items-center gap-3 mb-5">
+            <div className={`w-9 h-9 rounded-lg ${iconBg} ${iconColor} flex items-center justify-center shrink-0`}>
+                <Icon size={18} />
+            </div>
+            <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+        </div>
+    );
+};
+
+const StatItem = ({ icon, label, value, loading, iconBg, iconColor }) => {
+    const Icon = icon;
+    return (
+        <div className="flex items-center gap-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}>
+                <Icon size={18} />
+            </div>
+            <div className="min-w-0">
+                <div className="text-xs text-gray-500 font-medium">{label}</div>
+                <div className="text-xl font-bold text-gray-900">
+                    {loading ? <span className="inline-block w-8 h-5 bg-gray-200 rounded animate-pulse" /> : value}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+/* ─── main component ────────────────────────────────────── */
 const Profile = () => {
     const navigate = useNavigate();
     const { userInfo, setUserInfo, logout } = useAuthStore();
     const { resetWorkspaceState } = useWorkspaceStore();
-    
-    const [fullname, setFullname] = useState('');
-    const [email, setEmail] = useState('');
-    const [avatar, setAvatar] = useState('');
-    const [avatarFile, setAvatarFile] = useState(null);
-    const [avatarPreview, setAvatarPreview] = useState('');
-    const [newPassword, setNewPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [toggling2FA, setToggling2FA] = useState(false);
     const fileInputRef = useRef(null);
 
-    useEffect(() => {
-        if (userInfo) {
-            setFullname(userInfo.fullname || '');
-            setEmail(userInfo.email || '');
-            setAvatar(userInfo.avatar || '');
-            setTwoFactorEnabled(!!userInfo.twoFactorEnabled);
-        }
-    }, [userInfo]);
+    /* profile fields */
+    const [fullname, setFullname] = useState('');
+    const [email, setEmail] = useState('');
+    const [originalFullname, setOriginalFullname] = useState('');
+    const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+    const [avatar, setAvatar] = useState('');
+    const [avatarPreview, setAvatarPreview] = useState('');
 
+    /* loading states */
+    const [profileLoading, setProfileLoading] = useState(true);
+    const [savingInfo, setSavingInfo] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [toggling2FA, setToggling2FA] = useState(false);
+    const [savingPassword, setSavingPassword] = useState(false);
+    const [loadingActivity, setLoadingActivity] = useState(true);
+
+    /* password form */
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [showCurrentPw, setShowCurrentPw] = useState(false);
+    const [showNewPw, setShowNewPw] = useState(false);
+    const [showConfirmPw, setShowConfirmPw] = useState(false);
+
+    /* activity stats */
+    const [activity, setActivity] = useState({ workspacesCount: 0, projectsCount: 0, tasksCount: 0 });
+
+    const isDirty = fullname.trim() !== originalFullname.trim();
+
+    /* fetch profile */
     useEffect(() => {
-        const fetchProfile = async () => {
+        const load = async () => {
+            setProfileLoading(true);
             try {
                 const res = await axios.get('/api/auth/profile');
-                const profile = res.data || {};
-                setFullname(profile.fullname || '');
-                setEmail(profile.email || '');
-                setAvatar(profile.avatar || '');
-                setTwoFactorEnabled(!!profile.twoFactorEnabled);
-                setUserInfo(profile);
-            } catch (err) {
-                console.error('Failed to fetch profile', err);
-                // keep local state fallback from store
+                const p = res.data || {};
+                setFullname(p.fullname || '');
+                setOriginalFullname(p.fullname || '');
+                setEmail(p.email || '');
+                setAvatar(p.avatar || '');
+                setTwoFactorEnabled(!!p.twoFactorEnabled);
+                setUserInfo(p);
+            } catch {
+                if (userInfo) {
+                    setFullname(userInfo.fullname || '');
+                    setOriginalFullname(userInfo.fullname || '');
+                    setEmail(userInfo.email || '');
+                    setAvatar(userInfo.avatar || '');
+                    setTwoFactorEnabled(!!userInfo.twoFactorEnabled);
+                }
+            } finally {
+                setProfileLoading(false);
             }
         };
-        fetchProfile();
+        load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    /* fetch activity */
+    useEffect(() => {
+        const loadActivity = async () => {
+            setLoadingActivity(true);
+            try {
+                const res = await axios.get('/api/auth/activity-stats');
+                setActivity(res.data);
+            } catch {
+                /* silent */
+            } finally {
+                setLoadingActivity(false);
+            }
+        };
+        loadActivity();
+    }, []);
+
+    /* avatar: pick file → upload immediately */
+    const handleAvatarChange = useCallback(async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) { toast.error('Max file size is 5 MB'); return; }
+        if (!file.type.startsWith('image/')) { toast.error('Please select an image file'); return; }
+
+        const reader = new FileReader();
+        reader.onloadend = () => setAvatarPreview(reader.result);
+        reader.readAsDataURL(file);
+
+        setUploadingAvatar(true);
+        try {
+            const fd = new FormData();
+            fd.append('avatar', file);
+            const res = await axios.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setAvatar(res.data.avatar || '');
+            setAvatarPreview('');
+            setUserInfo(res.data);
+            toast.success('Photo updated');
+        } catch (err) {
+            setAvatarPreview('');
+            toast.error(err?.response?.data?.message || 'Upload failed');
+        } finally {
+            setUploadingAvatar(false);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        }
     }, [setUserInfo]);
 
-    const handleAvatarChange = (e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                toast.error('File size should be less than 5MB');
-                return;
-            }
-            if (!file.type.startsWith('image/')) {
-                toast.error('Please upload an image file');
-                return;
-            }
-            setAvatarFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setAvatarPreview(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if ((newPassword || confirmPassword) && newPassword !== confirmPassword) {
-            toast.error('Passwords do not match');
-            return;
-        }
-        if (newPassword && newPassword.length < 6) {
-            toast.error('Password must be at least 6 characters');
-            return;
-        }
-        setLoading(true);
+    /* remove avatar */
+    const handleRemoveAvatar = useCallback(async () => {
+        setUploadingAvatar(true);
         try {
-            const formData = new FormData();
-            formData.append('fullname', fullname);
-            formData.append('email', email);
-            if (avatarFile) {
-                formData.append('avatar', avatarFile);
-            }
-            if (newPassword) {
-                formData.append('password', newPassword);
-            }
-
-            const res = await axios.put('/api/auth/profile', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-            
-            setUserInfo(res.data);
-            setAvatar(res.data.avatar || '');
-            setTwoFactorEnabled(!!res.data.twoFactorEnabled);
-            setAvatarFile(null);
+            const fd = new FormData();
+            fd.append('removeAvatar', 'true');
+            const res = await axios.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setAvatar('');
             setAvatarPreview('');
+            setUserInfo(res.data);
+            toast.success('Photo removed');
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Failed to remove photo');
+        } finally {
+            setUploadingAvatar(false);
+        }
+    }, [setUserInfo]);
+
+    /* save personal info (name) */
+    const handleSaveInfo = useCallback(async () => {
+        if (!fullname.trim()) { toast.error('Full name is required'); return; }
+        setSavingInfo(true);
+        try {
+            const fd = new FormData();
+            fd.append('fullname', fullname.trim());
+            const res = await axios.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setOriginalFullname(res.data.fullname || '');
+            setUserInfo(res.data);
+            toast.success('Profile updated');
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Update failed');
+        } finally {
+            setSavingInfo(false);
+        }
+    }, [fullname, setUserInfo]);
+
+    /* update password */
+    const handleUpdatePassword = useCallback(async (e) => {
+        e.preventDefault();
+        if (!currentPassword) { toast.error('Enter your current password'); return; }
+        if (!newPassword) { toast.error('Enter a new password'); return; }
+        if (newPassword.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+        if (newPassword !== confirmPassword) { toast.error('Passwords do not match'); return; }
+        setSavingPassword(true);
+        try {
+            const fd = new FormData();
+            fd.append('currentPassword', currentPassword);
+            fd.append('password', newPassword);
+            await axios.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
-            toast.success('Profile updated successfully');
+            toast.success('Password updated');
         } catch (err) {
-            toast.error(err?.response?.data?.message || 'Failed to update profile');
+            toast.error(err?.response?.data?.message || 'Password update failed');
         } finally {
-            setLoading(false);
+            setSavingPassword(false);
         }
-    };
+    }, [currentPassword, newPassword, confirmPassword]);
 
-    const handleToggle2FA = async () => {
+    /* toggle 2FA */
+    const handleToggle2FA = useCallback(async () => {
         setToggling2FA(true);
         try {
             const res = await axios.put('/api/auth/2fa/toggle');
@@ -126,193 +256,265 @@ const Profile = () => {
         } finally {
             setToggling2FA(false);
         }
-    };
+    }, [setUserInfo]);
 
+    /* logout */
     const handleLogout = async () => {
-        try {
-            await axios.post('/api/auth/logout');
-            logout();
-            resetWorkspaceState();
-            navigate('/login');
-        } catch (err) {
-            toast.error(err?.response?.data?.message || 'Logout failed');
-        }
+        try { await axios.post('/api/auth/logout'); } catch { /* ignore */ }
+        logout();
+        resetWorkspaceState();
+        navigate('/login');
     };
 
     const displayAvatar = avatarPreview || avatar;
-    const avatarInitial = fullname?.charAt(0)?.toUpperCase() || 'U';
+    const avatarInitial = (fullname || email)?.charAt(0)?.toUpperCase() || 'U';
+    const Skeleton = ({ className }) => <div className={`bg-gray-200 rounded animate-pulse ${className}`} />;
 
     return (
-        <div className="px-8 py-10">
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900">Profile Settings</h1>
-                <p className="text-gray-500 mt-2">Manage your personal information and avatar.</p>
+        <div className="min-h-full bg-gray-50 px-8 py-8">
+
+            {/* ── Page header ── */}
+            <div className="flex items-start justify-between mb-8">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
+                    <p className="text-sm text-gray-500 mt-1">Manage your personal info and security</p>
+                </div>
+                <button
+                    onClick={handleSaveInfo}
+                    disabled={!isDirty || savingInfo}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                    {savingInfo
+                        ? <><Loader2 size={15} className="animate-spin" /> Saving…</>
+                        : <><Save size={15} /> Save Changes</>}
+                </button>
             </div>
 
-            <div className="bg-white rounded-lg shadow-md p-6 max-w-2xl">
-                <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Avatar Section */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-3">Profile Picture</label>
-                        <div className="flex items-center gap-6">
-                            <div className="relative">
-                                {displayAvatar ? (
-                                    <img
-                                        src={displayAvatar}
-                                        alt="Profile"
-                                        className="w-24 h-24 rounded-full object-cover border-2 border-gray-200"
-                                    />
-                                ) : (
-                                    <div className="w-24 h-24 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold border-2 border-gray-200">
-                                        {avatarInitial}
-                                    </div>
-                                )}
-                                <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white hover:bg-blue-700 transition-colors shadow-lg"
-                                    title="Change avatar"
-                                >
-                                    <Camera size={16} />
-                                </button>
+            {/* ── 70/30 grid ── */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
+
+                {/* ══ LEFT COLUMN ══ */}
+                <div className="space-y-6">
+
+                    {/* Card 1 – Personal Information */}
+                    <Card>
+                        <CardHeader icon={User} title="Personal Information" />
+                        {profileLoading ? (
+                            <div className="space-y-4">
+                                <Skeleton className="h-10 w-full" />
+                                <Skeleton className="h-10 w-full" />
                             </div>
-                            <div className="flex-1">
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleAvatarChange}
-                                    className="hidden"
+                        ) : (
+                            <div className="space-y-4">
+                                <InputField
+                                    label="Full Name" id="fullname"
+                                    value={fullname} onChange={(e) => setFullname(e.target.value)}
+                                    placeholder="Your full name"
                                 />
+                                <InputField
+                                    label="Email Address" id="email" type="email"
+                                    value={email} readOnly placeholder="your@email.com"
+                                />
+                                <p className="text-xs text-gray-400">Email cannot be changed. Contact support if needed.</p>
+                            </div>
+                        )}
+                    </Card>
+
+                    {/* Card 2 – Security */}
+                    <Card>
+                        <CardHeader icon={Lock} title="Security" iconColor="text-amber-600" iconBg="bg-amber-50" />
+                        <form onSubmit={handleUpdatePassword} className="space-y-4">
+                            <InputField
+                                label="Current Password" id="currentPw"
+                                type={showCurrentPw ? 'text' : 'password'}
+                                value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}
+                                placeholder="Enter current password"
+                                rightSlot={
+                                    <button type="button" onClick={() => setShowCurrentPw((v) => !v)} className="text-gray-400 hover:text-gray-600">
+                                        {showCurrentPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                                    </button>
+                                }
+                            />
+                            <InputField
+                                label="New Password" id="newPw"
+                                type={showNewPw ? 'text' : 'password'}
+                                value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Min. 6 characters"
+                                rightSlot={
+                                    <button type="button" onClick={() => setShowNewPw((v) => !v)} className="text-gray-400 hover:text-gray-600">
+                                        {showNewPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                                    </button>
+                                }
+                            />
+                            <InputField
+                                label="Confirm New Password" id="confirmPw"
+                                type={showConfirmPw ? 'text' : 'password'}
+                                value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="Re-enter new password"
+                                rightSlot={
+                                    <button type="button" onClick={() => setShowConfirmPw((v) => !v)} className="text-gray-400 hover:text-gray-600">
+                                        {showConfirmPw ? <EyeOff size={15} /> : <Eye size={15} />}
+                                    </button>
+                                }
+                            />
+                            <div className="pt-1">
                                 <button
-                                    type="button"
-                                    onClick={() => fileInputRef.current?.click()}
-                                    className="flex items-center gap-2 px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                                    type="submit" disabled={savingPassword}
+                                    className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold bg-amber-500 text-white hover:bg-amber-600 transition disabled:opacity-50"
                                 >
-                                    <Upload size={16} />
-                                    Upload Photo
+                                    {savingPassword
+                                        ? <><Loader2 size={15} className="animate-spin" /> Updating…</>
+                                        : 'Update Password'}
                                 </button>
-                                <p className="text-xs text-gray-500 mt-2">
-                                    JPG, PNG or GIF. Max size 5MB.
-                                </p>
                             </div>
-                        </div>
-                    </div>
+                        </form>
+                    </Card>
 
-                    {/* Full Name */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                        <input
-                            type="text"
-                            value={fullname}
-                            onChange={(e) => setFullname(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
+                    {/* Card 3 – 2FA */}
+                    <Card>
+                        <CardHeader
+                            icon={twoFactorEnabled ? ShieldCheck : ShieldOff}
+                            title="Two-Factor Authentication"
+                            iconColor={twoFactorEnabled ? 'text-emerald-600' : 'text-gray-500'}
+                            iconBg={twoFactorEnabled ? 'bg-emerald-50' : 'bg-gray-100'}
                         />
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            required
-                        />
-                    </div>
-
-                    {/* Password */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                        <input
-                            type="password"
-                            value={newPassword}
-                            onChange={(e) => setNewPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Leave blank to keep current password"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
-                        <input
-                            type="password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="Re-enter new password"
-                        />
-                    </div>
-
-                    <div className="pt-2">
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold disabled:opacity-50"
-                        >
-                            {loading ? 'Saving...' : 'Save Changes'}
-                        </button>
-                    </div>
-                </form>
-
-                {/* 2FA Section */}
-                <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h3 className="text-gray-900 font-bold mb-2 text-sm uppercase tracking-wide">
-                        Two-Factor Authentication
-                    </h3>
-                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <div className="flex items-start gap-3">
-                            <div
-                                className={`w-9 h-9 rounded-lg flex items-center justify-center ${
-                                    twoFactorEnabled ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-200 text-gray-600'
-                                }`}
-                            >
-                                {twoFactorEnabled ? <ShieldCheck size={18} /> : <ShieldOff size={18} />}
-                            </div>
+                        <div className="flex items-center justify-between gap-4">
                             <div>
-                                <p className="font-semibold text-gray-800 text-sm">
-                                    {twoFactorEnabled ? '2FA Enabled' : '2FA Disabled'}
+                                <p className="text-sm font-medium text-gray-800">
+                                    {twoFactorEnabled ? '2FA is currently enabled' : '2FA is currently disabled'}
                                 </p>
-                                <p className="text-xs text-gray-600 mt-0.5">
+                                <p className="text-xs text-gray-500 mt-0.5">
                                     {twoFactorEnabled
-                                        ? 'You will receive a verification code on login.'
-                                        : 'Enable 2FA for extra account security.'}
+                                        ? 'A verification code will be required on each login.'
+                                        : 'Enable two-factor authentication for extra account security.'}
                                 </p>
                             </div>
+                            <button
+                                type="button" role="switch" aria-checked={twoFactorEnabled}
+                                onClick={handleToggle2FA} disabled={toggling2FA}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200
+                                    ${twoFactorEnabled ? 'bg-emerald-500' : 'bg-gray-300'} disabled:opacity-60`}
+                            >
+                                <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200
+                                    ${twoFactorEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                            </button>
                         </div>
-                        <button
-                            type="button"
-                            onClick={handleToggle2FA}
-                            disabled={toggling2FA}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold border transition ${
-                                twoFactorEnabled
-                                    ? 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
-                                    : 'bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700'
-                            } disabled:opacity-60`}
-                        >
-                            {toggling2FA ? 'Updating...' : twoFactorEnabled ? 'Disable 2FA' : 'Enable 2FA'}
-                        </button>
-                    </div>
+                    </Card>
+
+                    {/* Card 4 – Activity Summary */}
+                    <Card>
+                        <CardHeader icon={BarChart3} title="Activity Summary" iconColor="text-violet-600" iconBg="bg-violet-50" />
+                        <p className="text-xs text-gray-400 -mt-3 mb-4">Stats across your account</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <StatItem icon={Building2} label="Workspaces joined" value={activity.workspacesCount} loading={loadingActivity} iconBg="bg-indigo-50" iconColor="text-indigo-600" />
+                            <StatItem icon={FolderKanban} label="Projects participated" value={activity.projectsCount} loading={loadingActivity} iconBg="bg-blue-50" iconColor="text-blue-600" />
+                            <StatItem icon={CheckSquare} label="Tasks assigned" value={activity.tasksCount} loading={loadingActivity} iconBg="bg-emerald-50" iconColor="text-emerald-600" />
+                        </div>
+                    </Card>
+
+                    {/* Card 5 – Sign Out */}
+                    <Card>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-gray-800">Sign Out</p>
+                                <p className="text-xs text-gray-500 mt-0.5">Sign out of your account on this device.</p>
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border-2 border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all"
+                            >
+                                <LogOut size={15} />
+                                Logout
+                            </button>
+                        </div>
+                    </Card>
+
                 </div>
 
-                {/* Logout Section */}
-                <div className="mt-10 pt-6 border-t border-gray-200">
-                    <h3 className="text-gray-900 font-bold mb-2 text-sm uppercase tracking-wide">Account</h3>
-                    <div className="flex items-center justify-between bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <div>
-                            <p className="font-semibold text-gray-800 text-sm">Sign Out</p>
-                            <p className="text-xs text-gray-600 mt-0.5">Sign out of your account on this device.</p>
+                {/* ══ RIGHT COLUMN ══ */}
+                <div className="sticky top-8">
+                    <Card>
+                        <h2 className="text-base font-semibold text-gray-900 mb-5">Your Profile</h2>
+
+                        <div className="flex flex-col items-center text-center">
+
+                            {/* Avatar */}
+                            {profileLoading ? (
+                                <Skeleton className="w-28 h-28 rounded-full mb-4" />
+                            ) : (
+                                <div className="relative mb-4">
+                                    <div className="w-28 h-28 rounded-full ring-4 ring-indigo-100 ring-offset-2 overflow-hidden">
+                                        {uploadingAvatar ? (
+                                            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                                                <Loader2 size={28} className="text-indigo-400 animate-spin" />
+                                            </div>
+                                        ) : displayAvatar ? (
+                                            <img src={displayAvatar} alt={fullname} className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-linear-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white text-3xl font-bold">
+                                                {avatarInitial}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <button
+                                        type="button" onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploadingAvatar}
+                                        className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white hover:bg-indigo-700 transition shadow-md disabled:opacity-60"
+                                        title="Change photo"
+                                    >
+                                        <Camera size={14} />
+                                    </button>
+                                </div>
+                            )}
+
+                            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+
+                            {profileLoading ? (
+                                <div className="space-y-2 w-full">
+                                    <Skeleton className="h-5 w-32 mx-auto" />
+                                    <Skeleton className="h-4 w-48 mx-auto" />
+                                </div>
+                            ) : (
+                                <>
+                                    <p className="text-base font-semibold text-gray-900">{fullname}</p>
+                                    <p className="text-xs text-gray-500 mt-0.5">{email}</p>
+
+                                    {/* badges */}
+                                    <div className="flex flex-wrap justify-center gap-2 mt-3">
+                                        <span className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full
+                                            ${twoFactorEnabled ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            {twoFactorEnabled ? <ShieldCheck size={11} /> : <ShieldOff size={11} />}
+                                            2FA {twoFactorEnabled ? 'On' : 'Off'}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+
+                            {/* photo action buttons */}
+                            <div className="flex gap-2 mt-5 w-full">
+                                <button
+                                    type="button" onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploadingAvatar}
+                                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-indigo-200 text-indigo-600 hover:bg-indigo-50 transition disabled:opacity-50"
+                                >
+                                    <Camera size={13} />
+                                    {uploadingAvatar ? 'Uploading…' : 'Change Photo'}
+                                </button>
+                                {(displayAvatar && !uploadingAvatar) && (
+                                    <button
+                                        type="button" onClick={handleRemoveAvatar}
+                                        className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border border-red-200 text-red-500 hover:bg-red-50 transition"
+                                    >
+                                        <Trash2 size={13} />
+                                        Remove
+                                    </button>
+                                )}
+                            </div>
+
                         </div>
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center gap-2 bg-white border-2 border-gray-300 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 hover:bg-red-50 hover:text-red-600 hover:border-red-300 transition-all"
-                        >
-                            <LogOut size={16} />
-                            Logout
-                        </button>
-                    </div>
+                    </Card>
                 </div>
+
             </div>
         </div>
     );

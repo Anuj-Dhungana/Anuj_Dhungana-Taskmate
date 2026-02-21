@@ -148,9 +148,12 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                 ) : (
                     <div>
                         {messagesWithGrouping.map((msg, index) => {
-                            const isMe = msg.sender?._id === userInfo?._id;
+                            // Use String() comparison so ObjectId from Mongoose === string from localStorage
+                            const senderId = String(msg.sender?._id || msg.sender || '');
+                            const isMe = !!senderId && senderId === String(userInfo?._id || '');
                             const prev = messagesWithGrouping[index - 1];
-                            const isGroupStart = !prev || prev.sender?._id !== msg.sender?._id;
+                            const prevSenderId = String(prev?.sender?._id || prev?.sender || '');
+                            const isGroupStart = !prev || prevSenderId !== senderId;
                             const canDelete = isMe || (canModerate && !isDM);
 
                             return (
@@ -171,11 +174,14 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                                 }}
                                             />
                                         ) : (
-                                            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold mr-3 text-blue-600">
+                                            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-bold mr-3 text-blue-600 shrink-0">
                                                 {msg.sender?.fullname?.substring(0, 1) || 'U'}
                                             </div>
                                         )
                                     )}
+
+                                    {/* Indent grouped non-me messages to align with the avatar-offset above */}
+                                    {!isMe && !isGroupStart && <div className="w-9 mr-3 shrink-0" />}
 
                                     <div className={`max-w-[70%] group relative ${isMe ? 'items-end' : ''}`}>
                                         {isGroupStart && !isMe && (

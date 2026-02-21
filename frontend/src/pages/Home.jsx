@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart3,
@@ -54,10 +54,55 @@ const socialProof = [
 
 const Home = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeNav, setActiveNav] = useState('');
   const [dashboardImageError, setDashboardImageError] = useState(false);
   const [analyticsImageError, setAnalyticsImageError] = useState(false);
   const dashboardPreviewSrc = '/Dashboard.png';
   const analyticsPreviewSrc = '/Landing-analytics.png';
+
+  useEffect(() => {
+    const syncActiveFromHash = () => {
+      const hash = String(window.location.hash || '').replace('#', '');
+      if (['features', 'analytics', 'pricing'].includes(hash)) {
+        setActiveNav(hash);
+      } else {
+        setActiveNav('');
+      }
+    };
+
+    syncActiveFromHash();
+    window.addEventListener('hashchange', syncActiveFromHash);
+    return () => window.removeEventListener('hashchange', syncActiveFromHash);
+  }, []);
+
+  useEffect(() => {
+    const sectionIds = ['features', 'analytics', 'pricing'];
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visible[0]?.target?.id) {
+          setActiveNav(visible[0].target.id);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '-35% 0px -45% 0px',
+        threshold: [0.2, 0.4, 0.6],
+      }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -69,9 +114,39 @@ const Home = () => {
           </Link>
 
           <div className="hidden md:flex items-center gap-8 text-sm text-slate-600">
-            <a href="#features" className="hover:text-slate-900 transition-colors">Features</a>
-            <a href="#analytics" className="hover:text-slate-900 transition-colors">Analytics</a>
-            <a href="#pricing" className="hover:text-slate-900 transition-colors">Pricing</a>
+            <a
+              href="#features"
+              onClick={() => setActiveNav('features')}
+              className={`transition-colors ${
+                activeNav === 'features'
+                  ? 'text-blue-700 font-semibold'
+                  : 'hover:text-slate-900'
+              }`}
+            >
+              Features
+            </a>
+            <a
+              href="#analytics"
+              onClick={() => setActiveNav('analytics')}
+              className={`transition-colors ${
+                activeNav === 'analytics'
+                  ? 'text-blue-700 font-semibold'
+                  : 'hover:text-slate-900'
+              }`}
+            >
+              Analytics
+            </a>
+            <a
+              href="#pricing"
+              onClick={() => setActiveNav('pricing')}
+              className={`transition-colors ${
+                activeNav === 'pricing'
+                  ? 'text-blue-700 font-semibold'
+                  : 'hover:text-slate-900'
+              }`}
+            >
+              Pricing
+            </a>
           </div>
 
           <div className="hidden md:flex items-center gap-4">
@@ -99,9 +174,36 @@ const Home = () => {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-100 bg-white px-5 py-4">
             <div className="space-y-3 text-sm text-slate-700">
-              <a href="#features" className="block" onClick={() => setMobileMenuOpen(false)}>Features</a>
-              <a href="#analytics" className="block" onClick={() => setMobileMenuOpen(false)}>Analytics</a>
-              <a href="#pricing" className="block" onClick={() => setMobileMenuOpen(false)}>Pricing</a>
+              <a
+                href="#features"
+                className={`block ${activeNav === 'features' ? 'text-blue-700 font-semibold' : ''}`}
+                onClick={() => {
+                  setActiveNav('features');
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Features
+              </a>
+              <a
+                href="#analytics"
+                className={`block ${activeNav === 'analytics' ? 'text-blue-700 font-semibold' : ''}`}
+                onClick={() => {
+                  setActiveNav('analytics');
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Analytics
+              </a>
+              <a
+                href="#pricing"
+                className={`block ${activeNav === 'pricing' ? 'text-blue-700 font-semibold' : ''}`}
+                onClick={() => {
+                  setActiveNav('pricing');
+                  setMobileMenuOpen(false);
+                }}
+              >
+                Pricing
+              </a>
               <Link to="/login" className="block" onClick={() => setMobileMenuOpen(false)}>Login</Link>
               <Link
                 to="/register"
@@ -115,8 +217,8 @@ const Home = () => {
         )}
       </nav>
 
-      <main className="pt-24">
-        <section className="py-20 md:py-24 px-5 sm:px-8">
+      <main className="pt-20">
+        <section className="pt-12 pb-20 md:pt-14 md:pb-24 px-5 sm:px-8">
           <div className="max-w-6xl mx-auto grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
             <div className="lg:col-span-6">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-slate-900">

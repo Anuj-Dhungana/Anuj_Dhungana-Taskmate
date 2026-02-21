@@ -9,7 +9,6 @@ import {
   MessageSquare,
   Phone,
   ShieldCheck,
-  Sparkles,
   X,
 } from 'lucide-react';
 import logo from '../assets/logo.png';
@@ -55,6 +54,10 @@ const socialProof = [
 
 const Home = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dashboardImageError, setDashboardImageError] = useState(false);
+  const [analyticsImageError, setAnalyticsImageError] = useState(false);
+  const dashboardPreviewSrc = '/Dashboard.png';
+  const analyticsPreviewSrc = '/Landing-analytics.png';
 
   return (
     <div className="min-h-screen bg-white text-slate-900">
@@ -114,8 +117,8 @@ const Home = () => {
 
       <main className="pt-24">
         <section className="py-20 md:py-24 px-5 sm:px-8">
-          <div className="max-w-6xl mx-auto grid lg:grid-cols-5 gap-10 lg:gap-14 items-center">
-            <div className="lg:col-span-3">
+          <div className="max-w-6xl mx-auto grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+            <div className="lg:col-span-6">
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight tracking-tight text-slate-900">
                 All Your Team&apos;s Work.
                 <br />
@@ -140,48 +143,20 @@ const Home = () => {
               </div>
             </div>
 
-            <div className="lg:col-span-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xl shadow-slate-200/70">
-                <div className="rounded-xl border border-slate-200 p-3 bg-slate-50">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="text-xs font-semibold text-slate-600">Board</p>
-                    <Sparkles className="w-4 h-4 text-blue-600" />
+            <div className="lg:col-span-6 lg:scale-[1.12] lg:origin-center">
+              <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-200/70">
+                {!dashboardImageError ? (
+                  <img
+                    src={dashboardPreviewSrc}
+                    alt="TaskMate dashboard preview"
+                    className="w-full h-auto rounded-xl border border-slate-200"
+                    onError={() => setDashboardImageError(true)}
+                  />
+                ) : (
+                  <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                    Add your image at <span className="font-semibold">frontend/public/Dashboard.png</span> to show the real dashboard preview.
                   </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-md bg-white p-2 border border-slate-200">
-                      <div className="h-2 w-12 rounded bg-slate-200 mb-2" />
-                      <div className="h-7 rounded bg-blue-50 border border-blue-100" />
-                    </div>
-                    <div className="rounded-md bg-white p-2 border border-slate-200">
-                      <div className="h-2 w-14 rounded bg-slate-200 mb-2" />
-                      <div className="h-7 rounded bg-amber-50 border border-amber-100" />
-                    </div>
-                    <div className="rounded-md bg-white p-2 border border-slate-200">
-                      <div className="h-2 w-10 rounded bg-slate-200 mb-2" />
-                      <div className="h-7 rounded bg-emerald-50 border border-emerald-100" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-slate-200 p-3">
-                    <p className="text-xs font-semibold text-slate-600 mb-2">Dashboard</p>
-                    <div className="space-y-2">
-                      <div className="h-2.5 w-full rounded bg-slate-200" />
-                      <div className="h-2.5 w-3/4 rounded bg-slate-200" />
-                      <div className="h-2.5 w-2/3 rounded bg-slate-200" />
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-slate-200 p-3">
-                    <p className="text-xs font-semibold text-slate-600 mb-2">Analytics</p>
-                    <div className="flex items-end gap-1.5 h-12">
-                      <span className="w-2.5 h-5 rounded bg-blue-300" />
-                      <span className="w-2.5 h-7 rounded bg-blue-400" />
-                      <span className="w-2.5 h-9 rounded bg-blue-500" />
-                      <span className="w-2.5 h-6 rounded bg-blue-300" />
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -234,27 +209,19 @@ const Home = () => {
                 See task velocity, workload distribution, and project health in real-time.
               </p>
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-lg shadow-slate-200/70">
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="rounded-lg border border-slate-200 p-3">
-                  <p className="text-xs font-medium text-slate-500">Velocity</p>
-                  <p className="text-xl font-semibold text-slate-900 mt-1">+18%</p>
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 shadow-lg shadow-slate-200/70">
+              {!analyticsImageError ? (
+                <img
+                  src={analyticsPreviewSrc}
+                  alt="TaskMate analytics preview"
+                  className="w-full h-auto rounded-xl border border-slate-200"
+                  onError={() => setAnalyticsImageError(true)}
+                />
+              ) : (
+                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-sm text-slate-500">
+                  Add your image at <span className="font-semibold">frontend/public/Landing-analytics.png</span> to show the real analytics preview.
                 </div>
-                <div className="rounded-lg border border-slate-200 p-3">
-                  <p className="text-xs font-medium text-slate-500">On Track</p>
-                  <p className="text-xl font-semibold text-slate-900 mt-1">74%</p>
-                </div>
-              </div>
-              <div className="rounded-xl border border-slate-200 p-4">
-                <div className="flex items-end gap-2 h-26">
-                  <span className="w-6 rounded-t bg-blue-200 h-12" />
-                  <span className="w-6 rounded-t bg-blue-300 h-18" />
-                  <span className="w-6 rounded-t bg-blue-500 h-24" />
-                  <span className="w-6 rounded-t bg-blue-300 h-16" />
-                  <span className="w-6 rounded-t bg-blue-400 h-20" />
-                  <span className="w-6 rounded-t bg-blue-500 h-26" />
-                </div>
-              </div>
+              )}
             </div>
           </div>
         </section>

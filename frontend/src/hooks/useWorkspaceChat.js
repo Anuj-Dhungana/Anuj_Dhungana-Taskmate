@@ -1,6 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import axios from 'axios';
 import useChatUnreadStore from '../store/useChatUnreadStore';
+
+// Stable fallback — a {} literal inside a selector creates a new reference every render,
+// causing Zustand's useSyncExternalStore to see a "changed" value and loop infinitely.
+const EMPTY_UNREAD = {};
 import {
     createMemberLookup,
     processDmThreads,
@@ -21,7 +25,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
     const [showDmPicker, setShowDmPicker] = useState(false);
     const [dmSearch, setDmSearch] = useState('');
     const unreadByWorkspace = useChatUnreadStore(
-        useCallback((state) => state.unreadByWorkspace[workspaceId] || {}, [workspaceId])
+        useCallback((state) => state.unreadByWorkspace[workspaceId] ?? EMPTY_UNREAD, [workspaceId])
     );
     const setWorkspaceChannels = useChatUnreadStore((state) => state.setWorkspaceChannels);
     const clearUnread = useChatUnreadStore((state) => state.clearUnread);
@@ -54,18 +58,22 @@ export const useWorkspaceChat = (workspaceId, userId) => {
 
     const refreshChannels = useCallback(async () => {
         if (!workspaceId) return;
-        const [chRes, dmRes] = await Promise.all([
-            axios.get(`/api/channels/workspace/${workspaceId}`),
-            axios.get(`/api/channels/workspace/${workspaceId}/dms`),
-        ]);
-        const nextChannels = chRes.data || [];
-        const nextDms = dmRes.data || [];
-        setChannels(nextChannels);
-        setDmThreads(nextDms);
-        setWorkspaceChannels(workspaceId, [...nextChannels, ...nextDms]);
-        setSelectedChannel((prev) => selectPreferredChannel(nextChannels, nextDms, null, prev));
-        if (workspace) {
-            setWorkspace({ ...workspace, channels: nextChannels });
+        try {
+            const [chRes, dmRes] = await Promise.all([
+                axios.get(`/api/channels/workspace/${workspaceId}`),
+                axios.get(`/api/channels/workspace/${workspaceId}/dms`),
+            ]);
+            const nextChannels = chRes.data || [];
+            const nextDms = dmRes.data || [];
+            setChannels(nextChannels);
+            setDmThreads(nextDms);
+            setWorkspaceChannels(workspaceId, [...nextChannels, ...nextDms]);
+            setSelectedChannel((prev) => selectPreferredChannel(nextChannels, nextDms, null, prev));
+            if (workspace) {
+                setWorkspace({ ...workspace, channels: nextChannels });
+            }
+        } catch (err) {
+            console.error('Failed to refresh channels', err);
         }
     }, [workspaceId, workspace, setWorkspaceChannels]);
 

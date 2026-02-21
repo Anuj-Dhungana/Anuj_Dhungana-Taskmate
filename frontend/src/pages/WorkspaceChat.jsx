@@ -123,7 +123,7 @@ const WorkspaceChat = () => {
 
     if (!currentWorkspaceId) {
         return (
-            <div className="px-8 py-10">
+            <div className="h-full min-h-0 flex items-center justify-center">
                 <div className="text-center text-gray-500">Select a workspace to open chat.</div>
             </div>
         );
@@ -131,7 +131,7 @@ const WorkspaceChat = () => {
 
     if (loading) {
         return (
-            <div className="px-8 py-10">
+            <div className="h-full min-h-0 flex items-center justify-center">
                 <div className="text-gray-500">Loading chat...</div>
             </div>
         );

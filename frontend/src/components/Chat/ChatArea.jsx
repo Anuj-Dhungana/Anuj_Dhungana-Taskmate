@@ -148,7 +148,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                 ) : (
                     <div>
                         {messagesWithGrouping.map((msg, index) => {
-                            const isMe = msg.sender?._id === userInfo._id;
+                            const isMe = msg.sender?._id === userInfo?._id;
                             const prev = messagesWithGrouping[index - 1];
                             const isGroupStart = !prev || prev.sender?._id !== msg.sender?._id;
                             const canDelete = isMe || (canModerate && !isDM);

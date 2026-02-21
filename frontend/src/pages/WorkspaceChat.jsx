@@ -32,8 +32,6 @@ const WorkspaceChat = () => {
         filteredChannels,
         filteredDMs,
         selectedConversation,
-        showChannelMenu,
-        setShowChannelMenu,
         showDmPicker,
         setShowDmPicker,
         dmSearch,
@@ -55,18 +53,8 @@ const WorkspaceChat = () => {
     const canManageSelectedChannel = canManageChannels && !selectedIsDM;
 
     const openCreateChannelModal = () => {
-        setShowChannelMenu(false);
         setChannelEditorMode('create');
         setChannelName('');
-        setChannelEditorError('');
-        setShowChannelEditor(true);
-    };
-
-    const openRenameChannelModal = () => {
-        if (!selectedConversation || selectedIsDM) return;
-        setShowChannelMenu(false);
-        setChannelEditorMode('rename');
-        setChannelName(selectedConversation.name || '');
         setChannelEditorError('');
         setShowChannelEditor(true);
     };
@@ -99,12 +87,6 @@ const WorkspaceChat = () => {
         } finally {
             setSavingChannel(false);
         }
-    };
-
-    const handleDeleteChannel = async () => {
-        if (!selectedConversation) return;
-        setChannelToDelete(selectedConversation);
-        setShowChannelMenu(false);
     };
 
     const confirmDeleteChannel = async () => {
@@ -164,11 +146,6 @@ const WorkspaceChat = () => {
                                 workspaceName={workspaceName}
                                 memberCount={memberCount}
                                 isDM={selectedIsDM}
-                                canManage={canManageSelectedChannel}
-                                showMenu={showChannelMenu}
-                                onMenuToggle={() => setShowChannelMenu((v) => !v)}
-                                onRename={openRenameChannelModal}
-                                onDelete={handleDeleteChannel}
                             />
                             <div className="flex-1 min-h-0">
                                 <ChatArea

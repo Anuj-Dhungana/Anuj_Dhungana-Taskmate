@@ -214,7 +214,7 @@ const InboxMenu = () => {
         <div className="relative">
             <button
                 onClick={() => setIsOpen((value) => !value)}
-                className="relative p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-gray-100 transition-colors"
+                className="relative p-2 rounded-lg text-gray-300 hover:text-white hover:bg-gray-800/70 transition-colors"
                 aria-label="Open inbox"
                 title="Inbox"
             >

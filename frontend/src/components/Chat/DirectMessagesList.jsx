@@ -3,7 +3,7 @@ import { Plus } from 'lucide-react';
 const DirectMessagesList = ({ dmThreads, selectedChannel, onSelectChannel, onCreateDm }) => {
     return (
         <div>
-            <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-gray-500 mb-2">
+            <div className="flex items-center justify-between text-[11px] uppercase tracking-wider text-indigo-400 font-semibold mb-2">
                 <span>Direct Messages</span>
                 <button
                     onClick={onCreateDm}
@@ -26,8 +26,8 @@ const DirectMessagesList = ({ dmThreads, selectedChannel, onSelectChannel, onCre
                             onClick={() => onSelectChannel(dm)}
                             className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center gap-2 border-l-4 transition ${
                                 isActive
-                                    ? 'bg-indigo-50 text-indigo-700 border-indigo-500'
-                                    : 'text-gray-700 border-transparent hover:bg-white'
+                                    ? 'bg-white/80 text-indigo-700 border-indigo-500 shadow-sm'
+                                    : 'text-indigo-900/70 border-transparent hover:bg-white/60'
                             }`}
                         >
                             <div className="relative w-8 h-8 shrink-0">

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Mail, CheckCircle, XCircle, Loader2, ArrowRight } from 'lucide-react';
-import { inviteAPI } from '../api/invites';
-import useAuthStore from '../store/useAuthStore';
+import { inviteAPI } from '../../api/invites';
+import useAuthStore from '../../store/useAuthStore';
 
 const InviteTokenPage = () => {
     const { token } = useParams();
@@ -157,3 +157,4 @@ const InviteTokenPage = () => {
 };
 
 export default InviteTokenPage;
+

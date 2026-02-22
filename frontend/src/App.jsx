@@ -1,17 +1,17 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
 import DashboardLayout from './pages/DashboardLayout';
 import WorkspaceList from './pages/WorkspaceList';
 import WorkspaceDetail from './pages/WorkspaceDetail';
 import ProjectView from './pages/ProjectView';
 import WorkspaceSettings from './pages/Settings';
-import VerifyEmail from './pages/VerifyEmail';
-import ForgotPassword from './pages/ForgotPassword';
-import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/auth/VerifyEmail';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import useAuthStore from './store/useAuthStore';
 import Profile from './pages/Profile';
 import MyTasks from './pages/MyTasks';
@@ -20,7 +20,7 @@ import WorkspaceChat from './pages/WorkspaceChat';
 import WorkspaceCalls from './pages/WorkspaceCalls';
 import WorkspaceMembers from './pages/WorkspaceMembers';
 import Analytics from './pages/Analytics';
-import InviteTokenPage from './pages/InviteTokenPage';
+import InviteTokenPage from './pages/auth/InviteTokenPage';
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {

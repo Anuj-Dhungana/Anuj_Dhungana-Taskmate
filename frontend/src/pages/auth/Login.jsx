@@ -4,7 +4,7 @@ import axios from 'axios';
 import useAuthStore from '../../store/useAuthStore';
 import { toast } from 'react-hot-toast';
 import { inviteAPI } from '../../api/invites';
-import { Eye, EyeOff, Mail, Lock, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
 /* ── shared brand left panel ── */
@@ -252,6 +252,14 @@ const Login = () => {
                                 Sign Up
                             </Link>
                         </p>
+
+                        {/* Back to home */}
+                        <div className="mt-4 flex items-center justify-center">
+                            <Link to="/"
+                                className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition">
+                                <ArrowLeft size={14} /> Back to Home
+                            </Link>
+                        </div>
                     </div>
 
                     <p className="text-center text-xs text-gray-400 mt-6">© 2025 TaskMate. All rights reserved.</p>

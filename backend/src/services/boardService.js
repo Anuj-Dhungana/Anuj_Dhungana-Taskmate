@@ -113,30 +113,49 @@ export const emitTaskChanged = (req, context, card, action = 'task_updated') => 
 };
 
 /**
- * Parse @mentions from comment content and return matched user IDs
- * Matches @fullname patterns against provided project members
+ * Parse @mentions from comment content and return matched user IDs.
+ * Finds every '@' in the content and checks if the text following it
+ * starts with a known project member's fullname (case-insensitive).
  */
 export const parseMentions = (content, projectMembers = []) => {
-    if (!content) return [];
-    const mentionRegex = /@([A-Za-z0-9_.-]+(?:\s+[A-Za-z0-9_.-]+)*)/g;
-    const mentionedNames = [];
-    let match;
-    while ((match = mentionRegex.exec(content)) !== null) {
-        mentionedNames.push(match[1].trim().toLowerCase());
-    }
-    if (mentionedNames.length === 0) return [];
+    if (!content || !projectMembers.length) return [];
 
-    const matchedUserIds = [];
+    // Build a lookup of lowercase fullname → userId
+    const memberLookup = [];
     for (const member of projectMembers) {
         const user = member?.user || member;
         const userId = user?._id?.toString() || user?.toString();
-        const fullname = (user?.fullname || '').trim().toLowerCase();
+        const fullname = (user?.fullname || '').trim();
         if (!fullname || !userId) continue;
-        if (mentionedNames.some((name) => fullname === name || fullname.startsWith(name))) {
-            matchedUserIds.push(userId);
-        }
+        memberLookup.push({ fullname, fullnameLower: fullname.toLowerCase(), userId });
     }
-    return [...new Set(matchedUserIds)];
+    if (memberLookup.length === 0) return [];
+
+    // Sort by longest name first so "John Doe Smith" matches before "John Doe"
+    memberLookup.sort((a, b) => b.fullnameLower.length - a.fullnameLower.length);
+
+    const matchedUserIds = new Set();
+    const contentLower = content.toLowerCase();
+
+    // Find every '@' in the content
+    let atIndex = contentLower.indexOf('@');
+    while (atIndex !== -1) {
+        const afterAt = contentLower.slice(atIndex + 1);
+        // Check if the text after '@' starts with any member's fullname
+        for (const { fullnameLower, userId } of memberLookup) {
+            if (afterAt.startsWith(fullnameLower)) {
+                // Ensure the name ends at a word boundary (space, punctuation, or end of string)
+                const charAfterName = afterAt[fullnameLower.length];
+                if (!charAfterName || /[\s,.:;!?)}\]]/.test(charAfterName)) {
+                    matchedUserIds.add(userId);
+                    break; // longest match wins for this position
+                }
+            }
+        }
+        atIndex = contentLower.indexOf('@', atIndex + 1);
+    }
+
+    return [...matchedUserIds];
 };
 
 /**

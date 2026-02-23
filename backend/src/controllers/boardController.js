@@ -378,9 +378,13 @@ export const addCardComment = async (req, res) => {
         // Parse @mentions and send notifications
         try {
             const project = await Project.findById(card.projectId).populate('members.user', 'fullname');
+            console.log('[MENTION DEBUG] Comment content:', content);
+            console.log('[MENTION DEBUG] Project members:', project?.members?.map(m => ({ id: m.user?._id?.toString(), name: m.user?.fullname })));
             const mentionedUserIds = parseMentions(content, project?.members || []);
+            console.log('[MENTION DEBUG] Matched user IDs:', mentionedUserIds);
             if (mentionedUserIds.length > 0) {
                 await createMentionNotifications(card, mentionedUserIds, req.user, content, req);
+                console.log('[MENTION DEBUG] Notifications created for', mentionedUserIds.length, 'users');
             }
         } catch (mentionErr) {
             console.error('Mention notification error:', mentionErr);

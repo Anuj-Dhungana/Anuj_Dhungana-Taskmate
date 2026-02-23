@@ -309,7 +309,11 @@ const InboxMenu = () => {
                                             notifications.map((notification) => (
                                                 <div
                                                     key={notification._id}
-                                                    onClick={() => handleNotificationClick(notification)}
+                                                    onClick={() => {
+                                                        if (!notification?.isRead) {
+                                                            markNotificationRead(notification?._id);
+                                                        }
+                                                    }}
                                                     className={`w-full text-left p-3 border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer ${
                                                         notification?.isRead ? 'bg-white' : 'bg-blue-50/40'
                                                     }`}
@@ -429,7 +433,11 @@ const InboxMenu = () => {
                                             mentions.map((mention) => (
                                                 <div
                                                     key={mention._id}
-                                                    onClick={() => handleNotificationClick(mention)}
+                                                    onClick={() => {
+                                                        if (!mention?.isRead) {
+                                                            markNotificationRead(mention?._id);
+                                                        }
+                                                    }}
                                                     className={`w-full text-left p-3 border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer ${
                                                         mention?.isRead ? 'bg-white' : 'bg-purple-50/40'
                                                     }`}
@@ -445,13 +453,10 @@ const InboxMenu = () => {
                                                                         {mention.sender.fullname}
                                                                     </span>
                                                                 ) : null}
-                                                                {mention?.message}
+                                                                {mention?.taskTitle
+                                                                    ? `mentioned you in "${mention.taskTitle}"`
+                                                                    : mention?.message}
                                                             </p>
-                                                            {mention?.commentContent && (
-                                                                <p className="mt-1 text-xs text-gray-500 bg-gray-50 rounded-md px-2 py-1 line-clamp-2 border border-gray-100">
-                                                                    "{mention.commentContent}"
-                                                                </p>
-                                                            )}
                                                             <div className="mt-1 text-[11px] text-gray-500 flex items-center gap-1.5">
                                                                 <span>Mention</span>
                                                                 <span>|</span>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import {
@@ -114,6 +114,10 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
     const [activity, setActivity] = useState([]);
     const [newSubtask, setNewSubtask] = useState('');
     const [commentDraft, setCommentDraft] = useState('');
+    const [mentionOpen, setMentionOpen] = useState(false);
+    const [mentionQuery, setMentionQuery] = useState('');
+    const [mentionIndex, setMentionIndex] = useState(0);
+    const commentTextareaRef = useRef(null);
 
     const workspaceMembers = selectedWorkspace?.workspace?.members || [];
     const normalizedProjectMembers = useMemo(() => {
@@ -156,6 +160,14 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
             .map((member) => member.fullname)
             .join(', ');
     }, [assignees, normalizedProjectMembers]);
+    const filteredMentionMembers = useMemo(() => {
+        if (!mentionOpen) return [];
+        const query = mentionQuery.toLowerCase();
+        return normalizedProjectMembers.filter((member) =>
+            member.fullname.toLowerCase().includes(query)
+        );
+    }, [mentionOpen, mentionQuery, normalizedProjectMembers]);
+
     const completedSubtasks = subtasks.filter((s) => !!s?.done).length;
     const isOverdue = dueDate && new Date(dueDate) < new Date() && !Number.isNaN(new Date(dueDate).getTime());
 
@@ -399,7 +411,78 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
         }
     };
 
+    const handleCommentChange = (event) => {
+        const value = event.target.value;
+        setCommentDraft(value);
+
+        const textarea = event.target;
+        const cursorPos = textarea.selectionStart;
+        const textBeforeCursor = value.slice(0, cursorPos);
+
+        // Find the last @ that isn't preceded by a word character
+        const mentionMatch = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+        if (mentionMatch) {
+            setMentionOpen(true);
+            setMentionQuery(mentionMatch[1]);
+            setMentionIndex(0);
+        } else {
+            setMentionOpen(false);
+            setMentionQuery('');
+        }
+    };
+
+    const insertMention = (member) => {
+        const textarea = commentTextareaRef.current;
+        if (!textarea) return;
+
+        const cursorPos = textarea.selectionStart;
+        const textBeforeCursor = commentDraft.slice(0, cursorPos);
+        const textAfterCursor = commentDraft.slice(cursorPos);
+
+        // Replace the @query with @fullname
+        const mentionMatch = textBeforeCursor.match(/(?:^|\s)@(\w*)$/);
+        if (!mentionMatch) return;
+
+        const matchStart = textBeforeCursor.lastIndexOf('@' + mentionMatch[1]);
+        const before = commentDraft.slice(0, matchStart);
+        const mentionText = `@${member.fullname} `;
+        const newValue = before + mentionText + textAfterCursor;
+
+        setCommentDraft(newValue);
+        setMentionOpen(false);
+        setMentionQuery('');
+
+        // Restore focus and cursor position
+        setTimeout(() => {
+            textarea.focus();
+            const newPos = before.length + mentionText.length;
+            textarea.setSelectionRange(newPos, newPos);
+        }, 0);
+    };
+
     const handleCommentKeyDown = (event) => {
+        if (mentionOpen && filteredMentionMembers.length > 0) {
+            if (event.key === 'ArrowDown') {
+                event.preventDefault();
+                setMentionIndex((prev) => (prev + 1) % filteredMentionMembers.length);
+                return;
+            }
+            if (event.key === 'ArrowUp') {
+                event.preventDefault();
+                setMentionIndex((prev) => (prev - 1 + filteredMentionMembers.length) % filteredMentionMembers.length);
+                return;
+            }
+            if (event.key === 'Enter' || event.key === 'Tab') {
+                event.preventDefault();
+                insertMention(filteredMentionMembers[mentionIndex]);
+                return;
+            }
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                setMentionOpen(false);
+                return;
+            }
+        }
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
             handleSendComment();
@@ -660,14 +743,52 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                                 )}
                             </div>
                             <div className="border-t border-gray-100 p-3 bg-white">
-                                <textarea
-                                    value={commentDraft}
-                                    onChange={(event) => setCommentDraft(event.target.value)}
-                                    onKeyDown={handleCommentKeyDown}
-                                    placeholder="Add a comment... (use @ to mention people)"
-                                    rows={2}
-                                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                />
+                                <div className="relative">
+                                    <textarea
+                                        ref={commentTextareaRef}
+                                        value={commentDraft}
+                                        onChange={handleCommentChange}
+                                        onKeyDown={handleCommentKeyDown}
+                                        placeholder="Add a comment... (use @ to mention people)"
+                                        rows={2}
+                                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    />
+                                    {mentionOpen && filteredMentionMembers.length > 0 && (
+                                        <div className="absolute left-0 right-0 bottom-full mb-1 max-h-44 overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xl z-30">
+                                            <div className="px-3 py-1.5 text-[11px] font-semibold text-gray-400 uppercase tracking-wide border-b border-gray-100">
+                                                Members
+                                            </div>
+                                            {filteredMentionMembers.map((member, index) => (
+                                                <button
+                                                    key={member._id}
+                                                    type="button"
+                                                    onMouseDown={(e) => {
+                                                        e.preventDefault();
+                                                        insertMention(member);
+                                                    }}
+                                                    className={`w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors ${
+                                                        index === mentionIndex
+                                                            ? 'bg-blue-50 text-blue-700'
+                                                            : 'text-gray-700 hover:bg-gray-50'
+                                                    }`}
+                                                >
+                                                    {member.avatar ? (
+                                                        <img
+                                                            src={member.avatar}
+                                                            alt={member.fullname}
+                                                            className="w-6 h-6 rounded-full object-cover shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white text-[10px] font-semibold flex items-center justify-center shrink-0">
+                                                            {initialsFromName(member.fullname)}
+                                                        </div>
+                                                    )}
+                                                    <span className="text-sm font-medium truncate">{member.fullname}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                                 <div className="mt-2 flex justify-end">
                                     <button
                                         onClick={handleSendComment}

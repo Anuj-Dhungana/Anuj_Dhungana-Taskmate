@@ -37,6 +37,8 @@ const getNotificationIcon = (type) => {
         case 'comment':
         case 'task_comment':
             return <MessageSquare className={`${iconClass} text-blue-600`} />;
+        case 'mention':
+            return <AtSign className={`${iconClass} text-purple-600`} />;
         case 'status':
         case 'task_status':
             return <CircleCheckBig className={`${iconClass} text-emerald-600`} />;
@@ -56,6 +58,8 @@ const getNotificationReference = (notification) => {
         case 'comment':
         case 'task_comment':
             return 'Task comment';
+        case 'mention':
+            return 'Mention';
         case 'status':
         case 'task_status':
             return 'Status update';
@@ -73,6 +77,8 @@ const getNotificationReference = (notification) => {
 const resolveNotificationPath = (notification) => {
     switch (notification?.type) {
         case 'assignment':
+            return '/tasks';
+        case 'mention':
             return '/tasks';
         case 'invite_accepted':
             return '/members';
@@ -103,8 +109,10 @@ const InboxMenu = () => {
 
     const notifications = useInboxStore((state) => state.notifications);
     const invites = useInboxStore((state) => state.invites);
+    const mentions = useInboxStore((state) => state.mentions);
     const loadingNotifications = useInboxStore((state) => state.loadingNotifications);
     const loadingInvites = useInboxStore((state) => state.loadingInvites);
+    const loadingMentions = useInboxStore((state) => state.loadingMentions);
     const processingInviteId = useInboxStore((state) => state.processingInviteId);
     const unreadMentionCount = useInboxStore((state) => state.unreadMentionCount);
 
@@ -276,9 +284,12 @@ const InboxMenu = () => {
                                         Invites ({pendingInviteCount})
                                     </button>
                                     <button
-                                        type="button"
-                                        disabled
-                                        className="px-2.5 py-2 rounded-lg text-xs font-semibold text-gray-400 bg-gray-50 cursor-not-allowed"
+                                        onClick={() => setActiveTab(TABS.mentions)}
+                                        className={`px-2.5 py-2 rounded-lg text-xs font-semibold transition ${
+                                            activeTab === TABS.mentions
+                                                ? 'bg-blue-50 text-blue-700'
+                                                : 'text-gray-600 hover:bg-gray-100'
+                                        }`}
                                     >
                                         Mentions ({unreadMentionCount})
                                     </button>
@@ -401,11 +412,72 @@ const InboxMenu = () => {
                                 )}
 
                                 {activeTab === TABS.mentions && (
-                                    <div className="p-6 text-center text-sm text-gray-400">
-                                        <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mb-3">
-                                            <AtSign className="w-5 h-5 text-gray-400" />
-                                        </div>
-                                        <p>Mentions are coming soon.</p>
+                                    <div>
+                                        {loadingMentions && mentions.length === 0 ? (
+                                            <div className="py-10 flex justify-center">
+                                                <div className="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                                            </div>
+                                        ) : mentions.length === 0 ? (
+                                            <div className="p-6 text-center text-sm text-gray-400">
+                                                <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-100 mb-3">
+                                                    <AtSign className="w-5 h-5 text-gray-400" />
+                                                </div>
+                                                <p>No mentions yet</p>
+                                                <p className="text-xs text-gray-400 mt-1">When someone @mentions you in a comment, it will appear here.</p>
+                                            </div>
+                                        ) : (
+                                            mentions.map((mention) => (
+                                                <div
+                                                    key={mention._id}
+                                                    onClick={() => handleNotificationClick(mention)}
+                                                    className={`w-full text-left p-3 border-b border-gray-100 hover:bg-gray-50 transition cursor-pointer ${
+                                                        mention?.isRead ? 'bg-white' : 'bg-purple-50/40'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-start gap-3">
+                                                        <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
+                                                            <AtSign className="w-4 h-4 text-purple-600" />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm text-gray-800 break-words">
+                                                                {mention?.sender?.fullname ? (
+                                                                    <span className="font-semibold mr-1">
+                                                                        {mention.sender.fullname}
+                                                                    </span>
+                                                                ) : null}
+                                                                {mention?.message}
+                                                            </p>
+                                                            {mention?.commentContent && (
+                                                                <p className="mt-1 text-xs text-gray-500 bg-gray-50 rounded-md px-2 py-1 line-clamp-2 border border-gray-100">
+                                                                    "{mention.commentContent}"
+                                                                </p>
+                                                            )}
+                                                            <div className="mt-1 text-[11px] text-gray-500 flex items-center gap-1.5">
+                                                                <span>Mention</span>
+                                                                <span>|</span>
+                                                                <span>{getRelativeTime(mention?.createdAt)}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-col items-end gap-1 shrink-0">
+                                                            {!mention?.isRead && (
+                                                                <span className="w-2 h-2 rounded-full bg-purple-500 mt-1"></span>
+                                                            )}
+                                                            {!mention?.isRead && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(event) =>
+                                                                        handleMarkRead(event, mention?._id)
+                                                                    }
+                                                                    className="text-[11px] text-purple-600 hover:text-purple-700 font-medium"
+                                                                >
+                                                                    Mark read
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
                                     </div>
                                 )}
                             </div>

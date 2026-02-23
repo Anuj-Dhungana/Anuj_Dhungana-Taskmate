@@ -5,6 +5,9 @@ export const notificationAPI = {
     // Get all notifications
     getAll: () => api.get('/api/notifications'),
     
+    // Get mentions only
+    getMentions: () => api.get('/api/notifications/mentions'),
+    
     // Mark notification as read
     markAsRead: (notificationId) => api.put(`/api/notifications/${notificationId}/read`),
     

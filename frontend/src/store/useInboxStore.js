@@ -29,9 +29,11 @@ const toInviteId = (invite) => String(invite?._id || invite?.id || '');
 const useInboxStore = create((set, get) => ({
     notifications: [],
     invites: [],
+    mentions: [],
     unreadMentionCount: 0,
     loadingNotifications: false,
     loadingInvites: false,
+    loadingMentions: false,
     processingInviteId: '',
 
     fetchNotifications: async () => {
@@ -60,8 +62,23 @@ const useInboxStore = create((set, get) => ({
         }
     },
 
+    fetchMentions: async () => {
+        set({ loadingMentions: true });
+        try {
+            const res = await notificationAPI.getMentions();
+            const list = Array.isArray(res?.data) ? res.data : [];
+            const mentions = sortNotifications(list.map(normalizeNotification));
+            const unreadMentionCount = mentions.filter((m) => !m.isRead).length;
+            set({ mentions, unreadMentionCount });
+        } catch (error) {
+            console.error('Failed to fetch mentions:', error);
+        } finally {
+            set({ loadingMentions: false });
+        }
+    },
+
     refreshInbox: async () => {
-        await Promise.all([get().fetchNotifications(), get().fetchInvites()]);
+        await Promise.all([get().fetchNotifications(), get().fetchInvites(), get().fetchMentions()]);
     },
 
     markNotificationRead: async (notificationId) => {
@@ -69,40 +86,55 @@ const useInboxStore = create((set, get) => ({
         if (!targetId) return;
 
         const previous = get().notifications;
-        const target = previous.find((notification) => String(notification?._id) === targetId);
+        const previousMentions = get().mentions;
+        const target =
+            previous.find((notification) => String(notification?._id) === targetId) ||
+            previousMentions.find((m) => String(m?._id) === targetId);
         if (!target || target.isRead) return;
 
+        const updatedNotifications = previous.map((notification) =>
+            String(notification?._id) === targetId
+                ? { ...notification, isRead: true }
+                : notification
+        );
+        const updatedMentions = previousMentions.map((m) =>
+            String(m?._id) === targetId ? { ...m, isRead: true } : m
+        );
+
         set({
-            notifications: previous.map((notification) =>
-                String(notification?._id) === targetId
-                    ? { ...notification, isRead: true }
-                    : notification
-            ),
+            notifications: updatedNotifications,
+            mentions: updatedMentions,
+            unreadMentionCount: updatedMentions.filter((m) => !m.isRead).length,
         });
 
         try {
             await notificationAPI.markAsRead(targetId);
         } catch (error) {
             console.error('Failed to mark notification read:', error);
-            set({ notifications: previous });
+            set({ notifications: previous, mentions: previousMentions });
             throw error;
         }
     },
 
     markAllNotificationsRead: async () => {
         const previous = get().notifications;
-        const hasUnread = previous.some((notification) => !notification?.isRead);
+        const previousMentions = get().mentions;
+        const hasUnread =
+            previous.some((notification) => !notification?.isRead) ||
+            previousMentions.some((m) => !m?.isRead);
         if (!hasUnread) return;
 
         set({
             notifications: previous.map((notification) => ({ ...notification, isRead: true })),
+            mentions: previousMentions.map((m) => ({ ...m, isRead: true })),
+            unreadMentionCount: 0,
         });
 
         try {
             await notificationAPI.markAllAsRead();
         } catch (error) {
             console.error('Failed to mark all notifications read:', error);
-            set({ notifications: previous });
+            set({ notifications: previous, mentions: previousMentions });
             throw error;
         }
     },
@@ -114,11 +146,26 @@ const useInboxStore = create((set, get) => ({
             const exists = state.notifications.some(
                 (notification) => String(notification?._id) === String(nextNotification._id)
             );
-            if (exists) return {};
 
-            return {
-                notifications: sortNotifications([nextNotification, ...state.notifications]),
-            };
+            const updates = {};
+
+            if (!exists) {
+                updates.notifications = sortNotifications([nextNotification, ...state.notifications]);
+            }
+
+            // If this is a mention, also add to mentions list
+            if (nextNotification.type === 'mention') {
+                const mentionExists = state.mentions.some(
+                    (m) => String(m?._id) === String(nextNotification._id)
+                );
+                if (!mentionExists) {
+                    const nextMentions = sortNotifications([nextNotification, ...state.mentions]);
+                    updates.mentions = nextMentions;
+                    updates.unreadMentionCount = nextMentions.filter((m) => !m.isRead).length;
+                }
+            }
+
+            return Object.keys(updates).length > 0 ? updates : {};
         });
     },
 

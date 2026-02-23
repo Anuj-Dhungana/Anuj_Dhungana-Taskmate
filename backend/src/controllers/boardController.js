@@ -11,7 +11,9 @@ import {
     getProjectContext,
     emitWorkspaceEvent,
     emitTaskChanged,
-    createAssigneeNotifications
+    createAssigneeNotifications,
+    parseMentions,
+    createMentionNotifications
 } from '../services/boardService.js';
 import { calculateWorkspaceAnalytics } from '../services/analyticsService.js';
 
@@ -372,6 +374,17 @@ export const addCardComment = async (req, res) => {
         await card.save();
         await card.populate('comments.author', 'fullname avatar');
         const comment = card.comments[card.comments.length - 1];
+
+        // Parse @mentions and send notifications
+        try {
+            const project = await Project.findById(card.projectId).populate('members.user', 'fullname');
+            const mentionedUserIds = parseMentions(content, project?.members || []);
+            if (mentionedUserIds.length > 0) {
+                await createMentionNotifications(card, mentionedUserIds, req.user, content, req);
+            }
+        } catch (mentionErr) {
+            console.error('Mention notification error:', mentionErr);
+        }
 
         emitTaskChanged(req, context, card, 'task_commented');
         res.status(201).json({ comment });

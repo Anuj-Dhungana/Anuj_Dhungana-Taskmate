@@ -113,6 +113,66 @@ export const emitTaskChanged = (req, context, card, action = 'task_updated') => 
 };
 
 /**
+ * Parse @mentions from comment content and return matched user IDs
+ * Matches @fullname patterns against provided project members
+ */
+export const parseMentions = (content, projectMembers = []) => {
+    if (!content) return [];
+    const mentionRegex = /@([A-Za-z0-9_.-]+(?:\s+[A-Za-z0-9_.-]+)*)/g;
+    const mentionedNames = [];
+    let match;
+    while ((match = mentionRegex.exec(content)) !== null) {
+        mentionedNames.push(match[1].trim().toLowerCase());
+    }
+    if (mentionedNames.length === 0) return [];
+
+    const matchedUserIds = [];
+    for (const member of projectMembers) {
+        const user = member?.user || member;
+        const userId = user?._id?.toString() || user?.toString();
+        const fullname = (user?.fullname || '').trim().toLowerCase();
+        if (!fullname || !userId) continue;
+        if (mentionedNames.some((name) => fullname === name || fullname.startsWith(name))) {
+            matchedUserIds.push(userId);
+        }
+    }
+    return [...new Set(matchedUserIds)];
+};
+
+/**
+ * Create mention notifications for users mentioned in a comment
+ */
+export const createMentionNotifications = async (card, mentionedUserIds, actor, commentContent, req) => {
+    const io = req.app.get('io');
+    const project = await Project.findById(card.projectId).select('workspace name');
+    const workspaceRoom = project?.workspace ? `workspace_${project.workspace}` : null;
+
+    for (const userId of mentionedUserIds) {
+        const userIdStr = userId.toString();
+        // Don't notify self-mentions
+        if (userIdStr === actor._id.toString()) continue;
+
+        const notif = await Notification.create({
+            recipient: userIdStr,
+            sender: actor._id,
+            message: `mentioned you in a comment on "${card.title}"`,
+            type: 'mention',
+            relatedId: card._id,
+            taskTitle: card.title,
+            commentContent: commentContent.length > 200 ? commentContent.slice(0, 200) + '...' : commentContent,
+        });
+
+        if (workspaceRoom) {
+            io.to(workspaceRoom).emit('new_notification', {
+                ...notif._doc,
+                recipient: userIdStr,
+                sender: { fullname: actor.fullname, avatar: actor.avatar },
+            });
+        }
+    }
+};
+
+/**
  * Create notifications for newly assigned users
  */
 export const createAssigneeNotifications = async (card, newAssignees, actor, req) => {

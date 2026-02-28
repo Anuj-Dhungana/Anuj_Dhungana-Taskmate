@@ -18,6 +18,7 @@ import MyTasks from './pages/MyTasks';
 import WorkspaceCalendar from './pages/WorkspaceCalendar';
 import WorkspaceChat from './pages/WorkspaceChat';
 import WorkspaceCalls from './pages/WorkspaceCalls';
+import WorkspaceMeetingRoom from './pages/WorkspaceMeetingRoom';
 import WorkspaceMembers from './pages/WorkspaceMembers';
 import Analytics from './pages/Analytics';
 import InviteTokenPage from './pages/auth/InviteTokenPage';
@@ -53,6 +54,7 @@ function App() {
           <Route path="/calendar" element={<WorkspaceCalendar />} />
           <Route path="/chat" element={<WorkspaceChat />} />
           <Route path="/calls" element={<WorkspaceCalls />} />
+          <Route path="/calls/:meetingId" element={<WorkspaceMeetingRoom />} />
           <Route path="/members" element={<WorkspaceMembers />} />
           <Route path="/settings" element={<WorkspaceSettings />} />
           <Route path="/profile" element={<Profile />} />

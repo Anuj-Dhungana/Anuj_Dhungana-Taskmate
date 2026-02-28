@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
     Inbox,
     UserPlus,
@@ -74,19 +73,6 @@ const getNotificationReference = (notification) => {
     }
 };
 
-const resolveNotificationPath = (notification) => {
-    switch (notification?.type) {
-        case 'assignment':
-            return '/tasks';
-        case 'mention':
-            return '/tasks';
-        case 'invite_accepted':
-            return '/members';
-        default:
-            return '/dashboard';
-    }
-};
-
 const formatExpiry = (expiresAt) => {
     const timestamp = new Date(expiresAt).getTime();
     if (Number.isNaN(timestamp)) return '';
@@ -100,7 +86,6 @@ const formatExpiry = (expiresAt) => {
 };
 
 const InboxMenu = () => {
-    const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [activeTab, setActiveTab] = useState(TABS.notifications);
 
@@ -163,24 +148,6 @@ const InboxMenu = () => {
         return () => socket.off('new_notification', handleNewNotification);
     }, [fetchInvites, pushRealtimeNotification, userInfo?._id]);
 
-    const handleNotificationClick = async (notification) => {
-        try {
-            if (!notification?.isRead) {
-                await markNotificationRead(notification?._id);
-            }
-        } catch {
-            toast.error('Failed to update notification status');
-        }
-
-        if (notification?.type === 'workspace_invite') {
-            setActiveTab(TABS.invites);
-            return;
-        }
-
-        setIsOpen(false);
-        navigate(resolveNotificationPath(notification));
-    };
-
     const handleMarkRead = async (event, notificationId) => {
         event.stopPropagation();
         try {
@@ -236,7 +203,7 @@ const InboxMenu = () => {
 
             {isOpen && (
                 <>
-                    <div className="absolute right-0 mt-2 w-[420px] max-w-[calc(100vw-1rem)] bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                    <div className="absolute right-0 mt-2 w-105 max-w-[calc(100vw-1rem)] bg-white border border-gray-200 rounded-2xl shadow-2xl z-50 overflow-hidden">
                         <div className="max-h-[70vh] flex flex-col">
                             <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
                                 <h3 className="text-sm font-bold text-gray-900">Inbox</h3>
@@ -323,7 +290,7 @@ const InboxMenu = () => {
                                                             {getNotificationIcon(notification?.type)}
                                                         </div>
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="text-sm text-gray-800 break-words">
+                                                            <p className="text-sm text-gray-800 wrap-break-word">
                                                                 {notification?.sender?.fullname ? (
                                                                     <span className="font-semibold mr-1">
                                                                         {notification.sender.fullname}
@@ -447,7 +414,7 @@ const InboxMenu = () => {
                                                             <AtSign className="w-4 h-4 text-purple-600" />
                                                         </div>
                                                         <div className="min-w-0 flex-1">
-                                                            <p className="text-sm text-gray-800 break-words">
+                                                            <p className="text-sm text-gray-800 wrap-break-word">
                                                                 {mention?.sender?.fullname ? (
                                                                     <span className="font-semibold mr-1">
                                                                         {mention.sender.fullname}

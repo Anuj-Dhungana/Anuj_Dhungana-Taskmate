@@ -2,8 +2,22 @@ import Workspace from '../models/Workspace.js';
 import Project from '../models/Project.js';
 import Channel from '../models/Channel.js';
 import User from '../models/User.js';
-
-const ALLOWED_INVITE_ROLES = ['member', 'admin'];
+import {
+    findWorkspaceById,
+    findWorkspaceByIdWithMembers,
+    getWorkspaceMember,
+    isAdminOrOwner,
+    isWorkspaceMember,
+    removeNullMembers,
+    getMemberIndex,
+    validateInviteRole,
+} from '../services/workspaceService.js';
+import {
+    emitMemberAdded,
+    emitMemberRemoved,
+    emitRoleChanged,
+    emitWorkspaceUpdated,
+} from '../services/realtimeService.js';
 
 
 export const createWorkspace = async (req, res) => {
@@ -54,21 +68,21 @@ export const getWorkspaceDetails = async (req, res) => {
         const workspaceId = req.params.id;
 
         // 1. Check if workspace exists
-        const workspace = await Workspace.findById(workspaceId).populate('members.user', 'fullname email avatar');
+        const workspace = await findWorkspaceByIdWithMembers(workspaceId);
         
         if (!workspace) {
             return res.status(404).json({ message: "Workspace not found" });
         }
 
         // Clean out any members whose user no longer exists in the database
-        const validMembers = workspace.members.filter(m => m.user != null);
-        if (validMembers.length !== workspace.members.length) {
-            workspace.members = validMembers;
+        const { changed, members } = removeNullMembers(workspace);
+        if (changed) {
+            workspace.members = members;
             await workspace.save();
         }
 
         // 2. Check if user is a member (Security)
-        const isMember = workspace.members.some(m => m.user?._id?.toString() === req.user._id.toString());
+        const isMember = isWorkspaceMember(workspace, req.user._id);
         if (!isMember) {
             return res.status(403).json({ message: "Not authorized to view this workspace" });
         }
@@ -99,14 +113,14 @@ export const inviteUserToWorkspace = async (req, res) => {
         const workspaceId = req.params.id;
 
         // 1. Find Workspace
-        const workspace = await Workspace.findById(workspaceId);
+        const workspace = await findWorkspaceById(workspaceId);
         if (!workspace) {
             return res.status(404).json({ message: "Workspace not found" });
         }
 
         // 2. Check Permissions (Only Owner/Admin can invite)
-        const requester = workspace.members.find(m => m.user.toString() === req.user._id.toString());
-        if (!requester || (requester.role !== 'owner' && requester.role !== 'admin')) {
+        const requester = getWorkspaceMember(workspace, req.user._id);
+        if (!isAdminOrOwner(requester)) {
             return res.status(403).json({ message: "Only Admins can invite users" });
         }
 
@@ -117,7 +131,7 @@ export const inviteUserToWorkspace = async (req, res) => {
         }
 
         // 4. Check if already a member
-        const isAlreadyMember = workspace.members.some(m => m.user.toString() === userToInvite._id.toString());
+        const isAlreadyMember = isWorkspaceMember(workspace, userToInvite._id);
         if (isAlreadyMember) {
             return res.status(400).json({ message: "User is already in this workspace" });
         }
@@ -129,14 +143,7 @@ export const inviteUserToWorkspace = async (req, res) => {
         });
 
         await workspace.save();
-        const io = req.app.get('io');
-        io?.to(`workspace_${workspace._id}`).emit('member_added', {
-            workspaceId: workspace._id.toString(),
-            member: {
-                user: userToInvite._id.toString(),
-                role: 'member',
-            },
-        });
+        emitMemberAdded(req, workspace._id, userToInvite._id, 'member');
 
         res.json({ message: `${userToInvite.fullname} added to workspace!` });
 
@@ -152,9 +159,7 @@ export const updateMemberRole = async (req, res) => {
     try {
         const { memberId, newRole } = req.body; 
         const workspace = req.workspace; // From middleware
-        const requester = workspace.members.find(
-            (m) => m.user.toString() === req.user._id.toString()
-        );
+        const requester = getWorkspaceMember(workspace, req.user._id);
 
         if (!requester) {
             return res.status(403).json({ message: "Not authorized" });
@@ -165,9 +170,7 @@ export const updateMemberRole = async (req, res) => {
         }
 
         // 1. Find the member in the array
-        const memberIndex = workspace.members.findIndex(
-            m => m.user.toString() === memberId
-        );
+        const memberIndex = getMemberIndex(workspace, memberId);
         
         if (memberIndex === -1) {
             return res.status(404).json({ message: "Member not found" });
@@ -187,15 +190,7 @@ export const updateMemberRole = async (req, res) => {
         // 3. Update the role
         workspace.members[memberIndex].role = newRole;
         await workspace.save();
-
-        const io = req.app.get('io');
-        io?.to(`workspace_${workspace._id}`).emit('role_changed', {
-            workspaceId: workspace._id.toString(),
-            member: {
-                user: memberId,
-                role: newRole,
-            },
-        });
+        emitRoleChanged(req, workspace._id, memberId, newRole);
 
         res.json({ message: "Role updated successfully" });
 
@@ -210,16 +205,14 @@ export const removeMember = async (req, res) => {
     try {
         const { memberId } = req.params;
         const workspace = req.workspace;
-        const requester = workspace.members.find(
-            (m) => m.user.toString() === req.user._id.toString()
-        );
+        const requester = getWorkspaceMember(workspace, req.user._id);
 
         if (!requester) {
             return res.status(403).json({ message: "Not authorized" });
         }
 
         // Prevent removing the Owner
-        const memberToRemove = workspace.members.find(m => m.user.toString() === memberId);
+        const memberToRemove = getWorkspaceMember(workspace, memberId);
 
         if (!memberToRemove) {
             return res.status(404).json({ message: "Member not found" });
@@ -239,13 +232,7 @@ export const removeMember = async (req, res) => {
         );
 
         await workspace.save();
-        const io = req.app.get('io');
-        io?.to(`workspace_${workspace._id}`).emit('member_removed', {
-            workspaceId: workspace._id.toString(),
-            member: {
-                user: memberId,
-            },
-        });
+        emitMemberRemoved(req, workspace._id, memberId);
         res.json({ message: "Member removed from workspace" });
 
     } catch (error) {
@@ -286,7 +273,7 @@ export const updateWorkspace = async (req, res) => {
             workspace.settings.access = workspace.settings.access || {};
 
             if (access.defaultInviteRole !== undefined) {
-                if (!ALLOWED_INVITE_ROLES.includes(access.defaultInviteRole)) {
+                if (!validateInviteRole(access.defaultInviteRole)) {
                     return res.status(400).json({ message: "Invalid default invite role" });
                 }
                 workspace.settings.access.defaultInviteRole = access.defaultInviteRole;
@@ -303,11 +290,7 @@ export const updateWorkspace = async (req, res) => {
 
         const saved = await workspace.save();
         const updated = await Workspace.findById(saved._id).populate('members.user', 'fullname email avatar');
-        const io = req.app.get('io');
-        io?.to(`workspace_${workspace._id}`).emit('workspace_updated', {
-            workspaceId: workspace._id.toString(),
-            workspace: updated,
-        });
+        emitWorkspaceUpdated(req, workspace._id, updated);
         res.json(updated);
     } catch (error) {
         res.status(500).json({ message: "Server Error" });
@@ -341,9 +324,7 @@ export const transferWorkspaceOwnership = async (req, res) => {
             return res.status(403).json({ message: "Only the current owner can transfer ownership" });
         }
 
-        const targetOwnerIndex = workspace.members.findIndex(
-            (member) => String(member.user) === targetOwnerId
-        );
+        const targetOwnerIndex = getMemberIndex(workspace, targetOwnerId);
 
         if (targetOwnerIndex === -1) {
             return res.status(404).json({ message: "Target user must be a workspace member" });
@@ -359,27 +340,11 @@ export const transferWorkspaceOwnership = async (req, res) => {
         await workspace.save();
 
         const updatedWorkspace = await Workspace.findById(workspace._id).populate('members.user', 'fullname email avatar');
-        const io = req.app.get('io');
         const workspaceId = workspace._id.toString();
 
-        io?.to(`workspace_${workspaceId}`).emit('role_changed', {
-            workspaceId,
-            member: {
-                user: requesterId,
-                role: 'admin',
-            },
-        });
-        io?.to(`workspace_${workspaceId}`).emit('role_changed', {
-            workspaceId,
-            member: {
-                user: targetOwnerId,
-                role: 'owner',
-            },
-        });
-        io?.to(`workspace_${workspaceId}`).emit('workspace_updated', {
-            workspaceId,
-            workspace: updatedWorkspace,
-        });
+        emitRoleChanged(req, workspaceId, requesterId, 'admin');
+        emitRoleChanged(req, workspaceId, targetOwnerId, 'owner');
+        emitWorkspaceUpdated(req, workspaceId, updatedWorkspace);
 
         res.json({
             message: "Ownership transferred successfully",

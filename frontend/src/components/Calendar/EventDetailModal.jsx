@@ -8,22 +8,11 @@ import {
     Clock,
     Copy,
     Flag,
-    Users,
     Video,
     X,
 } from 'lucide-react';
 import TypeBadge from './TypeBadge';
 import { formatEventDuration } from '../../utils/calendarHelpers';
-
-const getInitials = (name) => {
-    if (!name) return 'U';
-    return name
-        .split(' ')
-        .map((part) => part[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase();
-};
 
 const EventDetailModal = ({ event, onClose }) => {
     const navigate = useNavigate();
@@ -38,12 +27,6 @@ const EventDetailModal = ({ event, onClose }) => {
     const status = event.resource?.status;
     const isProjectEvent = event.source?.startsWith('project');
     const isMeetingEvent = event.type === 'meeting';
-    const attendees =
-        Array.isArray(meta.attendees) && meta.attendees.length > 0
-            ? meta.attendees
-            : Array.isArray(event.resource?.attendees)
-                ? event.resource.attendees.map((attendee) => attendee?.user).filter(Boolean)
-                : [];
     const meetingCode = meta.meetingCode || meta.roomID || event.resource?.roomID;
 
     const handleCopyMeetingCode = async () => {
@@ -135,35 +118,6 @@ const EventDetailModal = ({ event, onClose }) => {
                     {description && (
                         <div className="mt-3 rounded-xl bg-gray-50 p-3 text-sm text-gray-600">
                             {description}
-                        </div>
-                    )}
-                    {isMeetingEvent && attendees.length > 0 && (
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
-                                <Users size={14} className="text-indigo-500" />
-                                Participants
-                            </div>
-                            <div className="flex flex-wrap gap-2">
-                                {attendees.map((user) => (
-                                    <div
-                                        key={user?._id || user?.email || user?.fullname}
-                                        className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1.5 text-xs font-medium text-gray-700"
-                                    >
-                                        {user?.avatar ? (
-                                            <img
-                                                src={user.avatar}
-                                                alt={user.fullname || 'User'}
-                                                className="h-6 w-6 rounded-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-[10px] font-bold text-indigo-700">
-                                                {getInitials(user?.fullname)}
-                                            </div>
-                                        )}
-                                        <span>{user?.fullname || user?.email || 'Workspace member'}</span>
-                                    </div>
-                                ))}
-                            </div>
                         </div>
                     )}
                     {isMeetingEvent && meetingCode && (

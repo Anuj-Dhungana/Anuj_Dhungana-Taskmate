@@ -13,10 +13,13 @@ import {
     Plus,
     Clock3,
     FolderKanban,
+    Pencil,
+    Trash2,
 } from 'lucide-react';
 import api from '../api';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import ScheduleMeetingModal from '../components/modals/ScheduleMeetingModal';
+import ConfirmModal from '../components/modals/ConfirmModal';
 
 const createMeetingCode = () => {
     const randomChunk = Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -36,6 +39,9 @@ const WorkspaceCalls = () => {
     const [scheduledMeetings, setScheduledMeetings] = useState([]);
     const [meetingsLoading, setMeetingsLoading] = useState(false);
     const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+    const [editingMeeting, setEditingMeeting] = useState(null);
+    const [meetingToDelete, setMeetingToDelete] = useState(null);
+    const [isDeletingMeeting, setIsDeletingMeeting] = useState(false);
 
     const workspaceMembers = selectedWorkspace?.workspace?.members || [];
     const workspaceName = selectedWorkspace?.workspace?.name || 'Workspace';
@@ -121,6 +127,50 @@ const WorkspaceCalls = () => {
         );
     };
 
+    const handleOpenCreateModal = () => {
+        setEditingMeeting(null);
+        setIsScheduleModalOpen(true);
+    };
+
+    const handleOpenEditModal = (meeting) => {
+        setEditingMeeting(meeting);
+        setIsScheduleModalOpen(true);
+    };
+
+    const handleCloseScheduleModal = () => {
+        setIsScheduleModalOpen(false);
+        setEditingMeeting(null);
+    };
+
+    const handleOpenDeleteModal = (meeting) => {
+        setMeetingToDelete(meeting);
+    };
+
+    const handleCloseDeleteModal = () => {
+        if (isDeletingMeeting) return;
+        setMeetingToDelete(null);
+    };
+
+    const handleDeleteMeeting = async () => {
+        if (!meetingToDelete?._id) return;
+
+        setIsDeletingMeeting(true);
+        try {
+            await api.delete(`/api/meetings/${meetingToDelete._id}`);
+            setScheduledMeetings((currentMeetings) =>
+                currentMeetings.filter(
+                    (currentMeeting) => String(currentMeeting?._id) !== String(meetingToDelete?._id)
+                )
+            );
+            toast.success('Meeting deleted successfully.');
+            setMeetingToDelete(null);
+        } catch (error) {
+            toast.error(error?.response?.data?.message || 'Failed to delete meeting');
+        } finally {
+            setIsDeletingMeeting(false);
+        }
+    };
+
     if (!currentWorkspaceId) {
         return (
             <div className="px-8 py-10">
@@ -142,7 +192,7 @@ const WorkspaceCalls = () => {
                         </div>
                         <button
                             type="button"
-                            onClick={() => setIsScheduleModalOpen(true)}
+                            onClick={handleOpenCreateModal}
                             className="inline-flex items-center gap-2 self-start rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
                         >
                             <Plus className="h-4 w-4" />
@@ -280,10 +330,6 @@ const WorkspaceCalls = () => {
                                                         <Clock3 className="h-4 w-4 text-indigo-500" />
                                                         {format(new Date(meeting.startsAt), 'h:mm a')} - {format(new Date(meeting.endsAt), 'h:mm a')}
                                                     </span>
-                                                    <span className="inline-flex items-center gap-1.5">
-                                                        <Users className="h-4 w-4 text-indigo-500" />
-                                                        {(meeting.attendees || []).length} participants
-                                                    </span>
                                                 </div>
 
                                                 {meeting.description ? (
@@ -298,6 +344,22 @@ const WorkspaceCalls = () => {
                                             </div>
 
                                             <div className="flex shrink-0 items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenEditModal(meeting)}
+                                                    className="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenDeleteModal(meeting)}
+                                                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    Delete
+                                                </button>
                                                 <button
                                                     type="button"
                                                     onClick={() => handleCopyMeetingCode(meeting.roomID)}
@@ -324,10 +386,22 @@ const WorkspaceCalls = () => {
 
             <ScheduleMeetingModal
                 isOpen={isScheduleModalOpen}
-                onClose={() => setIsScheduleModalOpen(false)}
+                onClose={handleCloseScheduleModal}
                 workspaceId={currentWorkspaceId}
                 projects={projects}
                 onScheduled={handleMeetingScheduled}
+                meeting={editingMeeting}
+            />
+            <ConfirmModal
+                isOpen={Boolean(meetingToDelete)}
+                title="Delete Scheduled Meeting"
+                message={`Are you sure you want to delete "${meetingToDelete?.title || 'this meeting'}"? This action cannot be undone.`}
+                confirmText="Delete Meeting"
+                cancelText="Cancel"
+                variant="danger"
+                onConfirm={handleDeleteMeeting}
+                onClose={handleCloseDeleteModal}
+                loading={isDeletingMeeting}
             />
         </div>
     );

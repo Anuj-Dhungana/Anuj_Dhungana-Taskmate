@@ -45,7 +45,8 @@ const meetingSchema = new mongoose.Schema(
         durationMinutes: {
             type: Number,
             required: true,
-            min: 15,
+            min: 1,
+            max: 1440,
         },
         createdBy: {
             type: mongoose.Schema.Types.ObjectId,

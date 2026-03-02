@@ -21,6 +21,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import channelRoutes from './routes/channelRoutes.js';
 import inviteRoutes from './routes/inviteRoutes.js';
 import callRoutes from './routes/callRoutes.js';
+import meetingRoutes from './routes/meetingRoutes.js';
 
 // Models for Socket Saving
 import Message from './models/Message.js';
@@ -114,6 +115,7 @@ app.use('/api/channels', channelRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/calls', callRoutes);
+app.use('/api/meetings', meetingRoutes);
 app.set('io', io); 
 
 // Error handling middleware (must be after all routes)

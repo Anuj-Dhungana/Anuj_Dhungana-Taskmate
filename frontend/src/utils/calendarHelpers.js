@@ -74,6 +74,43 @@ export const processProjectEvents = (projects) => {
     return projectEvents;
 };
 
+export const processMeetingEvents = (meetings = []) => {
+    return meetings
+        .map((meeting) => {
+            const start = meeting?.startsAt ? new Date(meeting.startsAt) : null;
+            const end = meeting?.endsAt ? new Date(meeting.endsAt) : null;
+            if (!start || !end || Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+                return null;
+            }
+
+            const attendeeUsers = Array.isArray(meeting?.attendees)
+                ? meeting.attendees
+                      .map((attendee) => attendee?.user)
+                      .filter(Boolean)
+                : [];
+
+            return {
+                id: `meeting-${meeting._id}`,
+                title: meeting.title,
+                start,
+                end,
+                allDay: false,
+                type: 'meeting',
+                source: 'meeting',
+                resource: meeting,
+                meta: {
+                    description: meeting.description,
+                    projectName: meeting?.project?.name || '',
+                    durationMinutes: meeting.durationMinutes,
+                    roomID: meeting.roomID,
+                    attendees: attendeeUsers,
+                    meetingCode: meeting.roomID,
+                },
+            };
+        })
+        .filter(Boolean);
+};
+
 /**
  * Calculate calendar statistics
  */
@@ -106,8 +143,13 @@ export const getUpcomingEvents = (events, limit = 10) => {
  * Format event duration in hours
  */
 export const formatEventDuration = (start, end) => {
-    const hours = Math.round((end - start) / (1000 * 60 * 60));
-    return `${hours}h`;
+    const totalMinutes = Math.max(0, Math.round((end - start) / (1000 * 60)));
+    if (totalMinutes < 60) {
+        return `${totalMinutes}m`;
+    }
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
 };
 
 /**

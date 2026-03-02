@@ -4,8 +4,10 @@ import { enUS } from 'date-fns/locale';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import '../../styles/calendar.css';
 import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { addProjectDataChangedListener } from '../../utils/projectEvents';
+import { processMeetingEvents } from '../../utils/calendarHelpers';
+import EventDetailModal from './EventDetailModal';
 
 // Setup Localizer
 const locales = {
@@ -95,17 +97,20 @@ const ProjectCalendar = ({ projectId }) => {
   const [events, setEvents] = useState([]);
   const [view, setView] = useState('month');
   const [date, setDate] = useState(new Date());
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const fetchCalendarData = useCallback(async () => {
     if (!projectId) return;
     setEvents([]);
     try {
-      const [boardRes, projectRes] = await Promise.allSettled([
-        axios.get(`/api/board/${projectId}`),
-        axios.get(`/api/projects/${projectId}`),
+      const [boardRes, projectRes, meetingRes] = await Promise.allSettled([
+        api.get(`/api/board/${projectId}`),
+        api.get(`/api/projects/${projectId}`),
+        api.get(`/api/meetings?projectId=${projectId}`),
       ]);
       const cards = boardRes.status === 'fulfilled' ? boardRes.value.data?.cards || [] : [];
       const project = projectRes.status === 'fulfilled' ? projectRes.value.data : null;
+      const meetings = meetingRes.status === 'fulfilled' ? meetingRes.value.data || [] : [];
 
       const taskEvents = cards
         .filter((card) => card.dueDate)
@@ -146,7 +151,12 @@ const ProjectCalendar = ({ projectId }) => {
         }
       }
 
-      setEvents([...taskEvents, ...projectEvents]);
+      const meetingEvents = processMeetingEvents(meetings);
+      setEvents(
+        [...taskEvents, ...projectEvents, ...meetingEvents].sort(
+          (left, right) => left.start.getTime() - right.start.getTime()
+        )
+      );
     } catch (err) {
       console.error('Failed to load project calendar', err);
     }
@@ -190,6 +200,7 @@ const ProjectCalendar = ({ projectId }) => {
           date={date}
           onView={(newView) => setView(newView)}
           onNavigate={(newDate) => setDate(newDate)}
+          onSelectEvent={setSelectedEvent}
           eventPropGetter={eventStyleGetter}
           components={{
             event: (props) => <ProjectEvent {...props} view={view} />,
@@ -198,6 +209,7 @@ const ProjectCalendar = ({ projectId }) => {
           max={new Date(0, 0, 0, 20, 0, 0)}
         />
       </div>
+      <EventDetailModal event={selectedEvent} onClose={() => setSelectedEvent(null)} />
     </div>
   );
 };

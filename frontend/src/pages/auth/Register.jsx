@@ -129,7 +129,7 @@ const Register = () => {
                                 <div className="relative">
                                     <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                                     <input id="fullname" type="text" value={fullname} onChange={(e) => setFullname(e.target.value)} required
-                                        placeholder="John Doe"
+                                        placeholder="Anuj dhungana"
                                         className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition text-sm" />
                                 </div>
                             </div>

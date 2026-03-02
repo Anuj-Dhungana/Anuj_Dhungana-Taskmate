@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
-import axios from 'axios';
-import { processProjectEvents } from '../utils/calendarHelpers';
+import api from '../api';
+import { processMeetingEvents, processProjectEvents } from '../utils/calendarHelpers';
 import { addProjectDataChangedListener } from '../utils/projectEvents';
 
 export const useCalendarEvents = (workspaceId) => {
@@ -11,12 +11,19 @@ export const useCalendarEvents = (workspaceId) => {
         if (!workspaceId) return;
         setLoading(true);
         try {
-            const [projectsRes] = await Promise.allSettled([
-                axios.get(`/api/projects?workspaceId=${workspaceId}`),
+            const [projectsRes, meetingsRes] = await Promise.allSettled([
+                api.get(`/api/projects?workspaceId=${workspaceId}`),
+                api.get(`/api/meetings?workspaceId=${workspaceId}`),
             ]);
             const projects = projectsRes.status === 'fulfilled' ? projectsRes.value.data || [] : [];
+            const meetings = meetingsRes.status === 'fulfilled' ? meetingsRes.value.data || [] : [];
             const projectEvents = processProjectEvents(projects);
-            setEvents(projectEvents);
+            const meetingEvents = processMeetingEvents(meetings);
+            setEvents(
+                [...projectEvents, ...meetingEvents].sort(
+                    (left, right) => left.start.getTime() - right.start.getTime()
+                )
+            );
         } catch (err) {
             console.error(err);
         } finally {

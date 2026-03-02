@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Home from './pages/Home';
@@ -18,10 +19,11 @@ import MyTasks from './pages/MyTasks';
 import WorkspaceCalendar from './pages/WorkspaceCalendar';
 import WorkspaceChat from './pages/WorkspaceChat';
 import WorkspaceCalls from './pages/WorkspaceCalls';
-import WorkspaceMeetingRoom from './pages/WorkspaceMeetingRoom';
 import WorkspaceMembers from './pages/WorkspaceMembers';
 import Analytics from './pages/Analytics';
 import InviteTokenPage from './pages/auth/InviteTokenPage';
+
+const WorkspaceMeetingRoom = lazy(() => import('./pages/WorkspaceMeetingRoom'));
 
 // Helper Component: Protect Routes
 const PrivateRoute = ({ children }) => {
@@ -54,7 +56,14 @@ function App() {
           <Route path="/calendar" element={<WorkspaceCalendar />} />
           <Route path="/chat" element={<WorkspaceChat />} />
           <Route path="/calls" element={<WorkspaceCalls />} />
-          <Route path="/calls/:meetingId" element={<WorkspaceMeetingRoom />} />
+          <Route
+            path="/calls/:meetingId"
+            element={
+              <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading meeting room...</div>}>
+                <WorkspaceMeetingRoom />
+              </Suspense>
+            }
+          />
           <Route path="/members" element={<WorkspaceMembers />} />
           <Route path="/settings" element={<WorkspaceSettings />} />
           <Route path="/profile" element={<Profile />} />

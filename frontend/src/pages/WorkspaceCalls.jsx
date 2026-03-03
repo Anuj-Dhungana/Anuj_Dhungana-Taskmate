@@ -14,6 +14,7 @@ import {
     Trash2,
 } from 'lucide-react';
 import api from '../api';
+import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import ScheduleMeetingModal from '../components/modals/ScheduleMeetingModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
@@ -28,8 +29,12 @@ const sortMeetings = (meetings) =>
         (left, right) => new Date(left?.startsAt).getTime() - new Date(right?.startsAt).getTime()
     );
 
+const resolveMeetingCreatorId = (meeting) =>
+    String(meeting?.createdBy?._id || meeting?.createdBy || '');
+
 const WorkspaceCalls = () => {
     const navigate = useNavigate();
+    const userInfo = useAuthStore((state) => state.userInfo);
     const { currentWorkspaceId, selectedWorkspace } = useWorkspaceStore();
     const [quickCallValue, setQuickCallValue] = useState('');
     const [generatedMeetingCode, setGeneratedMeetingCode] = useState(() => createMeetingCode());
@@ -49,12 +54,19 @@ const WorkspaceCalls = () => {
         const baseUrl = globalThis?.location?.origin || '';
         return `${baseUrl}/calls/${resolvedMeetingCode}`;
     }, [resolvedMeetingCode]);
+    const ownScheduledMeetings = useMemo(
+        () =>
+            scheduledMeetings.filter(
+                (meeting) => resolveMeetingCreatorId(meeting) === String(userInfo?._id || '')
+            ),
+        [scheduledMeetings, userInfo?._id]
+    );
     const upcomingMeetings = useMemo(
-        () => scheduledMeetings.filter((meeting) => {
+        () => ownScheduledMeetings.filter((meeting) => {
             const endTime = new Date(meeting?.endsAt || meeting?.startsAt || 0).getTime();
             return Number.isFinite(endTime) && endTime >= Date.now();
         }),
-        [scheduledMeetings]
+        [ownScheduledMeetings]
     );
 
     const fetchMeetings = useCallback(async () => {
@@ -240,7 +252,7 @@ const WorkspaceCalls = () => {
                         <div className="flex items-center justify-between gap-3">
                             <h3 className="text-lg font-semibold text-gray-900 inline-flex items-center gap-2">
                                 <Calendar className="h-4.5 w-4.5 text-indigo-500" />
-                                Scheduled Meetings
+                                Your Scheduled Meetings
                             </h3>
                             <div className="flex items-center gap-2">
                                 <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-500">
@@ -265,7 +277,7 @@ const WorkspaceCalls = () => {
                             <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 text-center">
                                 <p className="text-sm font-semibold text-gray-700">No scheduled meetings yet</p>
                                 <p className="mt-1 text-sm text-gray-500">
-                                    Schedule a workspace sync, sprint planning session, or project review.
+                                    Only meetings you create appear here. Schedule a sync, sprint planning session, or project review.
                                 </p>
                             </div>
                         ) : (

@@ -289,10 +289,6 @@ const Settings = () => {
                                     })}
                                 </div>
                             </div>
-
-                            <div className="rounded-lg border border-dashed border-gray-200 p-3 text-sm text-gray-500">
-                                Workspace avatar/logo upload can be added later.
-                            </div>
                         </div>
                     </section>
 

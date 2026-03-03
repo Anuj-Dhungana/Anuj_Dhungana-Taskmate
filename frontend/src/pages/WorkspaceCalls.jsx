@@ -4,12 +4,9 @@ import { format } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import {
     Video,
-    Phone,
     Calendar,
-    Users,
     Link2,
     X,
-    Sparkles,
     Plus,
     Clock3,
     FolderKanban,
@@ -43,7 +40,6 @@ const WorkspaceCalls = () => {
     const [meetingToDelete, setMeetingToDelete] = useState(null);
     const [isDeletingMeeting, setIsDeletingMeeting] = useState(false);
 
-    const workspaceMembers = selectedWorkspace?.workspace?.members || [];
     const workspaceName = selectedWorkspace?.workspace?.name || 'Workspace';
     const projects = Array.isArray(selectedWorkspace?.projects) ? selectedWorkspace.projects : [];
 
@@ -91,10 +87,6 @@ const WorkspaceCalls = () => {
     };
 
     const handleStartVideoMeeting = () => {
-        openMeeting();
-    };
-
-    const handleStartAudioMeeting = () => {
         openMeeting();
     };
 
@@ -190,14 +182,6 @@ const WorkspaceCalls = () => {
                                 Start a live room for {workspaceName} and share the link with your team.
                             </p>
                         </div>
-                        <button
-                            type="button"
-                            onClick={handleOpenCreateModal}
-                            className="inline-flex items-center gap-2 self-start rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Schedule Meeting
-                        </button>
                     </div>
                 </header>
 
@@ -246,35 +230,9 @@ const WorkspaceCalls = () => {
                                 <Video className="h-4 w-4" />
                                 Start Video Meeting
                             </button>
-                            <button
-                                type="button"
-                                onClick={handleStartAudioMeeting}
-                                className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
-                            >
-                                <Phone className="h-4 w-4" />
-                                Start Audio Only
-                            </button>
                         </div>
                     </div>
 
-                    <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/70 p-4">
-                        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                            <div>
-                                <p className="text-sm font-semibold text-indigo-900">Current meeting link</p>
-                                <p className="mt-1 text-sm text-indigo-700 break-all">{currentCallLink}</p>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-indigo-800">
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 border border-indigo-100">
-                                    <Users className="h-3.5 w-3.5" />
-                                    {workspaceMembers.length} workspace members
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-full bg-white/80 px-2.5 py-1 border border-indigo-100">
-                                    <Sparkles className="h-3.5 w-3.5" />
-                                    Share this link to join
-                                </span>
-                            </div>
-                        </div>
-                    </div>
                 </section>
 
                 <section>
@@ -284,9 +242,19 @@ const WorkspaceCalls = () => {
                                 <Calendar className="h-4.5 w-4.5 text-indigo-500" />
                                 Scheduled Meetings
                             </h3>
-                            <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-500">
-                                {upcomingMeetings.length} upcoming
-                            </span>
+                            <div className="flex items-center gap-2">
+                                <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-500">
+                                    {upcomingMeetings.length} upcoming
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={handleOpenCreateModal}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700 transition hover:bg-indigo-100"
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    Schedule Meeting
+                                </button>
+                            </div>
                         </div>
 
                         {meetingsLoading ? (

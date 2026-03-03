@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import useAuthStore from '../../store/useAuthStore';
-import { Send, Hash, Trash2, Paperclip, Smile, Reply, MoreHorizontal } from 'lucide-react';
+import { Send, Hash, Trash2, Paperclip, Reply, MoreHorizontal } from 'lucide-react';
 import socket from '../../lib/socket';
 
 const TASK_REGEX = /(Task\s*#\d+)/gi;
@@ -29,6 +29,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     const [isTyping, setIsTyping] = useState(false);
+    const [selectedMessageId, setSelectedMessageId] = useState(null);
     const typingTimeoutRef = useRef(null);
     const messagesEndRef = useRef(null);
 
@@ -102,6 +103,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
         try {
             await axios.delete(`/api/messages/${messageId}`);
             setMessages((prev) => prev.filter((m) => m._id !== messageId));
+            setSelectedMessageId((currentId) => (currentId === messageId ? null : currentId));
         } catch (err) {
             console.error('Failed to delete message', err);
         }
@@ -137,7 +139,10 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                 </div>
             )}
 
-            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 bg-white">
+            <div
+                className="flex-1 min-h-0 overflow-y-auto px-6 py-5 bg-white"
+                onClick={() => setSelectedMessageId(null)}
+            >
                 {messagesWithGrouping.length === 0 ? (
                     <div className="h-full flex items-center justify-center text-gray-400">
                         <div className="text-center">
@@ -155,10 +160,17 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                             const prevSenderId = String(prev?.sender?._id || prev?.sender || '');
                             const isGroupStart = !prev || prevSenderId !== senderId;
                             const canDelete = isMe || (canModerate && !isDM);
+                            const isSelected = selectedMessageId === msg._id;
 
                             return (
                                 <div
                                     key={msg._id}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        setSelectedMessageId((currentId) => (
+                                            currentId === msg._id ? null : msg._id
+                                        ));
+                                    }}
                                     className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${
                                         isGroupStart ? 'mt-4' : 'mt-1'
                                     }`}
@@ -183,7 +195,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                     {/* Indent grouped non-me messages to align with the avatar-offset above */}
                                     {!isMe && !isGroupStart && <div className="w-9 mr-3 shrink-0" />}
 
-                                    <div className={`max-w-[70%] group relative ${isMe ? 'items-end' : ''}`}>
+                                    <div className={`max-w-[70%] relative ${isMe ? 'items-end' : ''}`}>
                                         {isGroupStart && !isMe && (
                                             <p className="text-[11px] text-gray-500 font-semibold mb-1">
                                                 {msg.sender?.fullname}
@@ -191,56 +203,57 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                         )}
 
                                         <div
-                                            className={`px-3 py-2 rounded-2xl shadow-sm text-sm leading-relaxed ${
+                                            className={`px-3 py-2 rounded-2xl shadow-sm text-sm leading-relaxed cursor-pointer ${
                                                 isMe
                                                     ? 'bg-indigo-600 text-white rounded-br-md'
                                                     : 'bg-gray-100 text-gray-800 rounded-bl-md'
                                             }`}
                                         >
-                                            {renderMessageContent(msg.content)}
-                                        </div>
-
-                                        <div className={`flex items-center justify-between mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                            <p className={`text-[10px] ${isMe ? 'text-indigo-200' : 'text-gray-400'}`}>
-                                                {new Date(msg.createdAt).toLocaleTimeString([], {
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                })}
-                                            </p>
-                                            {canDelete && (
-                                                <button
-                                                    onClick={() => handleDeleteMessage(msg._id)}
-                                                    className={`ml-2 text-[10px] flex items-center gap-1 ${
-                                                        isMe
-                                                            ? 'text-indigo-200 hover:text-white'
-                                                            : 'text-gray-400 hover:text-red-500'
-                                                    }`}
-                                                    title="Delete message"
-                                                >
-                                                    <Trash2 size={12} />
-                                                </button>
-                                            )}
+                                            <div className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                <div className="min-w-0 break-words">
+                                                    {renderMessageContent(msg.content)}
+                                                </div>
+                                                <span className={`shrink-0 text-[10px] leading-none ${
+                                                    isMe ? 'text-indigo-200' : 'text-gray-400'
+                                                }`}>
+                                                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                                                        hour: '2-digit',
+                                                        minute: '2-digit',
+                                                    })}
+                                                </span>
+                                            </div>
                                         </div>
 
                                         <div
                                             className={`absolute -top-3 ${
                                                 isMe ? 'right-0' : 'left-0'
-                                            } opacity-0 group-hover:opacity-100 transition`}
+                                            } ${isSelected ? 'opacity-100' : 'opacity-0 pointer-events-none'} transition`}
                                         >
                                             <div className="flex items-center gap-1 bg-white border border-gray-200 shadow-sm rounded-full px-2 py-1">
                                                 <button
+                                                    type="button"
+                                                    onClick={(event) => event.stopPropagation()}
                                                     className="text-gray-400 hover:text-indigo-600"
                                                     title="Reply"
                                                 >
                                                     <Reply size={12} />
                                                 </button>
+                                                {canDelete && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={(event) => {
+                                                            event.stopPropagation();
+                                                            handleDeleteMessage(msg._id);
+                                                        }}
+                                                        className="text-gray-400 hover:text-red-500"
+                                                        title="Delete message"
+                                                    >
+                                                        <Trash2 size={12} />
+                                                    </button>
+                                                )}
                                                 <button
-                                                    className="text-gray-400 hover:text-indigo-600"
-                                                    title="React"
-                                                >
-                                                    <Smile size={12} />
-                                                </button>
-                                                <button
+                                                    type="button"
+                                                    onClick={(event) => event.stopPropagation()}
                                                     className="text-gray-400 hover:text-indigo-600"
                                                     title="More"
                                                 >
@@ -285,13 +298,6 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                         onKeyDown={handleKeyDown}
                     />
                     <button
-                        type="button"
-                        className="text-gray-400 hover:text-indigo-600"
-                        title="Emoji"
-                    >
-                        <Smile size={16} />
-                    </button>
-                    <button
                         type="submit"
                         disabled={!newMessage.trim()}
                         className={`w-9 h-9 rounded-full flex items-center justify-center transition ${
@@ -309,4 +315,3 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
 };
 
 export default ChatArea;
-

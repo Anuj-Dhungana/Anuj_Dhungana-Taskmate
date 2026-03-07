@@ -55,7 +55,7 @@ const workspaceSchema = new mongoose.Schema({
     timestamps: true
 });
 
-workspaceSchema.pre('validate', function normalizeLegacyBillingPlan(next) {
+workspaceSchema.pre('validate', function normalizeLegacyBillingPlan() {
     if (!this.settings) {
         this.settings = {};
     }
@@ -65,7 +65,6 @@ workspaceSchema.pre('validate', function normalizeLegacyBillingPlan(next) {
     }
 
     this.settings.billing.currentPlan = normalizeWorkspacePlan(this.settings.billing.currentPlan);
-    next();
 });
 
 const Workspace = mongoose.model('Workspace', workspaceSchema);

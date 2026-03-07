@@ -42,6 +42,7 @@ const Settings = () => {
     const [deletingWorkspace, setDeletingWorkspace] = useState(false);
     const [showTransferConfirm, setShowTransferConfirm] = useState(false);
     const [transferringOwnership, setTransferringOwnership] = useState(false);
+    const [upgradingPlan, setUpgradingPlan] = useState(false);
 
     const applyWorkspaceToForm = useCallback(() => {
         if (!workspace) return;
@@ -181,6 +182,27 @@ const Settings = () => {
             toast.error(err?.response?.data?.message || 'Failed to transfer ownership');
         } finally {
             setTransferringOwnership(false);
+        }
+    };
+
+    const handleUpgradeToProWithKhalti = async () => {
+        if (!currentWorkspaceId || !isOwner) return;
+        if (isProPlan) {
+            toast('This workspace is already on Pro plan.');
+            return;
+        }
+
+        setUpgradingPlan(true);
+        try {
+            const res = await axios.post(`/api/workspaces/${currentWorkspaceId}/billing/khalti/initiate`);
+            const paymentUrl = res?.data?.paymentUrl;
+            if (!paymentUrl) {
+                throw new Error('Khalti payment URL was not returned');
+            }
+            window.location.assign(paymentUrl);
+        } catch (err) {
+            toast.error(err?.response?.data?.message || err?.message || 'Failed to start Khalti payment');
+            setUpgradingPlan(false);
         }
     };
 
@@ -334,10 +356,11 @@ const Settings = () => {
                             </div>
                             <button
                                 type="button"
-                                onClick={() => toast('Khalti upgrade flow can be connected here.')}
-                                className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
+                                onClick={handleUpgradeToProWithKhalti}
+                                disabled={upgradingPlan}
+                                className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60"
                             >
-                                {isProPlan ? 'Manage subscription' : 'Upgrade to Pro with Khalti'}
+                                {isProPlan ? 'Manage subscription' : upgradingPlan ? 'Redirecting to Khalti...' : 'Upgrade to Pro with Khalti'}
                             </button>
                         </div>
                     </section>

@@ -22,6 +22,7 @@ import WorkspaceCalls from './pages/WorkspaceCalls';
 import WorkspaceMembers from './pages/WorkspaceMembers';
 import Analytics from './pages/Analytics';
 import InviteTokenPage from './pages/auth/InviteTokenPage';
+import BillingResult from './pages/BillingResult';
 
 const WorkspaceMeetingRoom = lazy(() => import('./pages/WorkspaceMeetingRoom'));
 
@@ -66,6 +67,7 @@ function App() {
           />
           <Route path="/members" element={<WorkspaceMembers />} />
           <Route path="/settings" element={<WorkspaceSettings />} />
+          <Route path="/billing/result" element={<BillingResult />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/workspaces" element={<WorkspaceList />} />
           <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail />} />

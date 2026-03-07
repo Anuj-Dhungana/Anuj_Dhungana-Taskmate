@@ -13,6 +13,10 @@ import { updateMemberRole } from '../controllers/workspaceController.js';
 import { removeMember } from '../controllers/workspaceController.js';
 import checkWorkspaceRole from '../middleware/roleMiddleware.js';
 import { deleteWorkspace } from '../controllers/workspaceController.js';
+import {
+    initiateWorkspaceKhaltiPayment,
+    verifyWorkspaceKhaltiPayment,
+} from '../controllers/billingController.js';
 
 
 const router = express.Router();
@@ -25,6 +29,8 @@ router.route('/:id')
     .get(protect, getWorkspaceDetails)
     .put(protect, checkWorkspaceRole(['owner']), updateWorkspace)
     .delete(protect, checkWorkspaceRole(['owner']), deleteWorkspace);
+router.post('/:id/billing/khalti/initiate', protect, checkWorkspaceRole(['owner']), initiateWorkspaceKhaltiPayment);
+router.post('/:id/billing/khalti/verify', protect, checkWorkspaceRole(['owner']), verifyWorkspaceKhaltiPayment);
 router.get('/:id/billing/payments', protect, checkWorkspaceRole(['owner']), getWorkspacePaymentHistory);
 router.post('/:id/invite', protect, checkWorkspaceRole(['owner', 'admin']), inviteUserToWorkspace);
 router.put('/:id/role', protect, checkWorkspaceRole(['owner']), updateMemberRole);

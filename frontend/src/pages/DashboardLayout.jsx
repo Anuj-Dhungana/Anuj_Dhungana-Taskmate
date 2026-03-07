@@ -29,6 +29,7 @@ const DashboardLayout = () => {
         currentWorkspace,
         workspaces,
         currentWorkspaceId,
+        selectedWorkspace,
         myRole,
         workspaceMenuOpen,
         onToggleMenu: () => setWorkspaceMenuOpen((v) => !v),

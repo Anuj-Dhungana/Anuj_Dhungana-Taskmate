@@ -14,6 +14,8 @@ import EmptyProjectsState from '../components/workspace/EmptyProjectsState';
 import { useWorkspaceProjects } from '../hooks/useWorkspaceProjects';
 import { normalizeStatus, calculateProjectStats } from '../utils/projectHelpers';
 import { emitProjectDataChanged } from '../utils/projectEvents';
+import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
+import { showUpgradeToProPrompt } from '../utils/upgradePrompts';
 
 const WorkspaceDetail = () => {
     const { workspaceId } = useParams();
@@ -44,6 +46,26 @@ const WorkspaceDetail = () => {
 
     const myRole = workspace?.members?.find((m) => m.user?._id === userInfo?._id)?.role;
     const isAdminOrOwner = myRole === 'owner' || myRole === 'admin';
+    const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
+    const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
+    const projectLimitReached =
+        planFeatures.maxProjects !== null && projects.length >= planFeatures.maxProjects;
+
+    const openUpgradePrompt = useCallback((message) => {
+        showUpgradeToProPrompt({
+            message,
+            onUpgrade: () => navigate('/settings'),
+            ctaLabel: 'Upgrade to Pro',
+        });
+    }, [navigate]);
+
+    const handleCreateProjectClick = useCallback(() => {
+        if (projectLimitReached) {
+            openUpgradePrompt(`Free plan allows up to ${planFeatures.maxProjects} projects.`);
+            return;
+        }
+        setShowProjectModal(true);
+    }, [openUpgradePrompt, planFeatures.maxProjects, projectLimitReached]);
 
     const stats = useMemo(() => calculateProjectStats(enrichedProjects), [enrichedProjects]);
 
@@ -147,13 +169,19 @@ const WorkspaceDetail = () => {
                 </div>
 
                 <button
-                    onClick={() => setShowProjectModal(true)}
+                    onClick={handleCreateProjectClick}
                     className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
                 >
                     <Plus size={16} />
                     New Project
                 </button>
             </div>
+
+            {projectLimitReached && (
+                <p className="mb-4 text-sm text-amber-700">
+                    Free plan allows up to {planFeatures.maxProjects} projects.
+                </p>
+            )}
 
             <ProjectStatsCards stats={stats} />
 
@@ -167,7 +195,7 @@ const WorkspaceDetail = () => {
             {projects.length === 0 || visibleProjects.length === 0 ? (
                 <EmptyProjectsState
                     hasProjects={projects.length > 0}
-                    onCreateProject={() => setShowProjectModal(true)}
+                    onCreateProject={handleCreateProjectClick}
                 />
             ) : (
                 <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">

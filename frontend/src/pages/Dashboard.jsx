@@ -9,6 +9,8 @@ import ActivityFeed from '../components/dashboard/ActivityFeed';
 import NewActionDropdown from '../components/dashboard/NewActionDropdown';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
 import InviteUserModal from '../components/modals/InviteUserModal';
+import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
+import { showUpgradeToProPrompt } from '../utils/upgradePrompts';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -23,6 +25,7 @@ const Dashboard = () => {
         focusTasks,
         upcomingEvents,
         activityFeed,
+        projects,
         refreshData,
     } = useDashboardData();
 
@@ -30,6 +33,36 @@ const Dashboard = () => {
     const [showInviteModal, setShowInviteModal] = useState(false);
 
     const workspaceName = workspace?.name || 'Workspace';
+    const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
+    const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
+    const projectLimitReached =
+        planFeatures.maxProjects !== null && projects.length >= planFeatures.maxProjects;
+    const memberLimitReached =
+        planFeatures.maxMembers !== null && members.length >= planFeatures.maxMembers;
+
+    const openUpgradePrompt = (message) =>
+        showUpgradeToProPrompt({
+            message,
+            onUpgrade: () => navigate('/settings'),
+            ctaLabel: 'Upgrade to Pro',
+        });
+
+    const handleCreateProject = () => {
+        if (projectLimitReached) {
+            openUpgradePrompt(`Free plan allows up to ${planFeatures.maxProjects} projects.`);
+            return;
+        }
+        setShowCreateProject(true);
+    };
+
+    const handleInviteMember = () => {
+        if (!canInvite) return;
+        if (memberLimitReached) {
+            openUpgradePrompt('Upgrade to Pro to add more members.');
+            return;
+        }
+        setShowInviteModal(true);
+    };
 
     if (!currentWorkspaceId) {
         return (
@@ -62,9 +95,9 @@ const Dashboard = () => {
                 </div>
                 <NewActionDropdown
                     canInvite={canInvite}
-                    onCreateProject={() => setShowCreateProject(true)}
+                    onCreateProject={handleCreateProject}
                     onCreateTask={() => navigate('/tasks')}
-                    onInviteMember={() => setShowInviteModal(true)}
+                    onInviteMember={handleInviteMember}
                 />
             </div>
 
@@ -77,7 +110,7 @@ const Dashboard = () => {
                 <div className="flex-1 min-w-0 space-y-6">
                     <RecentProjects
                         projects={recentProjects}
-                        onCreateProject={() => setShowCreateProject(true)}
+                        onCreateProject={handleCreateProject}
                     />
 
                     <MyFocusToday

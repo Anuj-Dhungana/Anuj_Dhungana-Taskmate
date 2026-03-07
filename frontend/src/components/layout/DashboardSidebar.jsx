@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -8,6 +8,8 @@ import { NAV_GROUPS, SYSTEM_ITEMS, filterNavByRole, filterSystemByRole } from '.
 import logo from '../../assets/logo.png';
 import socket from '../../lib/socket';
 import useChatUnreadStore from '../../store/useChatUnreadStore';
+import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../../constants/workspacePlans';
+import { showUpgradeToProPrompt } from '../../utils/upgradePrompts';
 
 const DashboardSidebar = ({
     isCollapsed,
@@ -20,6 +22,11 @@ const DashboardSidebar = ({
     const location = useLocation();
     const iconSize = 22;
     const currentWorkspaceId = workspaceProps?.currentWorkspaceId;
+    const selectedWorkspace = workspaceProps?.selectedWorkspace;
+    const workspace = selectedWorkspace?.workspace;
+    const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
+    const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
+    const analyticsLocked = !planFeatures.analyticsEnabled;
     const setWorkspaceChannels = useChatUnreadStore((state) => state.setWorkspaceChannels);
     const incrementUnread = useChatUnreadStore((state) => state.incrementUnread);
     const isWorkspaceChannel = useChatUnreadStore((state) => state.isWorkspaceChannel);
@@ -33,6 +40,14 @@ const DashboardSidebar = ({
         return Object.values(unreadMap).reduce((sum, value) => sum + (Number(value) || 0), 0);
     }, [currentWorkspaceId, unreadByWorkspace]);
 
+    const handleAnalyticsLockedClick = useCallback(() => {
+        showUpgradeToProPrompt({
+            message: 'Analytics is available only for Pro workspaces.',
+            onUpgrade: () => navigate('/settings'),
+            ctaLabel: 'Upgrade in Billing',
+        });
+    }, [navigate]);
+
     const navGroups = useMemo(
         () =>
             filterNavByRole(NAV_GROUPS, myRole).map((group) => ({
@@ -40,10 +55,12 @@ const DashboardSidebar = ({
                 items: group.items.map((item) =>
                     item.to === '/chat'
                         ? { ...item, badgeCount: totalChatUnread }
-                        : item
+                        : item.to === '/analytics' && analyticsLocked
+                            ? { ...item, locked: true, onLockedClick: handleAnalyticsLockedClick }
+                            : item
                 ),
             })),
-        [totalChatUnread, myRole]
+        [totalChatUnread, myRole, analyticsLocked, handleAnalyticsLockedClick]
     );
 
     const systemItems = useMemo(

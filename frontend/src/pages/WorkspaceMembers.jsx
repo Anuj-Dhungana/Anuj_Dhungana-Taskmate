@@ -4,8 +4,12 @@ import InviteUserModal from '../components/modals/InviteUserModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import MemberStatsCards from '../components/members/MemberStatsCards';
 import MembersTable from '../components/members/MembersTable';
+import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
+import { showUpgradeToProPrompt } from '../utils/upgradePrompts';
+import { useNavigate } from 'react-router-dom';
 
 const WorkspaceMembers = () => {
+    const navigate = useNavigate();
     const {
         loading,
         currentWorkspaceId,
@@ -31,6 +35,24 @@ const WorkspaceMembers = () => {
         confirmKick,
         refreshWorkspace,
     } = useWorkspaceMembers();
+
+    const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
+    const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
+    const memberLimitReached =
+        planFeatures.maxMembers !== null && (workspace?.members?.length || 0) >= planFeatures.maxMembers;
+
+    const handleInviteClick = () => {
+        if (memberLimitReached) {
+            showUpgradeToProPrompt({
+                message: 'Upgrade to Pro to add more members.',
+                onUpgrade: () => navigate('/settings'),
+                ctaLabel: 'Upgrade to Pro',
+            });
+            return;
+        }
+
+        setShowInviteModal(true);
+    };
 
     if (!currentWorkspaceId) {
         return (
@@ -69,7 +91,7 @@ const WorkspaceMembers = () => {
                     </div>
                     {canInvite && (
                         <button
-                            onClick={() => setShowInviteModal(true)}
+                            onClick={handleInviteClick}
                             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                         >
                             <UserPlus size={18} />
@@ -78,6 +100,12 @@ const WorkspaceMembers = () => {
                     )}
                 </div>
             </div>
+
+            {memberLimitReached && (
+                <p className="mb-4 text-sm text-amber-700">
+                    Upgrade to Pro to add more members.
+                </p>
+            )}
 
             <MemberStatsCards stats={stats} />
 

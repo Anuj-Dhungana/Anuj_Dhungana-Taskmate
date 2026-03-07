@@ -2,6 +2,7 @@ import Workspace from '../models/Workspace.js';
 import Project from '../models/Project.js';
 import Channel from '../models/Channel.js';
 import User from '../models/User.js';
+import Payment from '../models/Payment.js';
 import { WORKSPACE_PLAN } from '../config/workspacePlans.js';
 import {
     findWorkspaceById,
@@ -369,6 +370,24 @@ export const transferWorkspaceOwnership = async (req, res) => {
         });
     } catch (error) {
         console.error('transferWorkspaceOwnership Error:', error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};
+
+export const getWorkspacePaymentHistory = async (req, res) => {
+    try {
+        const workspace = req.workspace;
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+
+        const payments = await Payment.find({ workspace: workspace._id })
+            .select('amount paymentMethod status paidAt createdAt khaltiTransactionId purchaseOrderId')
+            .sort({ createdAt: -1 });
+
+        res.json({ payments });
+    } catch (error) {
+        console.error('getWorkspacePaymentHistory Error:', error);
         res.status(500).json({ message: "Server Error" });
     }
 };

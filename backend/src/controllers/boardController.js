@@ -720,11 +720,8 @@ export const getWorkspaceAnalytics = async (req, res) => {
         if (!canAccessWorkspaceAnalytics(workspace)) {
             return res.status(403).json({
                 code: 'ANALYTICS_PRO_REQUIRED',
-                message: "Analytics is available on the Pro plan for this workspace.",
+                message: "Analytics is available only for Pro workspaces.",
             });
-        }
-        if (member.role !== 'owner') {
-            return res.status(403).json({ message: "Only workspace owners can access analytics" });
         }
 
         const daysNum = parseInt(days, 10) || 30;

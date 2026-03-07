@@ -28,7 +28,8 @@ export default function useAnalytics() {
   const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
   const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
   const analyticsEnabled = Boolean(planFeatures.analyticsEnabled);
-  const canView = myRole === 'owner' && analyticsEnabled;
+  const isWorkspaceMember = Boolean(myRole);
+  const canView = isWorkspaceMember && analyticsEnabled;
 
   const fetchAnalytics = useCallback(async () => {
     if (!currentWorkspaceId || !canView) return;

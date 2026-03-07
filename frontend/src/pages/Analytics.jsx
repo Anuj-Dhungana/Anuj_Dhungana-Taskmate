@@ -69,8 +69,8 @@ const Analytics = () => {
 
   if (!canView) {
     const message = !analyticsEnabled
-      ? 'Analytics are available on the Pro plan only.'
-      : 'Analytics are available to workspace owners only.';
+      ? 'Analytics is available only for Pro workspaces.'
+      : 'You are not allowed to access analytics for this workspace.';
 
     return (
       <div className="flex items-center justify-center h-[60vh]">

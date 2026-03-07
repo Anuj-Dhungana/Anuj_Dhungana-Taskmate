@@ -16,6 +16,7 @@ import {
     createMentionNotifications
 } from '../services/boardService.js';
 import { calculateWorkspaceAnalytics } from '../services/analyticsService.js';
+import { canAccessWorkspaceAnalytics } from '../services/workspacePlanService.js';
 
 
 export const getBoard = async (req, res) => {
@@ -715,6 +716,12 @@ export const getWorkspaceAnalytics = async (req, res) => {
         });
         if (!member) {
             return res.status(403).json({ message: "Not authorized to view this workspace" });
+        }
+        if (!canAccessWorkspaceAnalytics(workspace)) {
+            return res.status(403).json({
+                code: 'ANALYTICS_PRO_REQUIRED',
+                message: "Analytics is available on the Pro plan for this workspace.",
+            });
         }
         if (member.role !== 'owner') {
             return res.status(403).json({ message: "Only workspace owners can access analytics" });

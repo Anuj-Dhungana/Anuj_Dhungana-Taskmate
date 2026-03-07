@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import api from '../api/index';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
+import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
 
 const DATE_RANGES = [
   { label: 'Last 7 days', value: 7 },
@@ -24,7 +25,10 @@ export default function useAnalytics() {
   const myRole = members.find(
     (m) => (m.user?._id || m.user) === userInfo?._id
   )?.role;
-  const canView = myRole === 'owner';
+  const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
+  const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
+  const analyticsEnabled = Boolean(planFeatures.analyticsEnabled);
+  const canView = myRole === 'owner' && analyticsEnabled;
 
   const fetchAnalytics = useCallback(async () => {
     if (!currentWorkspaceId || !canView) return;
@@ -53,8 +57,10 @@ export default function useAnalytics() {
     activeTab,
     setActiveTab,
     canView,
+    analyticsEnabled,
     workspace,
     currentWorkspaceId,
+    currentPlan,
     refresh: fetchAnalytics,
   };
 }

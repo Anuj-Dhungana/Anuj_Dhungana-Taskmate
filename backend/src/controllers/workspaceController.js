@@ -2,6 +2,7 @@ import Workspace from '../models/Workspace.js';
 import Project from '../models/Project.js';
 import Channel from '../models/Channel.js';
 import User from '../models/User.js';
+import { WORKSPACE_PLAN } from '../config/workspacePlans.js';
 import {
     findWorkspaceById,
     findWorkspaceByIdWithMembers,
@@ -12,6 +13,7 @@ import {
     getMemberIndex,
     validateInviteRole,
 } from '../services/workspaceService.js';
+import { canAddMembersToWorkspace } from '../services/workspacePlanService.js';
 import {
     emitMemberAdded,
     emitMemberRemoved,
@@ -32,7 +34,12 @@ export const createWorkspace = async (req, res) => {
             name,
             description,
             color: safeColor,
-            members: [{ user: req.user._id, role: 'owner' }]
+            members: [{ user: req.user._id, role: 'owner' }],
+            settings: {
+                billing: {
+                    currentPlan: WORKSPACE_PLAN.FREE,
+                },
+            },
         });
 
         // 2. Automatically create a "General" channel 
@@ -134,6 +141,16 @@ export const inviteUserToWorkspace = async (req, res) => {
         const isAlreadyMember = isWorkspaceMember(workspace, userToInvite._id);
         if (isAlreadyMember) {
             return res.status(400).json({ message: "User is already in this workspace" });
+        }
+
+        const memberAllowance = canAddMembersToWorkspace(workspace, 1);
+        if (!memberAllowance.allowed) {
+            return res.status(403).json({
+                code: 'MEMBER_LIMIT_REACHED',
+                message: `Free plan allows up to ${memberAllowance.limit} members in this workspace. Upgrade to Pro for unlimited members.`,
+                limit: memberAllowance.limit,
+                currentCount: memberAllowance.currentMembers,
+            });
         }
 
         // 5. Add to Workspace

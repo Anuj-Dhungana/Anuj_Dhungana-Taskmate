@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { WORKSPACE_PLAN, normalizeWorkspacePlan } from '../config/workspacePlans.js';
 
 const workspaceSchema = new mongoose.Schema({
     name: {
@@ -43,14 +44,28 @@ const workspaceSchema = new mongoose.Schema({
         billing: {
             currentPlan: {
                 type: String,
-                enum: ['free', 'premium'],
-                default: 'free',
+                enum: [WORKSPACE_PLAN.FREE, WORKSPACE_PLAN.PRO],
+                default: WORKSPACE_PLAN.FREE,
+                set: normalizeWorkspacePlan,
             },
         },
     },
     
 }, {
     timestamps: true
+});
+
+workspaceSchema.pre('validate', function normalizeLegacyBillingPlan(next) {
+    if (!this.settings) {
+        this.settings = {};
+    }
+
+    if (!this.settings.billing) {
+        this.settings.billing = {};
+    }
+
+    this.settings.billing.currentPlan = normalizeWorkspacePlan(this.settings.billing.currentPlan);
+    next();
 });
 
 const Workspace = mongoose.model('Workspace', workspaceSchema);

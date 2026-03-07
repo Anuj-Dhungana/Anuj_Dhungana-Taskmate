@@ -10,6 +10,7 @@ import {
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
 
 const COLOR_OPTIONS = ['#F97316', '#22C55E', '#FACC15', '#14B8A6', '#A855F7', '#22D3EE', '#60A5FA', '#0F172A'];
 
@@ -65,7 +66,9 @@ const Settings = () => {
             day: 'numeric',
         })
         : '-';
-    const currentPlan = workspace?.settings?.billing?.currentPlan === 'premium' ? 'premium' : 'free';
+    const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
+    const isProPlan = currentPlan === WORKSPACE_PLAN.PRO;
+    const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
 
     const transferCandidates = useMemo(
         () => members.filter((member) => resolveMemberId(member) !== String(userInfo?._id || '') && member.role !== 'owner'),
@@ -299,11 +302,11 @@ const Settings = () => {
                                 <p className="text-sm text-gray-500 mt-1">Subscription overview and upgrade path.</p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                currentPlan === 'premium'
+                                isProPlan
                                     ? 'bg-emerald-100 text-emerald-700'
                                     : 'bg-gray-100 text-gray-700'
                             }`}>
-                                {currentPlan === 'premium' ? 'Premium' : 'Free'}
+                                {isProPlan ? 'Pro' : 'Free'}
                             </span>
                         </div>
 
@@ -311,11 +314,21 @@ const Settings = () => {
                             <div className="flex items-start gap-2 text-sm text-gray-700">
                                 <CreditCard className="w-4 h-4 mt-0.5 text-gray-500" />
                                 <div>
-                                    <p className="font-medium">Current plan: {currentPlan === 'premium' ? 'Premium' : 'Free'}</p>
+                                    <p className="font-medium">Current plan: {isProPlan ? 'Pro' : 'Free'}</p>
                                     <ul className="mt-2 space-y-1 text-xs text-gray-500">
-                                        <li>Workspace collaboration and projects</li>
-                                        <li>Pending invite workflow</li>
-                                        <li>Advanced billing and payment history (coming soon)</li>
+                                        <li>
+                                            {planFeatures.maxProjects === null
+                                                ? 'Unlimited projects'
+                                                : `Up to ${planFeatures.maxProjects} projects`}
+                                        </li>
+                                        <li>
+                                            {planFeatures.maxMembers === null
+                                                ? 'Unlimited members'
+                                                : `Up to ${planFeatures.maxMembers} members`}
+                                        </li>
+                                        <li>
+                                            Analytics {planFeatures.analyticsEnabled ? 'enabled' : 'disabled'}
+                                        </li>
                                     </ul>
                                 </div>
                             </div>
@@ -324,7 +337,7 @@ const Settings = () => {
                                 onClick={() => toast('Khalti upgrade flow can be connected here.')}
                                 className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition"
                             >
-                                {currentPlan === 'premium' ? 'Manage subscription' : 'Upgrade with Khalti'}
+                                {isProPlan ? 'Manage subscription' : 'Upgrade to Pro with Khalti'}
                             </button>
                         </div>
                     </section>

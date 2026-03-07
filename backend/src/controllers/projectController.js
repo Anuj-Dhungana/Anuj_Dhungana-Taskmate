@@ -1,6 +1,7 @@
 import Project from '../models/Project.js';
 import Workspace from '../models/Workspace.js';
 import List from '../models/List.js';
+import { canCreateProjectInWorkspace } from '../services/workspacePlanService.js';
 
 
 export const createProject = async (req, res) => {
@@ -29,6 +30,16 @@ export const createProject = async (req, res) => {
         const isMember = workspace.members.some(m => m.user.toString() === req.user._id.toString());
         if (!isMember) {
             return res.status(403).json({ message: "You are not a member of this workspace" });
+        }
+
+        const projectAllowance = await canCreateProjectInWorkspace(workspace);
+        if (!projectAllowance.allowed) {
+            return res.status(403).json({
+                code: 'PROJECT_LIMIT_REACHED',
+                message: `Free plan allows up to ${projectAllowance.limit} projects in this workspace. Upgrade to Pro for unlimited projects.`,
+                limit: projectAllowance.limit,
+                currentCount: projectAllowance.projectCount,
+            });
         }
 
         // Sanitize members to include only existing workspace users

@@ -338,8 +338,8 @@ const Home = () => {
                 <h3 className="text-xl font-semibold text-slate-900">Free</h3>
                 <ul className="mt-5 space-y-3 text-slate-600 text-sm">
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Up to 5 members</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />3 projects</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Basic analytics</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Up to 5 projects</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Analytics locked</li>
                 </ul>
                 <Link
                   to="/register"
@@ -350,18 +350,17 @@ const Home = () => {
               </article>
 
               <article className="rounded-2xl border-2 border-slate-800 p-7 bg-white">
-                <h3 className="text-xl font-semibold text-slate-900">Premium</h3>
+                <h3 className="text-xl font-semibold text-slate-900">Pro</h3>
                 <ul className="mt-5 space-y-3 text-slate-600 text-sm">
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Unlimited projects</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Advanced analytics</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Video calls</li>
-                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Priority support</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Unlimited members</li>
+                  <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Analytics enabled</li>
                 </ul>
                 <button
                   type="button"
                   className="mt-7 inline-flex rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
                 >
-                  Upgrade with Khalti
+                  Upgrade to Pro with Khalti
                 </button>
               </article>
             </div>

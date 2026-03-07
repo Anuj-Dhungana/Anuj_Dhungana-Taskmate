@@ -29,6 +29,7 @@ const Analytics = () => {
     activeTab,
     setActiveTab,
     canView,
+    analyticsEnabled,
     workspace,
     currentWorkspaceId,
     refresh,
@@ -67,11 +68,15 @@ const Analytics = () => {
   }
 
   if (!canView) {
+    const message = !analyticsEnabled
+      ? 'Analytics are available on the Pro plan only.'
+      : 'Analytics are available to workspace owners only.';
+
     return (
       <div className="flex items-center justify-center h-[60vh]">
         <div className="flex items-center gap-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl px-5 py-4 text-sm">
           <ShieldAlert className="w-5 h-5 shrink-0" />
-          Analytics are available to workspace owners only.
+          {message}
         </div>
       </div>
     );

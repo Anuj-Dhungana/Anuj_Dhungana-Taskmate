@@ -3,6 +3,7 @@ import Workspace from '../models/Workspace.js';
 import User from '../models/User.js';
 import Notification from '../models/Notification.js';
 import sendEmail from '../utils/sendEmail.js';
+import { canAddMembersToWorkspace } from '../services/workspacePlanService.js';
 
 // Send invite to join workspace
 export const sendInvite = async (req, res) => {
@@ -28,6 +29,16 @@ export const sendInvite = async (req, res) => {
         const requester = workspace.members.find(m => m.user && m.user._id.toString() === req.user._id.toString());
         if (!requester || !['owner', 'admin'].includes(requester.role)) {
             return res.status(403).json({ message: "Only owners and admins can invite members" });
+        }
+
+        const memberAllowance = canAddMembersToWorkspace(workspace, 1);
+        if (!memberAllowance.allowed) {
+            return res.status(403).json({
+                code: 'MEMBER_LIMIT_REACHED',
+                message: `Free plan allows up to ${memberAllowance.limit} members in this workspace. Upgrade to Pro for unlimited members.`,
+                limit: memberAllowance.limit,
+                currentCount: memberAllowance.currentMembers,
+            });
         }
 
         // Admins can only invite as 'member' — only owners can invite as 'admin'
@@ -229,6 +240,9 @@ export const acceptInvite = async (req, res) => {
 
         // Check if already a member
         const workspace = await Workspace.findById(invite.workspace._id);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
         const existingMember = workspace.members.find(m => m.user.toString() === req.user._id.toString());
         if (existingMember) {
             invite.status = 'accepted';
@@ -237,6 +251,16 @@ export const acceptInvite = async (req, res) => {
         }
 
         // Add user to workspace
+        const memberAllowance = canAddMembersToWorkspace(workspace, 1);
+        if (!memberAllowance.allowed) {
+            return res.status(403).json({
+                code: 'MEMBER_LIMIT_REACHED',
+                message: `Free plan allows up to ${memberAllowance.limit} members in this workspace. Upgrade to Pro for unlimited members.`,
+                limit: memberAllowance.limit,
+                currentCount: memberAllowance.currentMembers,
+            });
+        }
+
         workspace.members.push({
             user: req.user._id,
             role: invite.role,
@@ -395,6 +419,19 @@ export const acceptInviteByToken = async (req, res) => {
 
         // Add user to workspace
         const workspace = await Workspace.findById(invite.workspace);
+        if (!workspace) {
+            return res.status(404).json({ message: "Workspace not found" });
+        }
+        const memberAllowance = canAddMembersToWorkspace(workspace, 1);
+        if (!memberAllowance.allowed) {
+            return res.status(403).json({
+                code: 'MEMBER_LIMIT_REACHED',
+                message: `Free plan allows up to ${memberAllowance.limit} members in this workspace. Upgrade to Pro for unlimited members.`,
+                limit: memberAllowance.limit,
+                currentCount: memberAllowance.currentMembers,
+            });
+        }
+
         workspace.members.push({
             user: req.user._id,
             role: invite.role,

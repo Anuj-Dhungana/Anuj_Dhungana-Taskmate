@@ -29,6 +29,7 @@ const Analytics = () => {
     activeTab,
     setActiveTab,
     canView,
+    hasAnalyticsRole,
     analyticsEnabled,
     workspace,
     currentWorkspaceId,
@@ -68,7 +69,9 @@ const Analytics = () => {
   }
 
   if (!canView) {
-    const message = !analyticsEnabled
+    const message = !hasAnalyticsRole
+      ? 'Analytics is available to workspace owners and admins only.'
+      : !analyticsEnabled
       ? 'Analytics is available only for Pro workspaces.'
       : 'You are not allowed to access analytics for this workspace.';
 

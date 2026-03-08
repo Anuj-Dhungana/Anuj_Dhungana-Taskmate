@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -9,7 +9,6 @@ import logo from '../../assets/logo.png';
 import socket from '../../lib/socket';
 import useChatUnreadStore from '../../store/useChatUnreadStore';
 import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../../constants/workspacePlans';
-import { showUpgradeToProPrompt } from '../../utils/upgradePrompts';
 
 const DashboardSidebar = ({
     isCollapsed,
@@ -40,14 +39,6 @@ const DashboardSidebar = ({
         return Object.values(unreadMap).reduce((sum, value) => sum + (Number(value) || 0), 0);
     }, [currentWorkspaceId, unreadByWorkspace]);
 
-    const handleAnalyticsLockedClick = useCallback(() => {
-        showUpgradeToProPrompt({
-            message: 'Analytics is available only for Pro workspaces.',
-            onUpgrade: () => navigate('/settings'),
-            ctaLabel: 'Upgrade in Billing',
-        });
-    }, [navigate]);
-
     const navGroups = useMemo(
         () =>
             filterNavByRole(NAV_GROUPS, myRole).map((group) => ({
@@ -56,11 +47,11 @@ const DashboardSidebar = ({
                     item.to === '/chat'
                         ? { ...item, badgeCount: totalChatUnread }
                         : item.to === '/analytics' && analyticsLocked
-                            ? { ...item, locked: true, onLockedClick: handleAnalyticsLockedClick }
+                            ? { ...item, locked: true }
                             : item
                 ),
             })),
-        [totalChatUnread, myRole, analyticsLocked, handleAnalyticsLockedClick]
+        [totalChatUnread, myRole, analyticsLocked]
     );
 
     const systemItems = useMemo(

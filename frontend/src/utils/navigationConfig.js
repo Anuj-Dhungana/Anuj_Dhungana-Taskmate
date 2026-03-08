@@ -21,7 +21,7 @@ export const NAV_GROUPS = [
     {
         label: 'Insights',
         items: [
-            { to: '/analytics', label: 'Analytics', icon: TrendingUp },
+            { to: '/analytics', label: 'Analytics', icon: TrendingUp, requiredRoles: ['owner', 'admin'] },
         ],
     },
 ];

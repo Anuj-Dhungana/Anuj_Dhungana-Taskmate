@@ -22,14 +22,15 @@ export default function useAnalytics() {
 
   const workspace = selectedWorkspace?.workspace;
   const members = workspace?.members || [];
+  const resolveMemberId = (member) => String(member?.user?._id || member?.user || '');
   const myRole = members.find(
-    (m) => (m.user?._id || m.user) === userInfo?._id
+    (m) => resolveMemberId(m) === String(userInfo?._id || '')
   )?.role;
   const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
   const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
   const analyticsEnabled = Boolean(planFeatures.analyticsEnabled);
-  const isWorkspaceMember = Boolean(myRole);
-  const canView = isWorkspaceMember && analyticsEnabled;
+  const hasAnalyticsRole = myRole === 'owner' || myRole === 'admin';
+  const canView = hasAnalyticsRole && analyticsEnabled;
 
   const fetchAnalytics = useCallback(async () => {
     if (!currentWorkspaceId || !canView) return;
@@ -58,6 +59,8 @@ export default function useAnalytics() {
     activeTab,
     setActiveTab,
     canView,
+    myRole,
+    hasAnalyticsRole,
     analyticsEnabled,
     workspace,
     currentWorkspaceId,

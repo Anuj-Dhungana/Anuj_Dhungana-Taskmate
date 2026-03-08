@@ -717,6 +717,12 @@ export const getWorkspaceAnalytics = async (req, res) => {
         if (!member) {
             return res.status(403).json({ message: "Not authorized to view this workspace" });
         }
+        if (!isAdminOrOwner(member)) {
+            return res.status(403).json({
+                code: 'ANALYTICS_ROLE_FORBIDDEN',
+                message: "Analytics is available to workspace owners and admins only.",
+            });
+        }
         if (!canAccessWorkspaceAnalytics(workspace)) {
             return res.status(403).json({
                 code: 'ANALYTICS_PRO_REQUIRED',

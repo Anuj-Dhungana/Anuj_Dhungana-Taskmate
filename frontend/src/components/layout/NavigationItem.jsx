@@ -5,9 +5,9 @@ const NavigationItem = ({ item, isCollapsed, iconSize }) => {
     const badgeLabel = item.badgeCount > 99 ? '99+' : item.badgeCount;
     const displayLabel = item.locked ? `${item.label} 🔒` : item.label;
     const handleClick = (event) => {
-        if (item.locked) {
+        if (item.locked && item.onLockedClick) {
             event.preventDefault();
-            item.onLockedClick?.();
+            item.onLockedClick(event);
             return;
         }
         item.onClick?.(event);

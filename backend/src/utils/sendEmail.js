@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 const sendEmail = async (options) => {
     // 1. Create Transporter (Connection to Email Service)
     const transporter = nodemailer.createTransport({
-        service: 'gmail', // You can use 'hotmail' or others
+        service: 'gmail', // we can use any email service
         auth: {
             user: process.env.EMAIL_USER, 
             pass: process.env.EMAIL_PASS  

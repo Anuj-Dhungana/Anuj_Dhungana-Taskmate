@@ -99,7 +99,7 @@ const Login = () => {
             if (inviteToken) await handleInviteAcceptance(inviteToken);
             else navigate('/dashboard');
         } catch (err) {
-            toast.error(err?.response?.data?.message || err.message);
+            toast.error(err?.response?.data?.message || 'Login failed');
         } finally {
             setIsLoading(false);
         }

@@ -22,8 +22,6 @@ import channelRoutes from './routes/channelRoutes.js';
 import inviteRoutes from './routes/inviteRoutes.js';
 import callRoutes from './routes/callRoutes.js';
 import meetingRoutes from './routes/meetingRoutes.js';
-
-// Models for Socket Saving
 import Message from './models/Message.js';
 
 dotenv.config();
@@ -35,8 +33,13 @@ const app = express();
 app.use(logger); // Request logging
 app.use(express.json());
 app.use(cookieParser());
+const allowedOrigins = [
+    "http://localhost:5173",
+    process.env.FRONTEND_URL
+].filter(Boolean);
+
 app.use(cors({
-    origin: ["http://localhost:5173"], 
+    origin: allowedOrigins, 
     credentials: true 
 }));
 
@@ -49,7 +52,7 @@ if (process.env.NODE_ENV === 'production') {
 const httpServer = createServer(app); // Wrap Express
 const io = new Server(httpServer, {
     cors: {
-        origin: "http://localhost:5173",
+        origin: allowedOrigins,
         methods: ["GET", "POST"],
         credentials: true
     }

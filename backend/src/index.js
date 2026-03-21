@@ -82,7 +82,8 @@ io.on("connection", (socket) => {
                 workspaceId: data.workspaceId,
                 channelId: data.channelId,
                 sender: data.senderId,
-                content: data.content
+                content: data.content || '',
+                attachments: data.attachments || []
             });
             
             // 2. Add sender info to send back to clients

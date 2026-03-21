@@ -1,4 +1,5 @@
-import { Hash, Users as UsersIcon, UserPlus, Edit, Trash2 } from 'lucide-react';
+import { Hash, Users as UsersIcon, UserPlus, Edit, Trash2, MoreVertical } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
 
 const ChatHeader = ({
     conversation,
@@ -12,6 +13,27 @@ const ChatHeader = ({
 }) => {
     const displayName = isDM ? conversation?.displayName : conversation?.name;
     const displayEmail = conversation?.displayEmail;
+    
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        if (isMenuOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isMenuOpen]);
+
+    const showAddMembers = !isDM && conversation?.members?.length > 0 && canManage;
+    const showRenameDelete = !isDM && canManage && !conversation?.isGeneral;
 
     return (
         <div className="flex items-center justify-between px-5 border-b border-gray-200 bg-gray-50" style={{ minHeight: '64px' }}>
@@ -42,34 +64,61 @@ const ChatHeader = ({
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
-                {!isDM && conversation?.members?.length > 0 && canManage && (
+            <div className="flex items-center gap-2 relative" ref={menuRef}>
+                {(showAddMembers || showRenameDelete) && (
                     <button
-                        onClick={onAddMembers}
-                        className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-md hover:bg-indigo-100 hover:border-indigo-200 flex items-center gap-1.5 transition-colors"
-                        title="Add Members"
+                        onClick={() => setIsMenuOpen(!isMenuOpen)}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                        title="Channel Options"
                     >
-                        <UserPlus size={14} />
-                        <span className="hidden sm:inline">Add Members</span>
+                        <MoreVertical size={18} />
                     </button>
                 )}
-                {!isDM && canManage && !conversation?.isGeneral && (
-                    <>
-                        <button
-                            onClick={onRename}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
-                            title="Rename Channel"
-                        >
-                            <Edit size={16} />
-                        </button>
-                        <button
-                            onClick={onDelete}
-                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                            title="Delete Channel"
-                        >
-                            <Trash2 size={16} />
-                        </button>
-                    </>
+
+                {isMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+                        {showAddMembers && (
+                            <button
+                                onClick={() => {
+                                    setIsMenuOpen(false);
+                                    onAddMembers();
+                                }}
+                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                            >
+                                <UserPlus size={15} className="text-gray-400" />
+                                Add Members
+                            </button>
+                        )}
+                        
+                        {showAddMembers && showRenameDelete && (
+                            <div className="h-px bg-gray-100 my-1"></div>
+                        )}
+                        
+                        {showRenameDelete && (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        setIsMenuOpen(false);
+                                        onRename();
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
+                                >
+                                    <Edit size={15} className="text-gray-400" />
+                                    Rename Channel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setIsMenuOpen(false);
+                                        onDelete();
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                                >
+                                    <Trash2 size={15} className="text-red-400" />
+                                    Delete Channel
+                                </button>
+                            </>
+                        )}
+                    </div>
                 )}
             </div>
         </div>

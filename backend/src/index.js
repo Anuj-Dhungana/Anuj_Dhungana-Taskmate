@@ -83,7 +83,8 @@ io.on("connection", (socket) => {
                 channelId: data.channelId,
                 sender: data.senderId,
                 content: data.content || '',
-                attachments: data.attachments || []
+                attachments: data.attachments || [],
+                poll: data.poll || null
             });
             
             // 2. Add sender info to send back to clients

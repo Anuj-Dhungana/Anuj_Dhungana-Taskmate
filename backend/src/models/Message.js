@@ -11,6 +11,14 @@ const messageSchema = new mongoose.Schema({
         resource_type: String,
         original_filename: String,
     }],
+    poll: {
+        question: String,
+        options: [{
+            text: String,
+            votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+        }],
+        multipleAnswers: { type: Boolean, default: false }
+    }
 }, {
     timestamps: true
 });

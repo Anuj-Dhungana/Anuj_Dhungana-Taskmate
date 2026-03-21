@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import useAuthStore from '../../store/useAuthStore';
-import { Send, Hash, Trash2, Paperclip, Reply, MoreHorizontal, X, FileText, Image, File, Music } from 'lucide-react';
+import { Send, Hash, Trash2, Paperclip, Reply, MoreHorizontal, X, FileText, Image, File, Music, ChartBar } from 'lucide-react';
 import socket from '../../lib/socket';
+import CreatePollModal from './CreatePollModal';
+import PollCard from './PollCard';
+import MediaGallery from './MediaGallery';
 
 const TASK_REGEX = /(Task\s*#\d+)/gi;
 
@@ -33,6 +36,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const [attachments, setAttachments] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+    const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
     
     const typingTimeoutRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -92,12 +96,39 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
             }
         };
 
+        const handlePollUpdated = (updatedMsg) => {
+            if (updatedMsg.channelId === channel._id) {
+                setMessages((prev) => prev.map(m => m._id === updatedMsg._id ? updatedMsg : m));
+            }
+        };
+
         socket.on('receive_message', handleReceiveMessage);
+        socket.on('poll_updated', handlePollUpdated);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
+            socket.off('poll_updated', handlePollUpdated);
         };
     }, [channel, workspaceId]);
+
+    const handleSendPoll = (pollData) => {
+        if (!channel) return;
+        const messageData = {
+            channelId: channel._id,
+            workspaceId: workspaceId,
+            senderId: userInfo._id,
+            content: '',
+            attachments: [],
+            poll: pollData,
+            senderDetails: {
+                _id: userInfo._id,
+                fullname: userInfo.fullname,
+                avatar: userInfo.avatar,
+            },
+        };
+        socket.emit('send_message', messageData);
+        scrollToBottom();
+    };
 
     const handleSendMessage = async (e) => {
         e?.preventDefault();
@@ -208,6 +239,10 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                             const isGroupStart = !prev || prevSenderId !== senderId;
                             const canDelete = isMe || (canModerate && !isDM);
                             const isSelected = selectedMessageId === msg._id;
+                            
+                            // Group attachments by type
+                            const mediaAttachments = msg.attachments ? msg.attachments.filter(a => ['image', 'video'].includes(a.resource_type)) : [];
+                            const docAttachments = msg.attachments ? msg.attachments.filter(a => !['image', 'video'].includes(a.resource_type)) : [];
 
                             return (
                                 <div
@@ -258,21 +293,42 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                         >
                                             <div className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
                                                 <div className="min-w-0 break-words">
-                                                    {renderMessageContent(msg.content)}
-                                                    {msg.attachments && msg.attachments.length > 0 && (
-                                                        <div className="flex flex-wrap gap-2 mt-2">
-                                                            {msg.attachments.map((att, i) => (
-                                                                <a key={i} href={att.url} target="_blank" rel="noreferrer" className="block max-w-[200px]">
-                                                                    {att.resource_type === 'image' ? (
-                                                                        <img src={att.url} alt="attachment" className="rounded-lg max-h-48 object-contain bg-gray-50/50" />
-                                                                    ) : att.resource_type === 'video' ? (
-                                                                        <video src={att.url} controls className="rounded-lg max-h-48 outline-none" />
-                                                                    ) : att.resource_type === 'audio' ? (
-                                                                        <audio src={att.url} controls className="w-full max-w-[200px] outline-none" />
+                                                    {msg.poll ? (
+                                                        <PollCard 
+                                                            messageId={msg._id} 
+                                                            poll={msg.poll} 
+                                                            currentUserId={userInfo._id} 
+                                                            isMe={isMe}
+                                                        />
+                                                    ) : (
+                                                        renderMessageContent(msg.content)
+                                                    )}
+                                                    
+                                                    {mediaAttachments.length > 0 && (
+                                                        <MediaGallery media={mediaAttachments} />
+                                                    )}
+                                                    
+                                                    {docAttachments.length > 0 && (
+                                                        <div className="flex flex-col gap-1.5 mt-2">
+                                                            {docAttachments.map((att, i) => (
+                                                                <a
+                                                                    key={`doc-${i}`}
+                                                                    href={att.url}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="block"
+                                                                >
+                                                                    {att.resource_type === 'audio' ? (
+                                                                        <audio src={att.url} controls className="w-full max-w-[240px] outline-none rounded-lg mt-1" />
                                                                     ) : (
-                                                                        <div className="flex items-center gap-2 p-2 bg-gray-50/50 text-indigo-700 rounded-lg border border-indigo-100 hover:bg-white transition-colors">
-                                                                            <FileText size={16} />
-                                                                            <span className="text-xs truncate max-w-[140px]">{att.original_filename}</span>
+                                                                        <div className={`flex items-center gap-3 p-3 rounded-xl transition-colors min-w-[200px] w-full max-w-[280px] ${isMe ? 'bg-[#4b5563]/30 hover:bg-[#4b5563]/50' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                                                                            <div className={`w-11 h-11 rounded-lg flex items-center justify-center shrink-0 ${isMe ? 'bg-[#f43f5e] text-white shadow-sm' : 'bg-red-500 text-white shadow-sm'}`}>
+                                                                                <FileText size={22} fill="currentColor" className="opacity-90" />
+                                                                            </div>
+                                                                            <div className="flex flex-col min-w-0 pr-2">
+                                                                                <span className={`text-[15px] font-semibold truncate tracking-tight ${isMe ? 'text-white' : 'text-gray-900'}`}>{att.original_filename}</span>
+                                                                                <span className={`text-[11px] font-bold mt-0.5 opacity-80 uppercase tracking-wider ${isMe ? 'text-gray-200' : 'text-gray-500'}`}>{att.resource_type === 'raw' ? 'DOCUMENT' : 'FILE'}</span>
+                                                                            </div>
                                                                         </div>
                                                                     )}
                                                                 </a>
@@ -428,6 +484,19 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                     </div>
                                     Audio
                                 </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowAttachmentMenu(false);
+                                        setIsCreatePollOpen(true);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                        <ChartBar size={16} />
+                                    </div>
+                                    Poll
+                                </button>
                             </div>
                         )}
                     </div>
@@ -463,6 +532,12 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                     </button>
                 </div>
             </form>
+
+            <CreatePollModal 
+                isOpen={isCreatePollOpen} 
+                onClose={() => setIsCreatePollOpen(false)} 
+                onSubmit={handleSendPoll} 
+            />
         </div>
     );
 };

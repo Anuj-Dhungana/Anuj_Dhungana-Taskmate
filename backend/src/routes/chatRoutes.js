@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMessages, sendMessage, deleteMessage } from '../controllers/chatController.js';
+import { getMessages, sendMessage, deleteMessage, votePoll } from '../controllers/chatController.js';
 import protect from '../middleware/authMiddleware.js';
 import upload from '../config/cloudinary.js';
 
@@ -26,6 +26,7 @@ router.post('/upload', protect, upload.array('attachments', 10), (req, res) => {
         res.status(500).json({ message: "File upload failed" });
     }
 });
+router.post('/:id/vote', protect, votePoll);
 router.delete('/:id', protect, deleteMessage);
 
 export default router;

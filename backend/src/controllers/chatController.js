@@ -119,3 +119,58 @@ export const deleteMessage = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+export const votePoll = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { optionIndex } = req.body;
+        const userId = req.user._id;
+
+        const message = await Message.findById(id);
+        if (!message || !message.poll || !message.poll.options) {
+            return res.status(404).json({ message: "Poll not found" });
+        }
+
+        const access = await ensureChannelAccess(message.channelId, userId);
+        if (access.status !== 200) {
+            return res.status(access.status).json({ message: access.message });
+        }
+
+        if (optionIndex < 0 || optionIndex >= message.poll.options.length) {
+            return res.status(400).json({ message: "Invalid option" });
+        }
+
+        const hasVotedThisOption = message.poll.options[optionIndex].votes.includes(userId);
+
+        if (!message.poll.multipleAnswers) {
+            // Remove user from all other options
+            message.poll.options.forEach((opt) => {
+                const index = opt.votes.indexOf(userId);
+                if (index > -1) opt.votes.splice(index, 1);
+            });
+        }
+
+        if (hasVotedThisOption) {
+            const idx = message.poll.options[optionIndex].votes.indexOf(userId);
+            if (idx > -1) {
+                message.poll.options[optionIndex].votes.splice(idx, 1);
+            }
+        } else {
+            message.poll.options[optionIndex].votes.push(userId);
+        }
+
+        await message.save();
+
+        const fullMessage = await Message.findById(id).populate('sender', 'fullname avatar');
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(message.channelId.toString()).emit("poll_updated", fullMessage);
+        }
+
+        res.json(fullMessage);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};

@@ -1,4 +1,4 @@
-import { Hash, Users as UsersIcon, UserPlus } from 'lucide-react';
+import { Hash, Users as UsersIcon, UserPlus, Edit, Trash2 } from 'lucide-react';
 
 const ChatHeader = ({
     conversation,
@@ -7,6 +7,8 @@ const ChatHeader = ({
     isDM,
     canManage = false,
     onAddMembers,
+    onRename,
+    onDelete,
 }) => {
     const displayName = isDM ? conversation?.displayName : conversation?.name;
     const displayEmail = conversation?.displayEmail;
@@ -45,10 +47,29 @@ const ChatHeader = ({
                     <button
                         onClick={onAddMembers}
                         className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-md hover:bg-indigo-100 hover:border-indigo-200 flex items-center gap-1.5 transition-colors"
+                        title="Add Members"
                     >
                         <UserPlus size={14} />
-                        Add Members
+                        <span className="hidden sm:inline">Add Members</span>
                     </button>
+                )}
+                {!isDM && canManage && !conversation?.isGeneral && (
+                    <>
+                        <button
+                            onClick={onRename}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors"
+                            title="Rename Channel"
+                        >
+                            <Edit size={16} />
+                        </button>
+                        <button
+                            onClick={onDelete}
+                            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            title="Delete Channel"
+                        >
+                            <Trash2 size={16} />
+                        </button>
+                    </>
                 )}
             </div>
         </div>

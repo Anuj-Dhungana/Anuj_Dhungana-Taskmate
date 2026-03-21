@@ -66,6 +66,17 @@ const WorkspaceChat = () => {
         setShowChannelEditor(true);
     };
 
+    const openRenameChannelModal = () => {
+        setChannelEditorMode('rename');
+        setChannelName(selectedConversation?.name || '');
+        setChannelEditorError('');
+        setShowChannelEditor(true);
+    };
+
+    const openDeleteConfirmModal = () => {
+        setChannelToDelete(selectedConversation);
+    };
+
     const closeChannelEditorModal = () => {
         if (savingChannel) return;
         setShowChannelEditor(false);
@@ -168,6 +179,8 @@ const WorkspaceChat = () => {
                                 isDM={selectedIsDM}
                                 canManage={canManageSelectedChannel}
                                 onAddMembers={() => setShowAddMembersModal(true)}
+                                onRename={openRenameChannelModal}
+                                onDelete={openDeleteConfirmModal}
                             />
                             <div className="flex-1 min-h-0">
                                 <ChatArea

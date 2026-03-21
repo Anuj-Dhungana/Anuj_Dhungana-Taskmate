@@ -30,7 +30,12 @@ export const getWorkspaceChannels = async (req, res) => {
 
         const channels = await Channel.find({ 
             workspace: workspaceId, 
-            type: { $in: ['channel', null] } 
+            type: { $in: ['channel', null] },
+            $or: [
+                { members: { $exists: false } },
+                { members: { $size: 0 } },
+                { members: req.user._id }
+            ]
         }).sort({ isGeneral: -1, name: 1 });
         res.json(channels);
     } catch (error) {
@@ -67,7 +72,7 @@ export const getWorkspaceDMs = async (req, res) => {
 
 export const createChannel = async (req, res) => {
     try {
-        const { workspaceId, name } = req.body;
+        const { workspaceId, name, members = [] } = req.body;
         if (!workspaceId || !name?.trim()) {
             return res.status(400).json({ message: "workspaceId and name are required" });
         }
@@ -84,10 +89,17 @@ export const createChannel = async (req, res) => {
             return res.status(400).json({ message: "Channel already exists" });
         }
 
+        let channelMembers = [];
+        if (Array.isArray(members) && members.length > 0) {
+            // Ensure uniqueness and include the creator
+            channelMembers = [...new Set([...members, req.user._id.toString()])];
+        }
+
         const channel = await Channel.create({
             name: name.trim(),
             workspace: workspaceId,
             type: 'channel',
+            members: channelMembers,
             isGeneral: false
         });
 

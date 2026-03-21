@@ -1,4 +1,5 @@
-import { X } from 'lucide-react';
+import { X, Lock, Globe } from 'lucide-react';
+import { useState } from 'react';
 
 const ChannelEditorModal = ({
     isOpen,
@@ -6,10 +7,24 @@ const ChannelEditorModal = ({
     value,
     error = '',
     loading = false,
+    workspaceMembers = [],
+    currentUserId = null,
     onChange,
     onClose,
     onSubmit,
 }) => {
+    const [isPrivate, setIsPrivate] = useState(false);
+    const [selectedMembers, setSelectedMembers] = useState([]);
+    const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+
+    if (isOpen !== prevIsOpen) {
+        setPrevIsOpen(isOpen);
+        if (isOpen) {
+            setIsPrivate(false);
+            setSelectedMembers([]);
+        }
+    }
+
     if (!isOpen) return null;
 
     const isRename = mode === 'rename';
@@ -39,7 +54,7 @@ const ChannelEditorModal = ({
                 <form
                     onSubmit={(event) => {
                         event.preventDefault();
-                        onSubmit?.();
+                        onSubmit?.(isPrivate ? selectedMembers : []);
                     }}
                     className="space-y-4"
                 >
@@ -55,7 +70,60 @@ const ChannelEditorModal = ({
                         {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
                     </div>
 
-                    <div className="flex items-center justify-end gap-2">
+                    {!isRename && (
+                        <div>
+                            <label className="flex items-center gap-2 mb-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={isPrivate}
+                                    onChange={(e) => setIsPrivate(e.target.checked)}
+                                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                                    {isPrivate ? <Lock size={14} className="text-gray-500" /> : <Globe size={14} className="text-gray-500" />}
+                                    Make Private
+                                </span>
+                            </label>
+                            {isPrivate && (
+                                <div className="mt-3">
+                                    <p className="text-xs text-gray-500 mb-2">Select members who can access this channel:</p>
+                                    <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+                                        {workspaceMembers.filter(m => m._id && m._id !== currentUserId).map(member => (
+                                            <label key={member._id} className="flex items-center gap-3 p-2 hover:bg-gray-50 cursor-pointer">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedMembers.includes(member._id)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setSelectedMembers([...selectedMembers, member._id]);
+                                                        } else {
+                                                            setSelectedMembers(selectedMembers.filter(id => id !== member._id));
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500"
+                                                />
+                                                <div className="flex items-center gap-2">
+                                                    {member.avatar ? (
+                                                        <img src={member.avatar} alt="" className="w-6 h-6 rounded-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-xs font-semibold">
+                                                            {member.fullname?.charAt(0).toUpperCase() || 'U'}
+                                                        </div>
+                                                    )}
+                                                    <span className="text-sm text-gray-700">{member.fullname}</span>
+                                                </div>
+                                            </label>
+                                        ))}
+                                        {workspaceMembers.filter(m => m._id && m._id !== currentUserId).length === 0 && (
+                                            <div className="p-3 text-sm text-gray-500 text-center">No other members in this workspace.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="flex items-center justify-end gap-2 mt-6">
                         <button
                             type="button"
                             onClick={onClose}

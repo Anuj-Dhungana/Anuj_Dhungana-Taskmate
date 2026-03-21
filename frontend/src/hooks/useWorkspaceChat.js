@@ -133,13 +133,13 @@ export const useWorkspaceChat = (workspaceId, userId) => {
     }, [selectedChannel, dmWithMeta]);
 
     // Handler functions
-    const handleCreateChannel = async (name) => {
+    const handleCreateChannel = async (name, memberIds = []) => {
         const trimmedName = String(name || '').trim();
         if (!trimmedName) {
             throw new Error('Channel name is required');
         }
         try {
-            await axios.post('/api/channels', { workspaceId, name: trimmedName });
+            await axios.post('/api/channels', { workspaceId, name: trimmedName, members: memberIds });
             await refreshChannels();
         } catch (err) {
             console.error('Failed to create channel', err);

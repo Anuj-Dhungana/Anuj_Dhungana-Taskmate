@@ -65,7 +65,7 @@ const WorkspaceChat = () => {
         setChannelEditorError('');
     };
 
-    const submitChannelEditor = async () => {
+    const submitChannelEditor = async (selectedMembers = []) => {
         const trimmedName = channelName.trim();
         if (!trimmedName) {
             setChannelEditorError('Channel name is required');
@@ -78,7 +78,7 @@ const WorkspaceChat = () => {
             if (channelEditorMode === 'rename') {
                 await handleRenameChannel(trimmedName);
             } else {
-                await handleCreateChannel(trimmedName);
+                await handleCreateChannel(trimmedName, selectedMembers);
             }
             setShowChannelEditor(false);
             setChannelName('');
@@ -187,6 +187,8 @@ const WorkspaceChat = () => {
                 value={channelName}
                 error={channelEditorError}
                 loading={savingChannel}
+                workspaceMembers={members?.map(m => m.user).filter(Boolean) || []}
+                currentUserId={userInfo?._id}
                 onChange={(value) => {
                     setChannelName(value);
                     if (channelEditorError) setChannelEditorError('');

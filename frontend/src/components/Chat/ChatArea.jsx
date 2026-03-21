@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import useAuthStore from '../../store/useAuthStore';
-import { Send, Hash, Trash2, Paperclip, Reply, MoreHorizontal, X, FileText } from 'lucide-react';
+import { Send, Hash, Trash2, Paperclip, Reply, MoreHorizontal, X, FileText, Image, File, Music } from 'lucide-react';
 import socket from '../../lib/socket';
 
 const TASK_REGEX = /(Task\s*#\d+)/gi;
@@ -32,9 +32,30 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const [selectedMessageId, setSelectedMessageId] = useState(null);
     const [attachments, setAttachments] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
+    const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
+    
     const typingTimeoutRef = useRef(null);
     const messagesEndRef = useRef(null);
-    const fileInputRef = useRef(null);
+    const attachmentMenuRef = useRef(null);
+    
+    // Hidden specific file inputs
+    const mediaInputRef = useRef(null);
+    const docInputRef = useRef(null);
+    const audioInputRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target)) {
+                setShowAttachmentMenu(false);
+            }
+        };
+        if (showAttachmentMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showAttachmentMenu]);
 
     const scrollToBottom = () => {
         setTimeout(() => {
@@ -246,6 +267,8 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                                                         <img src={att.url} alt="attachment" className="rounded-lg max-h-48 object-contain bg-gray-50/50" />
                                                                     ) : att.resource_type === 'video' ? (
                                                                         <video src={att.url} controls className="rounded-lg max-h-48 outline-none" />
+                                                                    ) : att.resource_type === 'audio' ? (
+                                                                        <audio src={att.url} controls className="w-full max-w-[200px] outline-none" />
                                                                     ) : (
                                                                         <div className="flex items-center gap-2 p-2 bg-gray-50/50 text-indigo-700 rounded-lg border border-indigo-100 hover:bg-white transition-colors">
                                                                             <FileText size={16} />
@@ -328,6 +351,8 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                     <img src={att.url} alt="" className="w-full h-full object-cover" />
                                 ) : att.resource_type === 'video' ? (
                                     <div className="w-full h-full bg-gray-800 flex items-center justify-center text-white text-[10px] font-bold">VIDEO</div>
+                                ) : att.resource_type === 'audio' ? (
+                                    <div className="w-full h-full bg-orange-100 flex items-center justify-center text-orange-600 text-[10px] font-bold">AUDIO</div>
                                 ) : (
                                     <div className="w-full h-full bg-indigo-50 flex items-center justify-center text-[10px] text-indigo-600 px-1 text-center truncate" title={att.original_filename}>
                                         {att.original_filename.substring(0, 8)}...
@@ -345,24 +370,67 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                     </div>
                 )}
                 
-                <input
-                    type="file"
-                    multiple
-                    ref={fileInputRef}
-                    className="hidden"
-                    onChange={handleFileChange}
-                />
+                {/* Hidden specific file inputs */}
+                <input type="file" multiple ref={mediaInputRef} className="hidden" accept="image/*,video/*" onChange={handleFileChange} />
+                <input type="file" multiple ref={docInputRef} className="hidden" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.csv" onChange={handleFileChange} />
+                <input type="file" multiple ref={audioInputRef} className="hidden" accept="audio/*" onChange={handleFileChange} />
                 
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
-                    <button
-                        type="button"
-                        className={`text-gray-400 hover:text-indigo-600 transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
-                        title="Attach file"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                    >
-                        <Paperclip size={16} />
-                    </button>
+                    <div className="relative flex items-center" ref={attachmentMenuRef}>
+                        <button
+                            type="button"
+                            className={`text-gray-400 hover:text-indigo-600 transition-colors ${isUploading ? 'opacity-50 cursor-wait' : ''}`}
+                            title="Attach file"
+                            onClick={() => setShowAttachmentMenu(!showAttachmentMenu)}
+                            disabled={isUploading}
+                        >
+                            <Paperclip size={16} />
+                        </button>
+
+                        {showAttachmentMenu && (
+                            <div className="absolute bottom-full mb-3 left-0 bg-white border border-gray-100 rounded-2xl shadow-xl shadow-gray-200/50 py-2 w-48 z-50">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowAttachmentMenu(false);
+                                        mediaInputRef.current?.click();
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                        <Image size={16} />
+                                    </div>
+                                    Photos & Videos
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowAttachmentMenu(false);
+                                        docInputRef.current?.click();
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600">
+                                        <File size={16} />
+                                    </div>
+                                    Document
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowAttachmentMenu(false);
+                                        audioInputRef.current?.click();
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                                >
+                                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                                        <Music size={16} />
+                                    </div>
+                                    Audio
+                                </button>
+                            </div>
+                        )}
+                    </div>
                     <textarea
                         rows={1}
                         placeholder={

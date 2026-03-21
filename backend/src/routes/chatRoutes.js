@@ -16,7 +16,9 @@ router.post('/upload', protect, upload.array('attachments', 10), (req, res) => {
             url: file.path,
             public_id: file.filename,
             original_filename: file.originalname,
-            resource_type: file.mimetype.startsWith('video/') ? 'video' : (file.mimetype.startsWith('image/') ? 'image' : 'raw'),
+            resource_type: file.mimetype.startsWith('video/') ? 'video' : 
+                           file.mimetype.startsWith('audio/') ? 'audio' : 
+                           file.mimetype.startsWith('image/') ? 'image' : 'raw',
         }));
         res.status(200).json({ files });
     } catch (error) {

@@ -33,6 +33,10 @@ const app = express();
 app.use(logger); // Request logging
 app.use(express.json());
 app.use(cookieParser());
+
+// Trust the reverse proxy (like Render/Railway) for secure cookies
+app.set("trust proxy", 1);
+
 const allowedOrigins = [
     "http://localhost:5173",
     process.env.FRONTEND_URL

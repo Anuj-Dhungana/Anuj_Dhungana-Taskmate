@@ -1,10 +1,12 @@
-import { Hash, Users as UsersIcon } from 'lucide-react';
+import { Hash, Users as UsersIcon, UserPlus } from 'lucide-react';
 
 const ChatHeader = ({
     conversation,
     workspaceName,
     memberCount,
     isDM,
+    canManage = false,
+    onAddMembers,
 }) => {
     const displayName = isDM ? conversation?.displayName : conversation?.name;
     const displayEmail = conversation?.displayEmail;
@@ -38,7 +40,17 @@ const ChatHeader = ({
                 </div>
             </div>
 
-
+            <div className="flex items-center gap-2">
+                {!isDM && conversation?.members?.length > 0 && canManage && (
+                    <button
+                        onClick={onAddMembers}
+                        className="px-3 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 border border-indigo-100 rounded-md hover:bg-indigo-100 hover:border-indigo-200 flex items-center gap-1.5 transition-colors"
+                    >
+                        <UserPlus size={14} />
+                        Add Members
+                    </button>
+                )}
+            </div>
         </div>
     );
 };

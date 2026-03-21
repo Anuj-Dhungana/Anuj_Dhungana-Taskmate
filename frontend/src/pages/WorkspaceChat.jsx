@@ -9,6 +9,7 @@ import DirectMessagesList from '../components/chat/DirectMessagesList';
 import ChatHeader from '../components/chat/ChatHeader';
 import DmPickerModal from '../components/chat/DmPickerModal';
 import ChannelEditorModal from '../components/chat/ChannelEditorModal';
+import AddChannelMembersModal from '../components/chat/AddChannelMembersModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useWorkspaceChat } from '../hooks/useWorkspaceChat';
 
@@ -22,6 +23,11 @@ const WorkspaceChat = () => {
     const [channelName, setChannelName] = useState('');
     const [channelEditorError, setChannelEditorError] = useState('');
     const [savingChannel, setSavingChannel] = useState(false);
+    
+    // Add Members Modal State
+    const [showAddMembersModal, setShowAddMembersModal] = useState(false);
+    const [addingMembers, setAddingMembers] = useState(false);
+    const [addMembersError, setAddMembersError] = useState('');
 
     const {
         workspace,
@@ -40,6 +46,7 @@ const WorkspaceChat = () => {
         setSelectedChannel,
         handleCreateChannel,
         handleRenameChannel,
+        handleAddMembersToChannel,
         handleCreateDM,
         refreshChannels,
     } = useWorkspaceChat(currentWorkspaceId, userInfo?._id);
@@ -86,6 +93,19 @@ const WorkspaceChat = () => {
             setChannelEditorError(err?.response?.data?.message || 'Failed to save channel');
         } finally {
             setSavingChannel(false);
+        }
+    };
+
+    const submitAddMembers = async (selectedMembers) => {
+        setAddingMembers(true);
+        setAddMembersError('');
+        try {
+            await handleAddMembersToChannel(selectedConversation._id, selectedMembers);
+            setShowAddMembersModal(false);
+        } catch (err) {
+            setAddMembersError(err?.response?.data?.message || 'Failed to add members');
+        } finally {
+            setAddingMembers(false);
         }
     };
 
@@ -144,8 +164,10 @@ const WorkspaceChat = () => {
                             <ChatHeader
                                 conversation={selectedConversation}
                                 workspaceName={workspaceName}
-                                memberCount={memberCount}
+                                memberCount={selectedIsDM ? 2 : (selectedConversation.members?.length || memberCount)}
                                 isDM={selectedIsDM}
+                                canManage={canManageSelectedChannel}
+                                onAddMembers={() => setShowAddMembersModal(true)}
                             />
                             <div className="flex-1 min-h-0">
                                 <ChatArea
@@ -195,6 +217,20 @@ const WorkspaceChat = () => {
                 }}
                 onClose={closeChannelEditorModal}
                 onSubmit={submitChannelEditor}
+            />
+
+            <AddChannelMembersModal
+                isOpen={showAddMembersModal}
+                channel={selectedConversation}
+                workspaceMembers={members?.map(m => m.user).filter(Boolean) || []}
+                currentUserId={userInfo?._id}
+                loading={addingMembers}
+                error={addMembersError}
+                onClose={() => {
+                    setShowAddMembersModal(false);
+                    setAddMembersError('');
+                }}
+                onSubmit={submitAddMembers}
             />
 
             <ConfirmModal

@@ -164,6 +164,17 @@ export const useWorkspaceChat = (workspaceId, userId) => {
         }
     };
 
+    const handleAddMembersToChannel = async (channelId, memberIds) => {
+        if (!channelId || !memberIds || memberIds.length === 0) return;
+        try {
+            await axios.post(`/api/channels/${channelId}/members`, { memberIds });
+            await refreshChannels();
+        } catch (err) {
+            console.error('Failed to add members to channel', err);
+            throw err;
+        }
+    };
+
     const handleCreateDM = async (memberId) => {
         try {
             const res = await axios.post('/api/channels/dm', { workspaceId, memberId });
@@ -219,6 +230,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
         // Handlers
         handleCreateChannel,
         handleRenameChannel,
+        handleAddMembersToChannel,
         handleCreateDM,
         refreshChannels,
     };

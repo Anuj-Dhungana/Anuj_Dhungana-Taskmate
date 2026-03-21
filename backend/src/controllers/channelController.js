@@ -221,3 +221,50 @@ export const createOrGetDM = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+export const addMembersToChannel = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { memberIds } = req.body;
+        if (!memberIds || !Array.isArray(memberIds)) {
+            return res.status(400).json({ message: "memberIds array is required" });
+        }
+
+        const channel = await Channel.findById(id);
+        if (!channel) return res.status(404).json({ message: "Channel not found" });
+        if (channel.type === 'dm') {
+            return res.status(400).json({ message: "Cannot add multiple members to a direct message" });
+        }
+        if (channel.isGeneral || !channel.members || channel.members.length === 0) {
+            return res.status(400).json({ message: "Cannot explicitly add members to a public or general channel" });
+        }
+
+        const { workspace, member } = await getWorkspaceAndMember(channel.workspace, req.user._id);
+        if (!workspace) return res.status(404).json({ message: "Workspace not found" });
+        if (!isModerator(member)) {
+            // Alternatively, allow any existing member of the private channel to add others.
+            // For now, restricting to moderators (admins/owners) for better control.
+            return res.status(403).json({ message: "Only admins can add members to channels" });
+        }
+
+        // Filter memberIds to ensure they are actually in the workspace
+        const validWorkspaceMemberIds = workspace.members.map(m => m.user.toString());
+        const validIdsToAdd = memberIds.filter(id => validWorkspaceMemberIds.includes(id));
+
+        if (validIdsToAdd.length === 0) {
+            return res.status(400).json({ message: "No valid workspace members provided to add" });
+        }
+
+        // Add to channel
+        const updatedChannel = await Channel.findByIdAndUpdate(
+            id,
+            { $addToSet: { members: { $each: validIdsToAdd } } },
+            { new: true }
+        );
+
+        res.json(updatedChannel);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};

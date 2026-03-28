@@ -13,7 +13,8 @@ const generateToken = (res, userId) => {
         httpOnly: true, // Prevents JavaScript from reading the cookie (Security)
         secure: isProduction, // Use HTTPS in production
         sameSite: isProduction ? 'none' : 'strict', // Allow cross-domain cookies in production
-        maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days in milliseconds
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+        path: '/' // Ensure cookie is accessible across all routes
     });
 };
 

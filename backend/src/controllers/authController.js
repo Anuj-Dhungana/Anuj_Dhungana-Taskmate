@@ -32,7 +32,7 @@ export const registerUser = async (req, res) => {
 
         // Generate 6-digit Code
         const code = Math.floor(100000 + Math.random() * 900000).toString();
-        
+
         // Hash Password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
@@ -64,7 +64,7 @@ export const registerUser = async (req, res) => {
                            <p>This code expires in 10 minutes.</p>`
                 });
 
-                res.status(201).json({ 
+                res.status(201).json({
                     message: "Registration successful! Please check your email for the code.",
                     email: user.email // Send email back so frontend knows where to send code
                 });
@@ -117,12 +117,12 @@ export const loginUser = async (req, res) => {
         const user = await User.findOne({ email });
 
         if (user && (await bcrypt.compare(password, user.password))) {
-            
+
             if (!user.isVerified) {
                 return res.status(401).json({ message: "Please verify your email first." });
             }
 
-         
+
             if (user.twoFactorEnabled) {
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -173,7 +173,8 @@ export const logoutUser = (req, res) => {
         httpOnly: true,
         secure: isProduction,
         sameSite: isProduction ? 'none' : 'strict',
-        expires: new Date(0) // Expire immediately
+        expires: new Date(0), // Expire immediately
+        path: '/'
     });
 
     res.status(200).json({ message: 'Logged out successfully' });
@@ -260,13 +261,13 @@ export const resetPassword = async (req, res) => {
         // 4. Clear reset fields
         user.resetPasswordToken = undefined;
         user.resetPasswordExpire = undefined;
-        
+
         await user.save();
 
         res.status(200).json({ message: "Password updated successully! You can login now." });
 
     } catch (error) {
-        res.status(500).json({ message: "Server Error",  error });
+        res.status(500).json({ message: "Server Error", error });
     }
 };
 
@@ -322,12 +323,12 @@ export const updateProfile = async (req, res) => {
 export const toggle2FA = async (req, res) => {
     try {
         const user = await User.findById(req.user._id);
-        
+
         // Flip the status
         user.twoFactorEnabled = !user.twoFactorEnabled;
         await user.save();
 
-        res.json({ 
+        res.json({
             message: `2FA is now ${user.twoFactorEnabled ? 'Enabled' : 'Disabled'}`,
             twoFactorEnabled: user.twoFactorEnabled
         });

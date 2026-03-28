@@ -356,12 +356,7 @@ const Home = () => {
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Unlimited members</li>
                   <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-blue-600" />Analytics enabled</li>
                 </ul>
-                <button
-                  type="button"
-                  className="mt-7 inline-flex rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-                >
-                  Upgrade to Pro with Khalti
-                </button>
+              <p className="mt-5 text-2xl font-bold text-slate-900">Rs. 10<span className="text-sm font-normal text-slate-500"> / workspace</span></p>
               </article>
             </div>
           </div>

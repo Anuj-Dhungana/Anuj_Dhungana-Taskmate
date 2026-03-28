@@ -10,7 +10,7 @@ import {
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import BoardList from './BoardList';
-import TaskDetailModal from './TaskDetailModal';
+import TaskDetailModal from './task-detail/TaskDetailModal';
 import CreateTaskModal from './CreateTaskModal';
 import { Search, Plus, SlidersHorizontal } from 'lucide-react';
 import useWorkspaceStore from '../../store/useWorkspaceStore';

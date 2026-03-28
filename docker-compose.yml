@@ -1,4 +1,10 @@
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: taskmate-redis
+    ports:
+      - "6379:6379"
+
   backend:
     build:
       context: ./backend
@@ -6,6 +12,10 @@ services:
     container_name: taskmate-backend
     env_file:
       - ./backend/.env
+    environment:
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
     ports:
       - "5000:5000"
     volumes:
@@ -29,6 +39,7 @@ services:
     command: npm run dev -- --host 0.0.0.0 --port 5173
     depends_on:
       - backend
+
 
 volumes:
   backend_node_modules:

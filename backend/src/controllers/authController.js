@@ -6,6 +6,13 @@ import crypto from 'crypto';
 import Workspace from '../models/Workspace.js';
 import Project from '../models/Project.js';
 import Card from '../models/Card.js';
+import {
+    setVerifyOtp,
+    verifyAndConsumeVerifyOtp,
+    deleteVerifyOtp,
+    set2faOtp,
+    verifyAndConsume2faOtp,
+} from '../services/otpRedisService.js';
 
 const getFrontendBaseUrl = () =>
     String(process.env.FRONTEND_URL || 'http://localhost:5173')
@@ -30,14 +37,20 @@ export const registerUser = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Create User (Not verified yet)
+        // Create User (Not verified yet). OTP lives in Redis with TTL.
         const user = await User.create({
             fullname,
             email,
             password: hashedPassword,
-            verificationCode: code,
-            verificationCodeExpires: Date.now() + 10 * 60 * 1000 // 10 Minutes
         });
+
+        try {
+            await setVerifyOtp(email, code);
+        } catch (redisErr) {
+            await User.deleteOne({ _id: user._id });
+            console.error('Redis (verify OTP):', redisErr);
+            return res.status(500).json({ message: 'Could not store verification code. Try again.' });
+        }
 
         if (user) {
             // Send Email
@@ -56,7 +69,7 @@ export const registerUser = async (req, res) => {
                     email: user.email // Send email back so frontend knows where to send code
                 });
             } catch (error) {
-                // If email fails, delete user so they can try again
+                await deleteVerifyOtp(email);
                 await User.deleteOne({ _id: user._id });
                 return res.status(500).json({ message: "Email could not be sent. Please try again." });
             }
@@ -77,15 +90,11 @@ export const verifyEmail = async (req, res) => {
             return res.status(400).json({ message: "User not found" });
         }
 
-        // Check if code matches and hasn't expired
-        if (user.verificationCode === code && user.verificationCodeExpires > Date.now()) {
-            
+        const ok = await verifyAndConsumeVerifyOtp(email, code);
+        if (ok) {
             user.isVerified = true;
-            user.verificationCode = undefined;
-            user.verificationCodeExpires = undefined;
             await user.save();
 
-            // Log them in now
             generateToken(res, user._id);
 
             res.status(200).json({
@@ -115,15 +124,16 @@ export const loginUser = async (req, res) => {
 
          
             if (user.twoFactorEnabled) {
-                // 1. Generate Code
                 const code = Math.floor(100000 + Math.random() * 900000).toString();
-                
-                // 2. Save to DB
-                user.twoFactorCode = code;
-                user.twoFactorExpires = Date.now() + 5 * 60 * 1000; // 5 mins
-                await user.save();
 
-                // 3. Send Email
+                try {
+                    await set2faOtp(user.email, code);
+                } catch (redisErr) {
+                    console.error('Redis (2FA OTP):', redisErr);
+                    return res.status(500).json({ message: 'Could not send login code. Try again.' });
+                }
+
+                // Send Email
                 await sendEmail({
                     to: user.email,
                     subject: 'TaskMate - 2FA Login Code',
@@ -328,14 +338,12 @@ export const verify2FALogin = async (req, res) => {
         const { email, code } = req.body;
         const user = await User.findOne({ email });
 
-        if (user && user.twoFactorCode === code && user.twoFactorExpires > Date.now()) {
-            
-            // Clear code
-            user.twoFactorCode = undefined;
-            user.twoFactorExpires = undefined;
-            await user.save();
+        if (!user || !user.twoFactorEnabled) {
+            return res.status(401).json({ message: "Invalid or expired 2FA code" });
+        }
 
-            // SUCCESS! Generate Token
+        const ok = await verifyAndConsume2faOtp(email, code);
+        if (ok) {
             generateToken(res, user._id);
 
             res.json({

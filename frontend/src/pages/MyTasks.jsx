@@ -1,6 +1,6 @@
 
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Circle, Clock3, Search, X } from 'lucide-react';
-import TaskDetailModal from '../components/board/TaskDetailModal';
+import TaskDetailModal from '../components/board/task-detail/TaskDetailModal';
 import FocusTodaySection from '../components/tasks/FocusTodaySection';
 import KpiCard from '../components/tasks/KpiCard';
 import MyTaskCard from '../components/tasks/MyTaskCard';

@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import { createServer } from 'http'; 
 import { Server } from 'socket.io';  
 import connectDB from './config/db.js';
+import { getRedis } from './config/redis.js';
 
 // Middleware
 import { logger, errorLogger } from './middleware/logger.js';
@@ -139,6 +140,12 @@ app.use(errorHandler); // Global error handler
 const PORT = process.env.PORT || 5000;
 
 // IMPORTANT: Listen with httpServer, NOT app
-httpServer.listen(PORT, () => {
+httpServer.listen(PORT, async () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    try {
+        await getRedis().ping();
+        console.log('Redis connected');
+    } catch (err) {
+        console.error('Redis unavailable:', err?.message || err);
+    }
 });

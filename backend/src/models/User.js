@@ -24,24 +24,13 @@ const userSchema = new mongoose.Schema({
     },
 
     isVerified: { type: Boolean, default: false },
-    verificationCode: String,
-    verificationCodeExpires: Date,
 
-     resetPasswordToken: String,
+    resetPasswordToken: String,
     resetPasswordExpire: Date,
-
 
     twoFactorEnabled: {
         type: Boolean,
         default: false
-    },
-    twoFactorCode: {
-        type: String,
-        default: null
-    },
-    twoFactorExpires: {
-        type: Date,
-        default: null
     }
 }, {
     timestamps: true

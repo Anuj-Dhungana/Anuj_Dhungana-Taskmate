@@ -12,7 +12,7 @@ export const getRedis = () => {
             maxRetriesPerRequest: null,
         };
 
-        // Cloud Redis providers (Upstash, Redis Cloud) use rediss:// and require TLS
+        // Cloud Redis providers (Upstash) use rediss:// and require TLS
         if (url.startsWith('rediss://')) {
             options.tls = { rejectUnauthorized: false };
         }

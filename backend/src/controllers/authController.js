@@ -167,9 +167,12 @@ export const loginUser = async (req, res) => {
 
 
 export const logoutUser = (req, res) => {
-    // 1. Clear the cookie
+    const isProduction = process.env.NODE_ENV !== 'development';
+    // Clear the cookie (must match same attributes as login cookie)
     res.cookie('jwt', '', {
         httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'strict',
         expires: new Date(0) // Expire immediately
     });
 

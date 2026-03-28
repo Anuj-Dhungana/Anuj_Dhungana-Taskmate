@@ -5,12 +5,55 @@ import Notification from '../models/Notification.js';
 import sendEmail from '../utils/sendEmail.js';
 import { canAddMembersToWorkspace } from '../services/workspacePlanService.js';
 
+const getFrontendBaseUrl = () =>
+    String(process.env.FRONTEND_URL || 'http://localhost:5173')
+        .trim()
+        .replace(/\/+$/, '');
+
+const sendExternalInviteEmail = async ({ recipientEmail, inviterName, workspaceName, inviteLink }) =>
+    sendEmail({
+        email: recipientEmail,
+        subject: `You've been invited to ${workspaceName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #6366F1;">Workspace Invitation</h2>
+                <p>${inviterName} has invited you to join <strong>${workspaceName}</strong> on TaskMate.</p>
+                <p>Click the button below to accept:</p>
+                <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0;">Accept Invite</a>
+                <p style="color: #666; font-size: 14px;">This invite will expire in 72 hours.</p>
+                <p style="color: #666; font-size: 14px;">If you don't have an account, you'll be asked to register first.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px;">Or copy and paste this link: ${inviteLink}</p>
+            </div>
+        `,
+    });
+
+const sendExistingUserInviteEmail = async ({ recipientEmail, recipientName, inviterName, workspaceName, inviteRole, inviteLink }) =>
+    sendEmail({
+        email: recipientEmail,
+        subject: `You've been invited to ${workspaceName}`,
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #6366F1;">Workspace Invitation</h2>
+                <p>Hi ${recipientName},</p>
+                <p>${inviterName} has invited you to join <strong>${workspaceName}</strong> on TaskMate as a <strong>${inviteRole}</strong>.</p>
+                <p>Click the button below to view and accept your invitation:</p>
+                <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0;">View Invitation</a>
+                <p style="color: #666; font-size: 14px;">This invite will expire in 72 hours.</p>
+                <p style="color: #666; font-size: 14px;">You can also find this invitation in your TaskMate inbox.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+                <p style="color: #999; font-size: 12px;">Or copy and paste this link: ${inviteLink}</p>
+            </div>
+        `,
+    });
+
 // Send invite to join workspace
 export const sendInvite = async (req, res) => {
     try {
         const { workspaceId, email, role } = req.body;
+        const normalizedEmail = String(email || '').toLowerCase().trim();
 
-        if (!workspaceId || !email) {
+        if (!workspaceId || !normalizedEmail) {
             return res.status(400).json({ message: "workspaceId and email are required" });
         }
 
@@ -47,28 +90,72 @@ export const sendInvite = async (req, res) => {
         }
 
         // Check if user is already a member
-        const existingMember = workspace.members.find(m => m.user && m.user.email === email.toLowerCase());
+        const existingMember = workspace.members.find(m => m.user && m.user.email === normalizedEmail);
         if (existingMember) {
             return res.status(400).json({ message: "User is already a member of this workspace" });
         }
 
+        // Check if email belongs to existing user
+        const existingUser = await User.findOne({ email: normalizedEmail });
+
         // Check for existing pending invite
-        const existingInvite = await Invite.findOne({
+        let existingInvite = await Invite.findOne({
             workspace: workspaceId,
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             status: 'pending'
         });
-        if (existingInvite) {
-            return res.status(400).json({ message: "An invite is already pending for this email" });
+
+        if (existingInvite && existingInvite.isExpired()) {
+            existingInvite.status = 'expired';
+            await existingInvite.save();
+            existingInvite = null;
         }
 
-        // Check if email belongs to existing user
-        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        if (existingInvite) {
+            try {
+                if (existingUser) {
+                    const inviteLink = `${getFrontendBaseUrl()}/dashboard`;
+                    await sendExistingUserInviteEmail({
+                        recipientEmail: existingUser.email,
+                        recipientName: existingUser.fullname || 'there',
+                        inviterName: req.user.fullname,
+                        workspaceName: workspace.name,
+                        inviteRole,
+                        inviteLink,
+                    });
+                } else {
+                    if (!existingInvite.token) {
+                        existingInvite.generateToken();
+                        await existingInvite.save();
+                    }
+                    const inviteLink = `${getFrontendBaseUrl()}/invite/${existingInvite.token}`;
+                    await sendExternalInviteEmail({
+                        recipientEmail: normalizedEmail,
+                        inviterName: req.user.fullname,
+                        workspaceName: workspace.name,
+                        inviteLink,
+                    });
+                }
+
+                await existingInvite.populate('invitedBy', 'fullname email avatar');
+                return res.status(200).json({
+                    message: 'An invite is already pending for this email. Invite email has been resent.',
+                    invite: existingInvite,
+                    resent: true,
+                    emailDelivered: true,
+                });
+            } catch (emailError) {
+                console.error('Invite resend email failed:', emailError);
+                return res.status(502).json({
+                    message: 'An invite is pending, but the email could not be resent. Please try again shortly.',
+                });
+            }
+        }
 
         // Create invite
         const invite = await Invite.create({
             workspace: workspaceId,
-            email: email.toLowerCase(),
+            email: normalizedEmail,
             invitedBy: req.user._id,
             role: inviteRole,
             invitedUser: existingUser?._id || null,
@@ -80,27 +167,20 @@ export const sendInvite = async (req, res) => {
             await invite.save();
 
             // Send email with invite link
-            const inviteLink = `${process.env.FRONTEND_URL}/invite/${invite.token}`;
+            const inviteLink = `${getFrontendBaseUrl()}/invite/${invite.token}`;
             try {
-                await sendEmail({
-                    email: email.toLowerCase(),
-                    subject: `You've been invited to ${workspace.name}`,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2 style="color: #6366F1;">Workspace Invitation</h2>
-                            <p>${req.user.fullname} has invited you to join <strong>${workspace.name}</strong> on TaskMate.</p>
-                            <p>Click the button below to accept:</p>
-                            <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0;">Accept Invite</a>
-                            <p style="color: #666; font-size: 14px;">This invite will expire in 72 hours.</p>
-                            <p style="color: #666; font-size: 14px;">If you don't have an account, you'll be asked to register first.</p>
-                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                            <p style="color: #999; font-size: 12px;">Or copy and paste this link: ${inviteLink}</p>
-                        </div>
-                    `
+                await sendExternalInviteEmail({
+                    recipientEmail: normalizedEmail,
+                    inviterName: req.user.fullname,
+                    workspaceName: workspace.name,
+                    inviteLink,
                 });
             } catch (emailError) {
                 console.error('Email send failed:', emailError);
-                // Continue even if email fails
+                await invite.deleteOne();
+                return res.status(502).json({
+                    message: 'Invite email could not be sent. Please verify the recipient address and try again.',
+                });
             }
         } else {
             // Internal user - create notification
@@ -123,35 +203,32 @@ export const sendInvite = async (req, res) => {
             });
 
             // Send email to existing user as well
-            const inviteLink = `${process.env.FRONTEND_URL}/dashboard`;
+            const inviteLink = `${getFrontendBaseUrl()}/dashboard`;
             try {
-                await sendEmail({
-                    email: existingUser.email,
-                    subject: `You've been invited to ${workspace.name}`,
-                    html: `
-                        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                            <h2 style="color: #6366F1;">Workspace Invitation</h2>
-                            <p>Hi ${existingUser.fullname},</p>
-                            <p>${req.user.fullname} has invited you to join <strong>${workspace.name}</strong> on TaskMate as a <strong>${inviteRole}</strong>.</p>
-                            <p>Click the button below to view and accept your invitation:</p>
-                            <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background: #6366F1; color: white; text-decoration: none; border-radius: 8px; margin: 20px 0;">View Invitation</a>
-                            <p style="color: #666; font-size: 14px;">This invite will expire in 72 hours.</p>
-                            <p style="color: #666; font-size: 14px;">You can also find this invitation in your TaskMate inbox.</p>
-                            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-                            <p style="color: #999; font-size: 12px;">Or copy and paste this link: ${inviteLink}</p>
-                        </div>
-                    `
+                await sendExistingUserInviteEmail({
+                    recipientEmail: existingUser.email,
+                    recipientName: existingUser.fullname || 'there',
+                    inviterName: req.user.fullname,
+                    workspaceName: workspace.name,
+                    inviteRole,
+                    inviteLink,
                 });
             } catch (emailError) {
                 console.error('Email send to existing user failed:', emailError);
-                // Continue even if email fails
+                await invite.populate('invitedBy', 'fullname email avatar');
+                return res.status(202).json({
+                    message: 'Invite was created, but email delivery failed. The user can still accept from in-app notifications.',
+                    invite,
+                    emailDelivered: false,
+                });
             }
         }
 
         await invite.populate('invitedBy', 'fullname email avatar');
         res.status(201).json({ 
             message: "Invite sent successfully", 
-            invite 
+            invite,
+            emailDelivered: true,
         });
     } catch (error) {
         console.error(error);

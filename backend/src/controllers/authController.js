@@ -7,6 +7,11 @@ import Workspace from '../models/Workspace.js';
 import Project from '../models/Project.js';
 import Card from '../models/Card.js';
 
+const getFrontendBaseUrl = () =>
+    String(process.env.FRONTEND_URL || 'http://localhost:5173')
+        .trim()
+        .replace(/\/+$/, '');
+
 
 
 export const registerUser = async (req, res) => {
@@ -187,7 +192,7 @@ export const forgotPassword = async (req, res) => {
         await user.save();
 
         // 3. Create Reset URL (Points to Frontend)
-        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+        const resetUrl = `${getFrontendBaseUrl()}/reset-password/${resetToken}`;
 
         const message = `
             <h1>Password Reset Request</h1>

@@ -7,14 +7,12 @@ const generateToken = (res, userId) => {
     });
 
     // 2. Save it in a secure cookie
-    const isProduction = process.env.NODE_ENV !== 'development';
-    
     res.cookie('jwt', token, {
-        httpOnly: true, // Prevents JavaScript from reading the cookie (Security)
-        secure: isProduction, // Use HTTPS in production
-        sameSite: isProduction ? 'none' : 'strict', // Allow cross-domain cookies in production
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
-        path: '/' // Ensure cookie is accessible across all routes
+        httpOnly: true,
+        secure: true, // ALWAYS true for cross-site (Render is HTTPS)
+        sameSite: 'none', // ALWAYS none for cross-site cookies
+        maxAge: 30 * 24 * 60 * 60 * 1000,
+        path: '/'
     });
 };
 

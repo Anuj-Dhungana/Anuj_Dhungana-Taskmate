@@ -127,14 +127,14 @@ app.use('/api/calls', callRoutes);
 app.use('/api/meetings', meetingRoutes);
 app.set('io', io); 
 
+app.get('/', (req, res) => {
+    res.json({ message: "TaskMate Backend is running!" });
+});
+
 // Error handling middleware (must be after all routes)
 app.use(errorLogger); // Log errors
 app.use(notFound); // 404 handler
 app.use(errorHandler); // Global error handler
-
-app.get('/', (req, res) => {
-    res.json({ message: "TaskMate Backend is running!" });
-});
 
 const PORT = process.env.PORT || 5000;
 

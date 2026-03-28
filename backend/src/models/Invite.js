@@ -48,7 +48,6 @@ const inviteSchema = new mongoose.Schema({
 // Index for efficient queries
 inviteSchema.index({ workspace: 1, email: 1, status: 1 });
 inviteSchema.index({ invitedUser: 1, status: 1 });
-inviteSchema.index({ token: 1 });
 inviteSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // Auto-delete expired
 
 // Generate unique token for external invites

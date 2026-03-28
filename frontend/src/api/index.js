@@ -24,6 +24,8 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
+            // Prevent infinite redirect loop by clearing auth config
+            localStorage.removeItem('userInfo');
             // Redirect to login or handle unauthorized
             window.location.href = '/login';
         }

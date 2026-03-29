@@ -6,6 +6,8 @@ import {
     ArrowLeftRight,
     CreditCard,
     ShieldAlert,
+    CheckCircle2,
+    Sparkles,
 } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
@@ -332,36 +334,51 @@ const Settings = () => {
                             </span>
                         </div>
 
-                        <div className="mt-4 border border-gray-100 rounded-xl p-4">
-                            <div className="flex items-start gap-2 text-sm text-gray-700">
-                                <CreditCard className="w-4 h-4 mt-0.5 text-gray-500" />
-                                <div>
-                                    <p className="font-medium">Current plan: {isProPlan ? 'Pro' : 'Free'}</p>
-                                    <ul className="mt-2 space-y-1 text-xs text-gray-500">
-                                        <li>
-                                            {planFeatures.maxProjects === null
-                                                ? 'Unlimited projects'
-                                                : `Up to ${planFeatures.maxProjects} projects`}
-                                        </li>
-                                        <li>
-                                            {planFeatures.maxMembers === null
-                                                ? 'Unlimited members'
-                                                : `Up to ${planFeatures.maxMembers} members`}
-                                        </li>
-                                        <li>
-                                            Analytics {planFeatures.analyticsEnabled ? 'enabled' : 'disabled'}
-                                        </li>
-                                    </ul>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Current Plan */}
+                            <div className={`border rounded-xl p-4 ${isProPlan ? 'border-indigo-200 bg-indigo-50/50' : 'border-gray-200 bg-gray-50/50'}`}>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <CreditCard className="w-4 h-4 text-gray-500" />
+                                    <p className="text-sm font-semibold text-gray-900">Current Plan: {isProPlan ? 'Pro' : 'Free'}</p>
                                 </div>
+                                <ul className="space-y-1.5 text-xs text-gray-600">
+                                    <li className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                        {planFeatures.maxProjects === null ? 'Unlimited projects' : `Up to ${planFeatures.maxProjects} projects`}
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                        {planFeatures.maxMembers === null ? 'Unlimited members' : `Up to ${planFeatures.maxMembers} members`}
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <CheckCircle2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                        Analytics {planFeatures.analyticsEnabled ? 'enabled' : 'disabled'}
+                                    </li>
+                                </ul>
                             </div>
-                            <button
-                                type="button"
-                                onClick={handleUpgradeToProWithKhalti}
-                                disabled={upgradingPlan}
-                                className="mt-4 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60"
-                            >
-                                {isProPlan ? 'Manage subscription' : upgradingPlan ? 'Redirecting to Khalti...' : 'Upgrade to Pro with Khalti'}
-                            </button>
+
+                            {/* Pro Plan Upgrade */}
+                            {!isProPlan && (
+                                <div className="border-2 border-indigo-200 bg-linear-to-br from-indigo-50 to-white rounded-xl p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <p className="text-sm font-semibold text-gray-900">Pro Plan</p>
+                                    </div>
+                                    <p className="text-xl font-bold text-gray-900 mb-3">Rs. 10<span className="text-xs font-normal text-gray-500"> / workspace</span></p>
+                                    <ul className="space-y-1.5 text-xs text-gray-600 mb-4">
+                                        <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />Unlimited projects</li>
+                                        <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />Unlimited members</li>
+                                        <li className="flex items-center gap-2"><CheckCircle2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />Analytics enabled</li>
+                                    </ul>
+                                    <button
+                                        type="button"
+                                        onClick={handleUpgradeToProWithKhalti}
+                                        disabled={upgradingPlan}
+                                        className="w-full px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition disabled:opacity-60 shadow-md shadow-indigo-200"
+                                    >
+                                        {upgradingPlan ? 'Processing...' : 'Upgrade to Pro'}
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </section>
 
@@ -440,6 +457,7 @@ const Settings = () => {
                             </div>
                         </div>
                     </section>
+
 
                     <section className="bg-white border border-gray-200 rounded-2xl p-5 shadow-xs">
                         <h3 className="text-sm font-semibold text-gray-900">Tips</h3>

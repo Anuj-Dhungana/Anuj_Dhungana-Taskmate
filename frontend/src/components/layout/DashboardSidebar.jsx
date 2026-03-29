@@ -145,7 +145,7 @@ const DashboardSidebar = ({
             <WorkspaceSelector {...workspaceProps} isCollapsed={isCollapsed} />
 
             {/* Navigation Groups */}
-            <nav className={`flex-1 py-6 text-base ${isCollapsed ? 'px-2 space-y-2' : 'px-3 space-y-5'} overflow-hidden`}>
+            <nav className={`flex-1 py-6 text-base ${isCollapsed ? 'px-2 space-y-2' : 'px-3 space-y-5'} overflow-y-auto`}>
                 {navGroups.map((group, index) => (
                     <NavigationGroup
                         key={group.label}

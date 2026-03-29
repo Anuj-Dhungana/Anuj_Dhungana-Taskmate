@@ -69,6 +69,7 @@ const Analytics = () => {
   }
 
   if (!canView) {
+    const isNotPro = hasAnalyticsRole && !analyticsEnabled;
     const message = !hasAnalyticsRole
       ? 'Analytics is available to workspace owners and admins only.'
       : !analyticsEnabled
@@ -77,9 +78,28 @@ const Analytics = () => {
 
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex items-center gap-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl px-5 py-4 text-sm">
-          <ShieldAlert className="w-5 h-5 shrink-0" />
-          {message}
+        <div className="flex flex-col items-center gap-5 max-w-sm w-full">
+          <div className="flex items-center gap-3 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl px-5 py-4 text-sm w-full">
+            <ShieldAlert className="w-5 h-5 shrink-0" />
+            {message}
+          </div>
+          {isNotPro && (
+            <div className="border-2 border-indigo-200 bg-linear-to-br from-indigo-50 to-white rounded-xl p-5 w-full">
+              <p className="text-sm font-semibold text-gray-900 mb-2">Pro Plan</p>
+              <p className="text-xl font-bold text-gray-900 mb-3">Rs. 10<span className="text-xs font-normal text-gray-500"> / workspace</span></p>
+              <ul className="space-y-1.5 text-xs text-gray-600 mb-4">
+                <li className="flex items-center gap-2">✓ Unlimited projects</li>
+                <li className="flex items-center gap-2">✓ Unlimited members</li>
+                <li className="flex items-center gap-2">✓ Analytics enabled</li>
+              </ul>
+              <button
+                onClick={() => window.location.href = '/settings'}
+                className="w-full px-4 py-2.5 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition shadow-md shadow-indigo-200"
+              >
+                Upgrade to Pro
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );

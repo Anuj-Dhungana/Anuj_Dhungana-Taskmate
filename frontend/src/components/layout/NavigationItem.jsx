@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 const NavigationItem = ({ item, isCollapsed, iconSize }) => {
     const hasBadge = Number(item.badgeCount) > 0;
     const badgeLabel = item.badgeCount > 99 ? '99+' : item.badgeCount;
-    const displayLabel = item.locked ? `${item.label} 🔒` : item.label;
+    const displayLabel = item.label;
     const handleClick = (event) => {
         if (item.locked && item.onLockedClick) {
             event.preventDefault();

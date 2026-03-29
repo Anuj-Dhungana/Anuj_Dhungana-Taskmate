@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import useAuthStore from '../store/useAuthStore';
 import {
   BarChart3,
   CalendarCheck2,
@@ -59,6 +60,7 @@ const Home = () => {
   const [analyticsImageError, setAnalyticsImageError] = useState(false);
   const dashboardPreviewSrc = '/Dashboard.png';
   const analyticsPreviewSrc = '/Landing-analytics.png';
+  const { userInfo } = useAuthStore();
 
   useEffect(() => {
     const syncActiveFromHash = () => {
@@ -150,15 +152,26 @@ const Home = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <Link to="/login" className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors">
-              Login
-            </Link>
-            <Link
-              to="/register"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-            >
-              Get Started
-            </Link>
+            {userInfo ? (
+              <Link
+                to="/dashboard"
+                className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link to="/login" className="text-sm font-medium text-slate-700 hover:text-slate-900 transition-colors">
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+                >
+                  Get Started
+                </Link>
+              </>
+            )}
           </div>
 
           <button
@@ -204,14 +217,26 @@ const Home = () => {
               >
                 Pricing
               </a>
-              <Link to="/login" className="block" onClick={() => setMobileMenuOpen(false)}>Login</Link>
-              <Link
-                to="/register"
-                className="mt-2 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-white font-medium"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Get Started
-              </Link>
+              {userInfo ? (
+                <Link
+                  to="/dashboard"
+                  className="mt-2 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-white font-medium"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link to="/login" className="block" onClick={() => setMobileMenuOpen(false)}>Login</Link>
+                  <Link
+                    to="/register"
+                    className="mt-2 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-white font-medium"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    Get Started
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

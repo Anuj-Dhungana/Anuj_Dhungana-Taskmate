@@ -359,8 +359,18 @@ export const acceptInvite = async (req, res) => {
             relatedId: workspace._id
         });
 
-        // Emit real-time event
+        // Emit real-time notification to inviter
         const io = req.app.get('io');
+        io.to(`user_${invite.invitedBy._id.toString()}`).emit('new_notification', {
+            recipient: invite.invitedBy._id.toString(),
+            sender: { fullname: req.user.fullname, avatar: req.user.avatar },
+            message: `accepted your invite to join "${workspace.name}"`,
+            type: 'invite_accepted',
+            relatedId: workspace._id,
+            createdAt: new Date(),
+        });
+
+        // Emit member_joined to workspace room
         io.to(`workspace_${workspace._id.toString()}`).emit('member_joined', {
             workspace: workspace._id,
             member: {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import socket from '../lib/socket';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../store/useAuthStore';
@@ -48,6 +49,14 @@ export const useWorkspaceMembers = () => {
     useEffect(() => {
         refreshWorkspace();
     }, [refreshWorkspace]);
+
+    // Listen for real-time member_joined events
+    useEffect(() => {
+        if (!currentWorkspaceId) return;
+        const handleMemberJoined = () => refreshWorkspace();
+        socket.on('member_joined', handleMemberJoined);
+        return () => socket.off('member_joined', handleMemberJoined);
+    }, [currentWorkspaceId, refreshWorkspace]);
 
     const workspace = selectedWorkspace?.workspace;
     const members = useMemo(() => workspace?.members ?? [], [workspace?.members]);

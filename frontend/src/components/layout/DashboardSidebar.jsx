@@ -88,6 +88,9 @@ const DashboardSidebar = ({
         };
 
         loadDmChannels();
+        const rejoinRooms = () => loadDmChannels();
+        socket.on('connect', rejoinRooms);
+        return () => socket.off('connect', rejoinRooms);
     }, [currentWorkspaceId, setWorkspaceChannels]);
 
     useEffect(() => {

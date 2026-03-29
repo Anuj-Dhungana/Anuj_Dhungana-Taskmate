@@ -125,12 +125,18 @@ const InboxMenu = () => {
 
     useEffect(() => {
         if (!userInfo?._id) return;
-        socket.emit('join_workspace', `user_${userInfo._id}`);
+        const joinUserRoom = () => socket.emit('join_workspace', `user_${userInfo._id}`);
+        joinUserRoom();
+        socket.on('connect', joinUserRoom);
+        return () => socket.off('connect', joinUserRoom);
     }, [userInfo?._id]);
 
     useEffect(() => {
         if (!currentWorkspaceId) return;
-        socket.emit('join_workspace', `workspace_${currentWorkspaceId}`);
+        const joinWorkspaceRoom = () => socket.emit('join_workspace', `workspace_${currentWorkspaceId}`);
+        joinWorkspaceRoom();
+        socket.on('connect', joinWorkspaceRoom);
+        return () => socket.off('connect', joinWorkspaceRoom);
     }, [currentWorkspaceId]);
 
     useEffect(() => {

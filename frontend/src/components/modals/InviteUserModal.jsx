@@ -66,8 +66,8 @@ const InviteUserModal = ({ isOpen, onClose, workspaceId, defaultRole = 'member' 
                             onChange={e => setRole(e.target.value)}
                             className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition bg-white"
                         >
-                            <option value="member">Member - Can view and work on projects</option>
-                            <option value="admin">Admin - Can manage workspace and invite others</option>
+                            <option value="member">Member</option>
+                            <option value="admin">Admin</option>
                         </select>
                     </div>
                     

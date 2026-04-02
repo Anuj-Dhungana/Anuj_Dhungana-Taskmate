@@ -23,6 +23,7 @@ import WorkspaceMembers from './pages/WorkspaceMembers';
 import Analytics from './pages/Analytics';
 import InviteTokenPage from './pages/auth/InviteTokenPage';
 import BillingResult from './pages/BillingResult';
+import Loader from './components/common/Loader';
 
 const WorkspaceMeetingRoom = lazy(() => import('./pages/WorkspaceMeetingRoom'));
 
@@ -60,7 +61,7 @@ function App() {
           <Route
             path="/calls/:meetingId"
             element={
-              <Suspense fallback={<div className="p-6 text-sm text-gray-500">Loading meeting room...</div>}>
+              <Suspense fallback={<div className="p-6 flex justify-center"><Loader /></div>}>
                 <WorkspaceMeetingRoom />
               </Suspense>
             }

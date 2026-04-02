@@ -18,6 +18,7 @@ import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import ScheduleMeetingModal from '../components/modals/ScheduleMeetingModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import Loader from '../components/common/Loader';
 
 const createMeetingCode = () => {
     const randomChunk = Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -270,8 +271,8 @@ const WorkspaceCalls = () => {
                         </div>
 
                         {meetingsLoading ? (
-                            <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 text-center">
-                                <p className="text-sm font-semibold text-gray-700">Loading meetings...</p>
+                            <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 flex justify-center">
+                                <Loader />
                             </div>
                         ) : upcomingMeetings.length === 0 ? (
                             <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 text-center">
@@ -285,7 +286,7 @@ const WorkspaceCalls = () => {
                                 {upcomingMeetings.map((meeting) => (
                                     <div
                                         key={meeting._id}
-                                        className="rounded-2xl border border-gray-200 bg-gradient-to-r from-white via-white to-indigo-50/60 p-4"
+                                        className="rounded-2xl border border-gray-200 bg-linear-to-r from-white via-white to-indigo-50/60 p-4"
                                     >
                                         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                                             <div className="min-w-0">

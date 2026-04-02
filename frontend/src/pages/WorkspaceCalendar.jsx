@@ -64,26 +64,8 @@ const WorkspaceCalendar = () => {
 
     if (loading) {
         return (
-            <div className="px-8 py-8">
-                <div className="flex justify-between items-start mb-6">
-                    <div>
-                        <div className="h-7 w-52 bg-gray-200 rounded-lg animate-pulse mb-2" />
-                        <div className="h-4 w-72 bg-gray-100 rounded-lg animate-pulse" />
-                    </div>
-                    <div className="h-9 w-28 bg-gray-200 rounded-xl animate-pulse" />
-                </div>
-                <div className="grid grid-cols-4 gap-4 mb-6">
-                    {[...Array(4)].map((_, i) => (
-                        <div key={i} className="h-20 bg-gray-100 rounded-xl animate-pulse" />
-                    ))}
-                </div>
-                <div className="flex gap-6">
-                    <div className="flex-1 h-[60vh] bg-gray-100 rounded-2xl animate-pulse" />
-                    <div className="w-80 space-y-4">
-                        <div className="h-48 bg-gray-100 rounded-2xl animate-pulse" />
-                        <div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />
-                    </div>
-                </div>
+            <div className="px-8 py-16 flex items-center justify-center">
+                <div className="text-sm text-gray-500">Loading calendar...</div>
             </div>
         );
     }

@@ -7,6 +7,7 @@ import MembersTable from '../components/members/MembersTable';
 import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
 import { showUpgradeToProPrompt } from '../utils/upgradePrompts';
 import { useNavigate } from 'react-router-dom';
+import Loader from '../components/common/Loader';
 
 const WorkspaceMembers = () => {
     const navigate = useNavigate();
@@ -64,8 +65,8 @@ const WorkspaceMembers = () => {
 
     if (loading) {
         return (
-            <div className="px-8 py-10">
-                <div className="text-gray-500">Loading members...</div>
+            <div className="px-8 py-10 flex justify-center">
+                <Loader />
             </div>
         );
     }

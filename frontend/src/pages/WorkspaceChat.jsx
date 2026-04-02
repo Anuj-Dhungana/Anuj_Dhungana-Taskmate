@@ -12,6 +12,7 @@ import ChannelEditorModal from '../components/chat/ChannelEditorModal';
 import AddChannelMembersModal from '../components/chat/AddChannelMembersModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useWorkspaceChat } from '../hooks/useWorkspaceChat';
+import Loader from '../components/common/Loader';
 
 const WorkspaceChat = () => {
     const { currentWorkspaceId } = useWorkspaceStore();
@@ -145,7 +146,7 @@ const WorkspaceChat = () => {
     if (loading) {
         return (
             <div className="h-full min-h-0 flex items-center justify-center">
-                <div className="text-gray-500">Loading chat...</div>
+                <Loader />
             </div>
         );
     }

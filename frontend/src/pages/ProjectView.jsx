@@ -7,6 +7,7 @@ import ProjectCalendar from '../components/calendar/ProjectCalendar';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
 import { addProjectDataChangedListener } from '../utils/projectEvents';
 import useWorkspaceStore from '../store/useWorkspaceStore';
+import Loader from '../components/common/Loader';
 
 const statusColors = {
     planning: 'bg-yellow-100 text-yellow-700',
@@ -82,7 +83,7 @@ const ProjectView = () => {
     if (loading) {
         return (
             <div className="px-8 py-10 flex items-center justify-center h-[80vh]">
-                <div className="text-gray-400 text-sm">Loading project...</div>
+                <Loader />
             </div>
         );
     }

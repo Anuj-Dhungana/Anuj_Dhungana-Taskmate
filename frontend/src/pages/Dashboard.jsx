@@ -11,6 +11,7 @@ import CreateProjectModal from '../components/modals/CreateProjectModal';
 import InviteUserModal from '../components/modals/InviteUserModal';
 import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
 import { showUpgradeToProPrompt } from '../utils/upgradePrompts';
+import Loader from '../components/common/Loader';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -77,8 +78,8 @@ const Dashboard = () => {
 
     if (loading) {
         return (
-            <div className="px-8 py-10">
-                <div className="text-gray-500">Loading dashboard...</div>
+            <div className="px-8 py-10 flex justify-center">
+                <Loader />
             </div>
         );
     }

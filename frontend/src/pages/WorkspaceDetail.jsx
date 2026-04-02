@@ -16,6 +16,7 @@ import { normalizeStatus, calculateProjectStats } from '../utils/projectHelpers'
 import { emitProjectDataChanged } from '../utils/projectEvents';
 import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
 import { showUpgradeToProPrompt } from '../utils/upgradePrompts';
+import Loader from '../components/common/Loader';
 
 const WorkspaceDetail = () => {
     const { workspaceId } = useParams();
@@ -154,7 +155,7 @@ const WorkspaceDetail = () => {
         return (
             <div className="px-8 py-10">
                 <div className="flex items-center justify-center py-20">
-                    <div className="text-gray-500">Loading workspace...</div>
+                    <Loader />
                 </div>
             </div>
         );

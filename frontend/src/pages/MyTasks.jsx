@@ -5,6 +5,7 @@ import FocusTodaySection from '../components/tasks/FocusTodaySection';
 import KpiCard from '../components/tasks/KpiCard';
 import MyTaskCard from '../components/tasks/MyTaskCard';
 import useMyTasks from '../hooks/useMyTasks';
+import Loader from '../components/common/Loader';
 
 const SECTIONS = [
     { key: 'overdue', label: 'Overdue', empty: 'No overdue tasks', tone: 'text-red-600' },
@@ -45,8 +46,8 @@ const MyTasks = () => {
 
     if (loading) {
         return (
-            <div className="px-8 py-10">
-                <div className="text-gray-500">Loading tasks...</div>
+            <div className="px-8 py-10 flex justify-center">
+                <Loader />
             </div>
         );
     }

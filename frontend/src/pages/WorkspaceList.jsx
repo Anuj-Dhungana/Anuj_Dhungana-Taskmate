@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Grid, Plus, Users } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
+import Loader from '../components/common/Loader';
 
 const WorkspaceList = () => {
     const navigate = useNavigate();
@@ -51,7 +52,7 @@ const WorkspaceList = () => {
         return (
             <div className="px-8 py-10">
                 <div className="flex items-center justify-center py-20">
-                    <div className="text-gray-500">Loading workspaces...</div>
+                    <Loader />
                 </div>
             </div>
         );

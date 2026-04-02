@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
-import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
+import Loader from '../components/common/Loader';
 
 const verifyResultCache = new Map();
 const verifyToastSent = new Set();
@@ -105,9 +106,9 @@ const BillingResult = () => {
 
                 <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50 p-4">
                     {loading && (
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            {message}
+                        <div className="flex flex-col items-center gap-3 text-sm text-gray-700">
+                            <Loader />
+                            <span>{message}</span>
                         </div>
                     )}
 

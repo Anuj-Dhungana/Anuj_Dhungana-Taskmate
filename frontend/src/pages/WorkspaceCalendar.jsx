@@ -65,7 +65,7 @@ const WorkspaceCalendar = () => {
 
     if (loading) {
         return (
-            <div className="px-8 py-16 flex items-center justify-center">
+            <div className="px-8 py-16 h-[60vh] flex items-center justify-center">
                 <Loader />
             </div>
         );

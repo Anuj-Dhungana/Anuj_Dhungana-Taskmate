@@ -154,7 +154,7 @@ const WorkspaceDetail = () => {
     if (loading) {
         return (
             <div className="px-8 py-10">
-                <div className="flex items-center justify-center py-20">
+                <div className="flex items-center justify-center min-h-[60vh]">
                     <Loader />
                 </div>
             </div>

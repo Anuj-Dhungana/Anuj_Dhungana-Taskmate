@@ -65,7 +65,7 @@ const WorkspaceMembers = () => {
 
     if (loading) {
         return (
-            <div className="px-8 py-10 flex justify-center">
+            <div className="px-8 py-10 h-[60vh] flex items-center justify-center">
                 <Loader />
             </div>
         );

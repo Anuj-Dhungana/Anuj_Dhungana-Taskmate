@@ -61,7 +61,7 @@ function App() {
           <Route
             path="/calls/:meetingId"
             element={
-              <Suspense fallback={<div className="p-6 flex justify-center"><Loader /></div>}>
+              <Suspense fallback={<div className="p-6 min-h-[60vh] flex items-center justify-center"><Loader /></div>}>
                 <WorkspaceMeetingRoom />
               </Suspense>
             }

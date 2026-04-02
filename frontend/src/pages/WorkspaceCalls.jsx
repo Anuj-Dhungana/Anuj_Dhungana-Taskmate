@@ -271,7 +271,7 @@ const WorkspaceCalls = () => {
                         </div>
 
                         {meetingsLoading ? (
-                            <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 flex justify-center">
+                            <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 min-h-32 flex items-center justify-center">
                                 <Loader />
                             </div>
                         ) : upcomingMeetings.length === 0 ? (

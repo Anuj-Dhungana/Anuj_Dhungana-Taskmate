@@ -38,15 +38,76 @@ app.use(cookieParser());
 // Trust the reverse proxy (like Render/Railway) for secure cookies
 app.set("trust proxy", 1);
 
+const normalizeOrigin = (value) =>
+    String(value || '')
+        .trim()
+        .replace(/\/+$/, '');
+
+const expandOriginVariants = (origin) => {
+    const normalized = normalizeOrigin(origin);
+    if (!normalized) return [];
+
+    try {
+        const parsed = new URL(normalized);
+        const variants = [normalized];
+
+        if (parsed.hostname.startsWith('www.')) {
+            const withoutWww = new URL(parsed.toString());
+            withoutWww.hostname = parsed.hostname.replace(/^www\./, '');
+            variants.push(normalizeOrigin(withoutWww.toString()));
+        } else {
+            const withWww = new URL(parsed.toString());
+            withWww.hostname = `www.${parsed.hostname}`;
+            variants.push(normalizeOrigin(withWww.toString()));
+        }
+
+        return variants;
+    } catch {
+        return [normalized];
+    }
+};
+
+const envOrigins = [
+    process.env.FRONTEND_URL,
+    ...(process.env.FRONTEND_URLS || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+];
+
 const allowedOrigins = [
-    "http://localhost:5173",
-    process.env.FRONTEND_URL
-].filter(Boolean);
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    ...envOrigins.flatMap(expandOriginVariants),
+]
+    .map(normalizeOrigin)
+    .filter(Boolean)
+    .filter((origin, index, arr) => arr.indexOf(origin) === index);
+
+const isAllowedOrigin = (origin) => {
+    const normalized = normalizeOrigin(origin);
+    return allowedOrigins.includes(normalized);
+};
+
+const corsOriginHandler = (origin, callback) => {
+    // Allow non-browser requests (no Origin header).
+    if (!origin) return callback(null, true);
+
+    if (isAllowedOrigin(origin)) {
+        return callback(null, true);
+    }
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+};
 
 app.use(cors({
-    origin: allowedOrigins, 
-    credentials: true 
+    origin: corsOriginHandler,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+console.log('CORS allowed origins:', allowedOrigins);
 
 // Apply rate limiting to all API routes (skip in development to avoid 429s during dev/HMR)
 if (process.env.NODE_ENV === 'production') {
@@ -57,7 +118,7 @@ if (process.env.NODE_ENV === 'production') {
 const httpServer = createServer(app); // Wrap Express
 const io = new Server(httpServer, {
     cors: {
-        origin: allowedOrigins,
+        origin: corsOriginHandler,
         methods: ["GET", "POST"],
         credentials: true
     }

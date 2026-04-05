@@ -12,7 +12,7 @@ import ChannelEditorModal from '../components/chat/ChannelEditorModal';
 import AddChannelMembersModal from '../components/chat/AddChannelMembersModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useWorkspaceChat } from '../hooks/useWorkspaceChat';
-import Loader from '../components/common/Loader';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const WorkspaceChat = () => {
     const { currentWorkspaceId } = useWorkspaceStore();
@@ -144,11 +144,7 @@ const WorkspaceChat = () => {
     }
 
     if (loading) {
-        return (
-            <div className="h-full min-h-0 flex items-center justify-center">
-                <Loader />
-            </div>
-        );
+        return <PageSkeleton kind="chat" />;
     }
 
     return (

@@ -7,7 +7,7 @@ import MembersTable from '../components/members/MembersTable';
 import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
 import { showUpgradeToProPrompt } from '../utils/upgradePrompts';
 import { useNavigate } from 'react-router-dom';
-import Loader from '../components/common/Loader';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const WorkspaceMembers = () => {
     const navigate = useNavigate();
@@ -64,11 +64,7 @@ const WorkspaceMembers = () => {
     }
 
     if (loading) {
-        return (
-            <div className="px-8 py-10 h-[60vh] flex items-center justify-center">
-                <Loader />
-            </div>
-        );
+        return <PageSkeleton kind="members" />;
     }
 
     if (!canInvite) {

@@ -5,7 +5,7 @@ import FocusTodaySection from '../components/tasks/FocusTodaySection';
 import KpiCard from '../components/tasks/KpiCard';
 import MyTaskCard from '../components/tasks/MyTaskCard';
 import useMyTasks from '../hooks/useMyTasks';
-import Loader from '../components/common/Loader';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const SECTIONS = [
     { key: 'overdue', label: 'Overdue', empty: 'No overdue tasks', tone: 'text-red-600' },
@@ -45,11 +45,7 @@ const MyTasks = () => {
     }
 
     if (loading) {
-        return (
-            <div className="px-8 py-10 h-[60vh] flex items-center justify-center">
-                <Loader />
-            </div>
-        );
+        return <PageSkeleton kind="tasks" />;
     }
 
     return (

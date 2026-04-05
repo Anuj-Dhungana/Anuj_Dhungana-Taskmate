@@ -15,7 +15,7 @@ import CalendarStatsCards from '../components/calendar/CalendarStatsCards';
 import TodayEventsList from '../components/calendar/TodayEventsList';
 import UpcomingEventsList from '../components/calendar/UpcomingEventsList';
 import CalendarLegend from '../components/calendar/CalendarLegend';
-import Loader from '../components/common/Loader';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const locales = { 'en-US': enUS };
 const localizer = dateFnsLocalizer({ format, parse, startOfWeek, getDay, locales });
@@ -64,11 +64,7 @@ const WorkspaceCalendar = () => {
     }
 
     if (loading) {
-        return (
-            <div className="px-8 py-16 h-[60vh] flex items-center justify-center">
-                <Loader />
-            </div>
-        );
+        return <PageSkeleton kind="calendar" />;
     }
 
     return (

@@ -13,7 +13,7 @@ import KPIStrip from '../components/analytics/KPIStrip';
 import ProjectHealthTab from '../components/analytics/ProjectHealthTab';
 import CommunicationTab from '../components/analytics/CommunicationTab';
 import TeamWorkloadTab from '../components/analytics/TeamWorkloadTab';
-import Loader from '../components/common/Loader';
+import PageSkeleton from '../components/common/PageSkeleton';
 
 const TABS = [
   { key: 'projectHealth', label: 'Project Health', icon: FolderKanban },
@@ -59,14 +59,7 @@ const Analytics = () => {
   }
 
   if (!workspace) {
-    return (
-      <div className="flex items-center justify-center h-[60vh]">
-        <div className="flex flex-col items-center gap-3">
-          <Loader />
-          <p className="text-gray-400 text-sm">Loading workspace…</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton kind="analytics" />;
   }
 
   if (!canView) {

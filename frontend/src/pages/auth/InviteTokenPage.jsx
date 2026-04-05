@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Mail, XCircle, ArrowRight } from 'lucide-react';
 import { inviteAPI } from '../../api/invites';
 import useAuthStore from '../../store/useAuthStore';
-import Loader from '../../components/common/Loader';
+import PageSkeleton from '../../components/common/PageSkeleton';
 
 const InviteTokenPage = () => {
     const { token } = useParams();
@@ -52,14 +52,7 @@ const InviteTokenPage = () => {
     };
 
     if (loading) {
-        return (
-            <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <Loader />
-                    <p className="text-gray-600">Verifying invitation...</p>
-                </div>
-            </div>
-        );
+        return <PageSkeleton kind="authCard" />;
     }
 
     if (error || !invite) {
@@ -84,14 +77,7 @@ const InviteTokenPage = () => {
     }
 
     if (accepting) {
-        return (
-            <div className="min-h-screen bg-linear-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center p-4">
-                <div className="text-center">
-                    <Loader />
-                    <p className="text-gray-600">Accepting invitation...</p>
-                </div>
-            </div>
-        );
+        return <PageSkeleton kind="authCard" />;
     }
 
     // User is not logged in, show workspace details and prompt to login/register

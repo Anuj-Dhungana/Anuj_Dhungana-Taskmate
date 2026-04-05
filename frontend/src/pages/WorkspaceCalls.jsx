@@ -18,7 +18,6 @@ import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import ScheduleMeetingModal from '../components/modals/ScheduleMeetingModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
-import Loader from '../components/common/Loader';
 
 const createMeetingCode = () => {
     const randomChunk = Math.random().toString(36).slice(2, 5).toUpperCase();
@@ -271,8 +270,12 @@ const WorkspaceCalls = () => {
                         </div>
 
                         {meetingsLoading ? (
-                            <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 min-h-32 flex items-center justify-center">
-                                <Loader />
+                            <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 min-h-32 animate-pulse">
+                                <div className="space-y-3">
+                                    <div className="h-4 w-40 rounded bg-gray-200" />
+                                    <div className="h-4 w-full rounded bg-gray-200" />
+                                    <div className="h-4 w-10/12 rounded bg-gray-200" />
+                                </div>
                             </div>
                         ) : upcomingMeetings.length === 0 ? (
                             <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 p-5 text-center">

@@ -10,6 +10,7 @@ import {
     groupUpcomingByDay,
 } from '../utils/dashboardHelpers';
 import { getProjectLabel } from '../utils/projectHelpers';
+import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
 
 export const useDashboardData = () => {
     const { userInfo } = useAuthStore();
@@ -26,7 +27,9 @@ export const useDashboardData = () => {
     const members = useMemo(() => workspace?.members ?? [], [workspace?.members]);
     const myRole = members.find((m) => m.user?._id === userInfo?._id)?.role;
     const canInvite = myRole === 'owner' || myRole === 'admin';
-    const canAccessAnalytics = myRole === 'owner' || myRole === 'admin';
+    const currentPlan = normalizeWorkspacePlan(workspace?.settings?.billing?.currentPlan);
+    const planFeatures = WORKSPACE_PLAN_FEATURES[currentPlan] || WORKSPACE_PLAN_FEATURES[WORKSPACE_PLAN.FREE];
+    const canAccessAnalytics = (myRole === 'owner' || myRole === 'admin') && Boolean(planFeatures.analyticsEnabled);
 
     const formatAnalyticsActivity = useCallback((item, index) => {
         const sender = item?.user || { fullname: 'System' };
@@ -53,12 +56,16 @@ export const useDashboardData = () => {
         if (!currentWorkspaceId) return;
         setLoading(true);
         try {
+            const analyticsRequest = canAccessAnalytics
+                ? axios.get(`/api/board/workspace-analytics?workspaceId=${currentWorkspaceId}`)
+                : Promise.resolve({ data: { activity: [] } });
+
             const [projectsRes, cardsRes, myTasksRes, notifRes, analyticsRes] = await Promise.allSettled([
                 axios.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
                 axios.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`),
                 axios.get(`/api/board/my-tasks?workspaceId=${currentWorkspaceId}`),
                 axios.get('/api/notifications'),
-                axios.get(`/api/board/workspace-analytics?workspaceId=${currentWorkspaceId}`),
+                analyticsRequest,
             ]);
 
             setProjects(projectsRes.status === 'fulfilled' ? projectsRes.value.data || [] : []);
@@ -73,7 +80,7 @@ export const useDashboardData = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentWorkspaceId]);
+    }, [currentWorkspaceId, canAccessAnalytics]);
 
     useEffect(() => {
         fetchData();

@@ -33,7 +33,6 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const { userInfo } = useAuthStore();
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
-    const [isTyping, setIsTyping] = useState(false);
     const [selectedMessageId, setSelectedMessageId] = useState(null);
     const [attachments, setAttachments] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
@@ -41,9 +40,10 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
     const [replyingToMessage, setReplyingToMessage] = useState(null);
     const [reactionPopupId, setReactionPopupId] = useState(null);
+    const [typingUsers, setTypingUsers] = useState({});
     
-    const typingTimeoutRef = useRef(null);
     const messagesEndRef = useRef(null);
+    const typingTimeoutRef = useRef(null);
     const attachmentMenuRef = useRef(null);
     
     // Hidden specific file inputs
@@ -110,16 +110,36 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
             }
         };
 
+        const handleUserTyping = (data) => {
+            if (data.channelId === channel._id && data.user !== userInfo.fullname) {
+                setTypingUsers(prev => ({ ...prev, [data.user]: true }));
+            }
+        };
+
+        const handleUserStopTyping = (data) => {
+            if (data.channelId === channel._id) {
+                setTypingUsers(prev => {
+                    const newmap = { ...prev };
+                    delete newmap[data.user];
+                    return newmap;
+                });
+            }
+        };
+
         socket.on('receive_message', handleReceiveMessage);
         socket.on('poll_updated', handleMessageUpdated);
         socket.on('message_updated', handleMessageUpdated);
+        socket.on('user_typing', handleUserTyping);
+        socket.on('user_stop_typing', handleUserStopTyping);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
             socket.off('poll_updated', handleMessageUpdated);
             socket.off('message_updated', handleMessageUpdated);
+            socket.off('user_typing', handleUserTyping);
+            socket.off('user_stop_typing', handleUserStopTyping);
         };
-    }, [channel, workspaceId]);
+    }, [channel, workspaceId, userInfo.fullname]);
 
     const handleSendPoll = (pollData) => {
         if (!channel) return;
@@ -162,10 +182,8 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
         setNewMessage('');
         setAttachments([]);
         setReplyingToMessage(null);
-        setIsTyping(false);
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
-        }
+        socket.emit('stop_typing', { channelId: channel?._id, user: userInfo?.fullname });
+        if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
     };
 
     const handleFileChange = async (e) => {
@@ -210,13 +228,13 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
 
     const handleInputChange = (e) => {
         setNewMessage(e.target.value);
-        setIsTyping(true);
-        if (typingTimeoutRef.current) {
-            clearTimeout(typingTimeoutRef.current);
+        if (channel && userInfo) {
+            socket.emit('typing', { channelId: channel._id, user: userInfo.fullname });
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => {
+                socket.emit('stop_typing', { channelId: channel._id, user: userInfo.fullname });
+            }, 1500);
         }
-        typingTimeoutRef.current = setTimeout(() => {
-            setIsTyping(false);
-        }, 1200);
     };
 
     const handleKeyDown = (e) => {
@@ -485,8 +503,19 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                 )}
             </div>
 
-            <div className="px-6 pb-2 text-xs text-gray-400">
-                {isTyping && newMessage.trim().length > 0 ? 'Typing…' : ''}
+            <div className="px-6 pb-2 min-h-[24px]">
+                {Object.keys(typingUsers).length > 0 && (
+                    <span className="text-xs text-indigo-500 font-medium animate-pulse flex items-center gap-1">
+                        <div className="flex space-x-1">
+                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce"></div>
+                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        </div>
+                        <span className="ml-1">
+                            {Object.keys(typingUsers).join(', ')} {Object.keys(typingUsers).length > 1 ? 'are' : 'is'} typing...
+                        </span>
+                    </span>
+                )}
             </div>
 
             <form onSubmit={handleSendMessage} className="px-6 pb-5 relative">

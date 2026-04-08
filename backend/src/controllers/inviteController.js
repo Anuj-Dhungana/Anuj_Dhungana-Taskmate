@@ -381,6 +381,9 @@ export const acceptInvite = async (req, res) => {
             }
         });
 
+        // Tell the accepting user's active UI to re-fetch workspaces so sidebar updates
+        io.to(`user_${req.user._id.toString()}`).emit('fetch_workspaces');
+
         await workspace.populate('members.user', 'fullname email avatar');
         res.json({ 
             message: "Invite accepted successfully", 
@@ -530,6 +533,12 @@ export const acceptInviteByToken = async (req, res) => {
         invite.status = 'accepted';
         invite.invitedUser = req.user._id;
         await invite.save();
+
+        // Tell the accepting user's active UI to re-fetch workspaces so sidebar updates
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user_${req.user._id.toString()}`).emit('fetch_workspaces');
+        }
 
         await workspace.populate('members.user', 'fullname email avatar');
         res.json({ 

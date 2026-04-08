@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useRealtimeSyncStore from '../store/useRealtimeSyncStore';
+import socket from '../lib/socket';
 import { getUserRole } from '../utils/navigationConfig';
 
 export const useDashboard = () => {
@@ -61,6 +62,11 @@ export const useDashboard = () => {
     useEffect(() => {
         if (userInfo?._id) {
             fetchWorkspaces();
+            
+            socket.on("fetch_workspaces", fetchWorkspaces);
+            return () => {
+                socket.off("fetch_workspaces", fetchWorkspaces);
+            };
         }
     }, [userInfo?._id, fetchWorkspaces]);
 

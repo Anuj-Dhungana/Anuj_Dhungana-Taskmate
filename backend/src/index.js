@@ -179,6 +179,16 @@ io.on("connection", (socket) => {
         }
     });
 
+    // Handle Typing
+    socket.on("typing", (data) => {
+        // Broadcast user_typing to specific channel
+        socket.to(data.channelId).emit("user_typing", data);
+    });
+
+    socket.on("stop_typing", (data) => {
+        socket.to(data.channelId).emit("user_stop_typing", data);
+    });
+
     socket.on("disconnect", () => {
         console.log("User Disconnected", socket.id);
     });

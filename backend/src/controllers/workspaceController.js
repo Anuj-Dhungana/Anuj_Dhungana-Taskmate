@@ -251,6 +251,12 @@ export const removeMember = async (req, res) => {
 
         await workspace.save();
         emitMemberRemoved(req, workspace._id, memberId);
+        // Tell the removed user's active UI to re-fetch workspaces to instantly update their sidebar
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`user_${memberId}`).emit('fetch_workspaces');
+        }
+
         res.json({ message: "Member removed from workspace" });
 
     } catch (error) {

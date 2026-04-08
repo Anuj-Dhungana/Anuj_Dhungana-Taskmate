@@ -13,6 +13,8 @@ import AddChannelMembersModal from '../components/chat/AddChannelMembersModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
 import { useWorkspaceChat } from '../hooks/useWorkspaceChat';
 import PageSkeleton from '../components/common/PageSkeleton';
+import useRightPanelStore from '../store/useRightPanelStore';
+import PollVotesPanel from '../components/chat/PollVotesPanel';
 
 const WorkspaceChat = () => {
     const { currentWorkspaceId } = useWorkspaceStore();
@@ -29,6 +31,8 @@ const WorkspaceChat = () => {
     const [showAddMembersModal, setShowAddMembersModal] = useState(false);
     const [addingMembers, setAddingMembers] = useState(false);
     const [addMembersError, setAddMembersError] = useState('');
+
+    const { isOpen: isRightPanelOpen, panelType, panelData, closePanel } = useRightPanelStore();
 
     const {
         workspace,
@@ -166,7 +170,7 @@ const WorkspaceChat = () => {
                     />
                 </ChatSidebar>
 
-                <main className="flex-1 min-h-0 flex flex-col">
+                <main className="flex-1 min-h-0 flex flex-col relative transition-all duration-300">
                     {selectedConversation ? (
                         <>
                             <ChatHeader
@@ -199,6 +203,22 @@ const WorkspaceChat = () => {
                         </div>
                     )}
                 </main>
+
+                {/* Desktop & Tablet: Right Sidebar */}
+                {isRightPanelOpen && panelType === 'pollVotes' && panelData?.poll && (
+                    <div className="hidden md:block w-[380px] shrink-0 border-l border-gray-200 h-full bg-slate-50 z-10 animate-in slide-in-from-right duration-200 ease-out">
+                        <PollVotesPanel poll={panelData.poll} onClose={closePanel} />
+                    </div>
+                )}
+                
+                {/* Mobile: Overlay Sliding Drawer */}
+                {isRightPanelOpen && panelType === 'pollVotes' && panelData?.poll && (
+                    <div className="md:hidden fixed inset-0 z-[100] flex justify-end bg-black/20 animate-in fade-in duration-200 backdrop-blur-[1px]">
+                        <div className="w-full h-full bg-slate-50 animate-in slide-in-from-right duration-200 ease-out shadow-[-10px_0_30px_rgba(0,0,0,0.1)]">
+                            <PollVotesPanel poll={panelData.poll} onClose={closePanel} />
+                        </div>
+                    </div>
+                )}
             </div>
 
             <DmPickerModal

@@ -1,9 +1,13 @@
 import { useMemo } from 'react';
 import axios from 'axios';
 import { CheckCircle2, Circle } from 'lucide-react';
+import { getInitials } from '../../utils/helpers';
+import useRightPanelStore from '../../store/useRightPanelStore';
 
 const PollCard = ({ messageId, poll, currentUserId, isMe }) => {
     
+    const { openPanel } = useRightPanelStore();
+
     // Calculate total votes
     const totalVotes = useMemo(() => {
         return poll.options.reduce((sum, opt) => sum + (opt.votes?.length || 0), 0);
@@ -41,7 +45,7 @@ const PollCard = ({ messageId, poll, currentUserId, isMe }) => {
                 {poll.options.map((option, index) => {
                     const votes = option.votes?.length || 0;
                     const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
-                    const hasVoted = option.votes?.includes(currentUserId);
+                    const hasVoted = option.votes?.some(v => (v._id || v).toString() === currentUserId.toString());
                     
                     return (
                         <div 
@@ -63,9 +67,20 @@ const PollCard = ({ messageId, poll, currentUserId, isMe }) => {
                                     </span>
                                 </div>
                                 {votes > 0 && (
-                                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                                        <div className={`w-[18px] h-[18px] rounded-full flex items-center justify-center text-[9px] font-black ${isMe ? 'bg-white text-indigo-700 shadow-sm' : 'bg-gray-800 text-white shadow-sm'} overflow-hidden`}>
-                                            A
+                                    <div className="flex items-center shrink-0 ml-2">
+                                        <div className="flex -space-x-1.5 mr-1.5">
+                                            {option.votes.slice(0, 3).map((voter) => {
+                                                const voterId = voter._id || voter;
+                                                const isPop = !!voter.fullname;
+                                                const ringColor = isMe ? 'ring-[#4F46E5]' : 'ring-white'; // Approximate indigo-600 or white
+                                                return isPop && voter.avatar ? (
+                                                    <img key={voterId} src={voter.avatar} className={`w-[18px] h-[18px] rounded-full ring-[1px] ${ringColor} object-cover`} alt="" />
+                                                ) : (
+                                                    <div key={voterId} className={`w-[18px] h-[18px] rounded-full ring-[1px] ${ringColor} flex items-center justify-center text-[7px] font-bold text-white bg-slate-500 overflow-hidden`}>
+                                                        {getInitials(isPop ? voter.fullname : 'U')}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                         <span className={`text-[13px] font-black ${textColor}`}>{votes}</span>
                                     </div>
@@ -87,6 +102,7 @@ const PollCard = ({ messageId, poll, currentUserId, isMe }) => {
 
             <div className={`mt-0 border-t ${borderDivider}`}>
                 <button 
+                    onClick={() => openPanel('pollVotes', { poll })}
                     className={`w-full py-3 text-[14px] font-bold hover:bg-black/5 active:bg-black/10 transition-colors ${isMe ? 'text-emerald-300' : 'text-emerald-600'}`}
                 >
                     View votes

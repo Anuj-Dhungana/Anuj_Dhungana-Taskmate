@@ -44,6 +44,7 @@ export const getMessages = async (req, res) => {
 
         const messages = await Message.find({ channelId })
             .populate('sender', 'fullname avatar email')
+            .populate('poll.options.votes', 'fullname avatar')
             .sort({ createdAt: 1 }); // Oldest first
 
         res.json(messages);
@@ -71,6 +72,7 @@ export const sendMessage = async (req, res) => {
         });
 
         const fullMessage = await newMessage.populate('sender', 'fullname avatar');
+        await fullMessage.populate('poll.options.votes', 'fullname avatar');
         
         res.status(201).json(fullMessage);
     } catch (error) {
@@ -161,7 +163,7 @@ export const votePoll = async (req, res) => {
 
         await message.save();
 
-        const fullMessage = await Message.findById(id).populate('sender', 'fullname avatar');
+        const fullMessage = await Message.findById(id).populate('sender', 'fullname avatar').populate('poll.options.votes', 'fullname avatar');
 
         const io = req.app.get('io');
         if (io) {

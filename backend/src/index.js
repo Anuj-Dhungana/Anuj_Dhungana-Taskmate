@@ -153,14 +153,22 @@ io.on("connection", (socket) => {
                 sender: data.senderId,
                 content: data.content || '',
                 attachments: data.attachments || [],
-                poll: data.poll || null
+                poll: data.poll || null,
+                replyTo: data.replyTo || null
             });
+            
+            let populatedReplyTo = null;
+            if (data.replyTo) {
+                const replyMsg = await Message.findById(data.replyTo).populate('sender', 'fullname avatar');
+                populatedReplyTo = replyMsg;
+            }
             
             // 2. Add sender info to send back to clients
             // (In a real app, we populate. Here we trust frontend or populate manually)
             const messageToSend = {
                 ...newMessage._doc,
-                sender: data.senderDetails 
+                sender: data.senderDetails,
+                replyTo: populatedReplyTo
             };
 
             // 3. Broadcast to everyone in that channel

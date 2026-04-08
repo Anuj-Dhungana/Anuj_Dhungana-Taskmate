@@ -37,6 +37,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const [isUploading, setIsUploading] = useState(false);
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
+    const [replyingToMessage, setReplyingToMessage] = useState(null);
     
     const typingTimeoutRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -140,6 +141,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
             senderId: userInfo._id,
             content: newMessage,
             attachments: attachments,
+            replyTo: replyingToMessage?._id || null,
             senderDetails: {
                 _id: userInfo._id,
                 fullname: userInfo.fullname,
@@ -150,6 +152,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
         socket.emit('send_message', messageData);
         setNewMessage('');
         setAttachments([]);
+        setReplyingToMessage(null);
         setIsTyping(false);
         if (typingTimeoutRef.current) {
             clearTimeout(typingTimeoutRef.current);
@@ -292,7 +295,21 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                             }`}
                                         >
                                             <div className={`flex items-end gap-2 ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                                <div className="min-w-0 break-words">
+                                                <div className="min-w-0 wrap-break-word">
+                                                    {msg.replyTo && (
+                                                        <div 
+                                                            className={`mb-2 p-2 rounded-lg border-l-4 text-xs opacity-90 cursor-default ${isMe ? 'bg-[#5b52db] border-[#8179f3]' : 'bg-gray-200 border-indigo-500'}`}
+                                                        >
+                                                            <div className="flex items-center justify-between mb-1">
+                                                                <span className={`font-bold ${isMe ? 'text-indigo-100' : 'text-indigo-700'}`}>
+                                                                    {msg.replyTo.sender?.fullname || 'Unknown User'}
+                                                                </span>
+                                                            </div>
+                                                            <div className={`truncate max-w-[200px] sm:max-w-[300px] ${isMe ? 'text-gray-100' : 'text-gray-600'}`}>
+                                                                {msg.replyTo.content || (msg.replyTo.attachments?.length > 0 ? 'Attachment' : msg.replyTo.poll ? `Poll: ${msg.replyTo.poll.question}` : 'Deleted message')}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                     {msg.poll ? (
                                                         <PollCard 
                                                             messageId={msg._id} 
@@ -355,7 +372,11 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                             <div className="flex items-center gap-1 bg-white border border-gray-200 shadow-sm rounded-full px-2 py-1">
                                                 <button
                                                     type="button"
-                                                    onClick={(event) => event.stopPropagation()}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        setReplyingToMessage(msg);
+                                                        setSelectedMessageId(null);
+                                                    }}
                                                     className="text-gray-400 hover:text-indigo-600"
                                                     title="Reply"
                                                 >
@@ -398,6 +419,30 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
             </div>
 
             <form onSubmit={handleSendMessage} className="px-6 pb-5 relative">
+                
+                {/* Replying To Banner */}
+                {replyingToMessage && (
+                    <div className="flex items-center justify-between mb-2 p-3 bg-indigo-50/50 rounded-xl border-l-4 border-indigo-500 shadow-sm">
+                        <div className="flex flex-col min-w-0 mr-4">
+                            <span className="text-[12px] font-bold text-indigo-700 leading-tight">
+                                Replying to {replyingToMessage.sender?.fullname || 'User'}
+                            </span>
+                            <span className="text-[13px] text-gray-600 truncate mt-0.5">
+                                {replyingToMessage.content || 
+                                (replyingToMessage.attachments?.length > 0 ? 'Attachment' : 
+                                replyingToMessage.poll ? `Poll: ${replyingToMessage.poll.question}` : '')}
+                            </span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setReplyingToMessage(null)}
+                            className="p-1 rounded-full hover:bg-indigo-100 text-indigo-400 hover:text-indigo-700 transition"
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
+
                 {/* Upload Queued Attachments Preview */}
                 {attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-2 p-3 bg-gray-50 rounded-xl border border-gray-200 shadow-sm shadow-gray-100">

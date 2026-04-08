@@ -18,7 +18,8 @@ const messageSchema = new mongoose.Schema({
             votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
         }],
         multipleAnswers: { type: Boolean, default: false }
-    }
+    },
+    replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' }
 }, {
     timestamps: true
 });

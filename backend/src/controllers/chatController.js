@@ -45,6 +45,7 @@ export const getMessages = async (req, res) => {
         const messages = await Message.find({ channelId })
             .populate('sender', 'fullname avatar email')
             .populate('poll.options.votes', 'fullname avatar')
+            .populate({ path: 'replyTo', populate: { path: 'sender', select: 'fullname avatar' } })
             .sort({ createdAt: 1 }); // Oldest first
 
         res.json(messages);

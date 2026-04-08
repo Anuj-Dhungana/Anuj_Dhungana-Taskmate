@@ -177,3 +177,57 @@ export const votePoll = async (req, res) => {
         res.status(500).json({ message: "Server Error" });
     }
 };
+
+export const toggleReaction = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { emoji } = req.body;
+        const userId = req.user._id;
+
+        if (!emoji) return res.status(400).json({ message: "Emoji is required" });
+
+        const message = await Message.findById(id);
+        if (!message) return res.status(404).json({ message: "Message not found" });
+
+        const access = await ensureChannelAccess(message.channelId, userId);
+        if (access.status !== 200) {
+            return res.status(access.status).json({ message: access.message });
+        }
+
+        let reactionObj = message.reactions?.find(r => r.emoji === emoji);
+        
+        if (reactionObj) {
+            const userIndex = reactionObj.users.indexOf(userId);
+            if (userIndex > -1) {
+                // Remove reaction if already reacted
+                reactionObj.users.splice(userIndex, 1);
+                // Clean up empty reaction array
+                if (reactionObj.users.length === 0) {
+                    message.reactions = message.reactions.filter(r => r.emoji !== emoji);
+                }
+            } else {
+                reactionObj.users.push(userId);
+            }
+        } else {
+            // First time this emoji is used
+            message.reactions.push({ emoji, users: [userId] });
+        }
+
+        await message.save();
+
+        const fullMessage = await Message.findById(id)
+            .populate('sender', 'fullname avatar')
+            .populate('poll.options.votes', 'fullname avatar')
+            .populate({ path: 'replyTo', populate: { path: 'sender', select: 'fullname avatar' } });
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(message.channelId.toString()).emit("message_updated", fullMessage);
+        }
+
+        res.json(fullMessage);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Server Error" });
+    }
+};

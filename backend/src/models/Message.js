@@ -19,7 +19,11 @@ const messageSchema = new mongoose.Schema({
         }],
         multipleAnswers: { type: Boolean, default: false }
     },
-    replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' }
+    replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Message' },
+    reactions: [{
+        emoji: { type: String, required: true },
+        users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    }]
 }, {
     timestamps: true
 });

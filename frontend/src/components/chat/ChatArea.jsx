@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import axios from 'axios';
 import useAuthStore from '../../store/useAuthStore';
-import { Send, Hash, Trash2, Paperclip, Reply, MoreHorizontal, X, FileText, Image, File, Music, ChartBar } from 'lucide-react';
+import { Send, Hash, Trash2, Paperclip, Reply, Smile, MoreHorizontal, X, FileText, Image, File, Music, ChartBar } from 'lucide-react';
 import socket from '../../lib/socket';
 import CreatePollModal from './CreatePollModal';
 import PollCard from './PollCard';
 import MediaGallery from './MediaGallery';
 
 const TASK_REGEX = /(Task\s*#\d+)/gi;
+
+const EMOJI_LIST = ['👍', '❤️', '😂', '😮', '😢', '👏'];
 
 const renderMessageContent = (content) => {
     if (!content) return null;
@@ -38,6 +40,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
     const [isCreatePollOpen, setIsCreatePollOpen] = useState(false);
     const [replyingToMessage, setReplyingToMessage] = useState(null);
+    const [reactionPopupId, setReactionPopupId] = useState(null);
     
     const typingTimeoutRef = useRef(null);
     const messagesEndRef = useRef(null);
@@ -52,6 +55,10 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
         const handleClickOutside = (event) => {
             if (attachmentMenuRef.current && !attachmentMenuRef.current.contains(event.target)) {
                 setShowAttachmentMenu(false);
+            }
+            // Auto close reaction popup if clicking outside
+            if (!event.target.closest('.reaction-popup-container') && !event.target.closest('.reaction-btn')) {
+                setReactionPopupId(null);
             }
         };
         if (showAttachmentMenu) {
@@ -97,18 +104,20 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
             }
         };
 
-        const handlePollUpdated = (updatedMsg) => {
+        const handleMessageUpdated = (updatedMsg) => {
             if (updatedMsg.channelId === channel._id) {
                 setMessages((prev) => prev.map(m => m._id === updatedMsg._id ? updatedMsg : m));
             }
         };
 
         socket.on('receive_message', handleReceiveMessage);
-        socket.on('poll_updated', handlePollUpdated);
+        socket.on('poll_updated', handleMessageUpdated);
+        socket.on('message_updated', handleMessageUpdated);
 
         return () => {
             socket.off('receive_message', handleReceiveMessage);
-            socket.off('poll_updated', handlePollUpdated);
+            socket.off('poll_updated', handleMessageUpdated);
+            socket.off('message_updated', handleMessageUpdated);
         };
     }, [channel, workspaceId]);
 
@@ -177,6 +186,15 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
         } finally {
             setIsUploading(false);
             e.target.value = null; // reset input
+        }
+    };
+
+    const handleToggleReaction = async (messageId, emoji) => {
+        setReactionPopupId(null);
+        try {
+            await axios.post(`/api/messages/${messageId}/react`, { emoji });
+        } catch (error) {
+            console.error("Failed to react:", error);
         }
     };
 
@@ -374,6 +392,17 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                                     type="button"
                                                     onClick={(event) => {
                                                         event.stopPropagation();
+                                                        setReactionPopupId(reactionPopupId === msg._id ? null : msg._id);
+                                                    }}
+                                                    className="text-gray-400 hover:text-indigo-600 reaction-btn"
+                                                    title="React"
+                                                >
+                                                    <Smile size={12} />
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
                                                         setReplyingToMessage(msg);
                                                         setSelectedMessageId(null);
                                                     }}
@@ -404,7 +433,49 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
                                                     <MoreHorizontal size={12} />
                                                 </button>
                                             </div>
+                                            
+                                            {/* Emoji Picker Popup */}
+                                            {reactionPopupId === msg._id && (
+                                                <div 
+                                                    className={`absolute bottom-[110%] ${isMe ? 'right-0' : 'left-0'} bg-white border border-gray-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.15)] rounded-full px-2.5 py-2 flex gap-1.5 z-50 reaction-popup-container animate-in fade-in zoom-in-95 duration-150`}
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    {EMOJI_LIST.map((emoji) => (
+                                                        <button
+                                                            key={emoji}
+                                                            onClick={() => handleToggleReaction(msg._id, emoji)}
+                                                            className="hover:scale-125 hover:-translate-y-1 transition-transform origin-bottom text-[22px] leading-none"
+                                                            type="button"
+                                                        >
+                                                            {emoji}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
+                                        
+                                        {/* Reaction Pills Below Bubble */}
+                                        {msg.reactions && msg.reactions.length > 0 && (
+                                            <div className={`flex flex-wrap gap-1 mt-1 ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                                {msg.reactions.map((reaction, i) => {
+                                                    const iReacted = reaction.users.some(uId => typeof uId === 'object' ? uId._id === userInfo._id : uId === userInfo._id);
+                                                    return (
+                                                        <button
+                                                            key={`${reaction.emoji}-${i}`}
+                                                            onClick={() => handleToggleReaction(msg._id, reaction.emoji)}
+                                                            className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full border shadow-sm text-[11px] font-bold ${
+                                                                iReacted 
+                                                                    ? 'bg-indigo-50 border-indigo-200 text-indigo-700' 
+                                                                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            <span>{reaction.emoji}</span>
+                                                            <span className={iReacted ? 'text-indigo-600' : 'text-gray-500'}>{reaction.users.length}</span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );

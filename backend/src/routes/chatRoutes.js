@@ -1,5 +1,5 @@
 import express from 'express';
-import { getMessages, sendMessage, deleteMessage, votePoll } from '../controllers/chatController.js';
+import { getMessages, sendMessage, deleteMessage, votePoll, toggleReaction } from '../controllers/chatController.js';
 import protect from '../middleware/authMiddleware.js';
 import upload from '../config/cloudinary.js';
 
@@ -27,6 +27,7 @@ router.post('/upload', protect, upload.array('attachments', 10), (req, res) => {
     }
 });
 router.post('/:id/vote', protect, votePoll);
+router.post('/:id/react', protect, toggleReaction);
 router.delete('/:id', protect, deleteMessage);
 
 export default router;

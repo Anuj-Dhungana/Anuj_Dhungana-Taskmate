@@ -5,7 +5,6 @@ import {
     getWorkspaceDetails,
     updateWorkspace,
     transferWorkspaceOwnership,
-    getWorkspacePaymentHistory,
 } from '../controllers/workspaceController.js';
 import protect from '../middleware/authMiddleware.js';
 import { inviteUserToWorkspace } from '../controllers/workspaceController.js';
@@ -31,7 +30,7 @@ router.route('/:id')
     .delete(protect, checkWorkspaceRole(['owner']), deleteWorkspace);
 router.post('/:id/billing/khalti/initiate', protect, checkWorkspaceRole(['owner']), initiateWorkspaceKhaltiPayment);
 router.post('/:id/billing/khalti/verify', protect, checkWorkspaceRole(['owner']), verifyWorkspaceKhaltiPayment);
-router.get('/:id/billing/payments', protect, checkWorkspaceRole(['owner']), getWorkspacePaymentHistory);
+
 router.post('/:id/invite', protect, checkWorkspaceRole(['owner', 'admin']), inviteUserToWorkspace);
 router.put('/:id/role', protect, checkWorkspaceRole(['owner']), updateMemberRole);
 router.post('/:id/transfer-ownership', protect, checkWorkspaceRole(['owner']), transferWorkspaceOwnership);

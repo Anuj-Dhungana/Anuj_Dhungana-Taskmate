@@ -56,14 +56,6 @@ const createMockRequest = (overrides = {}) => ({
     ...overrides,
 });
 
-const createMockIo = () => {
-    const roomEmitter = { emit: vi.fn() };
-    return {
-        to: vi.fn().mockReturnValue(roomEmitter),
-        roomEmitter,
-    };
-};
-
 describe('projectController', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -145,7 +137,6 @@ describe('projectController', () => {
 
         it('creates project and default lists successfully', async () => {
             // Arrange
-            const io = createMockIo();
             const req = createMockRequest({
                 body: {
                     workspaceId: 'workspace-1',
@@ -161,7 +152,6 @@ describe('projectController', () => {
                     projectColor: '#12ABef',
                     calendarEnabled: true,
                 },
-                app: { get: vi.fn().mockReturnValue(io) },
             });
             const res = createMockResponse();
             const workspace = {
@@ -208,8 +198,6 @@ describe('projectController', () => {
                 { title: 'In Progress', order: 1, projectId: 'project-1' },
                 { title: 'Done', order: 2, projectId: 'project-1' },
             ]);
-            expect(req.app.get).toHaveBeenCalledWith('io');
-            expect(io.to).toHaveBeenCalledWith('workspace_workspace-1');
             expect(res.status).toHaveBeenCalledWith(201);
             expect(res.json).toHaveBeenCalledWith(createdProject);
         });
@@ -335,7 +323,6 @@ describe('projectController', () => {
 
         it('updates project successfully for owner/admin', async () => {
             // Arrange
-            const io = createMockIo();
             const req = createMockRequest({
                 params: { id: 'project-1' },
                 body: {
@@ -351,7 +338,6 @@ describe('projectController', () => {
                     calendarEnabled: true,
                     priority: 'High',
                 },
-                app: { get: vi.fn().mockReturnValue(io) },
             });
             const res = createMockResponse();
             const project = {
@@ -444,10 +430,8 @@ describe('projectController', () => {
 
         it('deletes project successfully for owner/admin', async () => {
             // Arrange
-            const io = createMockIo();
             const req = createMockRequest({
                 params: { id: 'project-1' },
-                app: { get: vi.fn().mockReturnValue(io) },
             });
             const res = createMockResponse();
             const project = {
@@ -467,8 +451,6 @@ describe('projectController', () => {
 
             // Assert
             expect(project.deleteOne).toHaveBeenCalledTimes(1);
-            expect(req.app.get).toHaveBeenCalledWith('io');
-            expect(io.to).toHaveBeenCalledWith('workspace_workspace-1');
             expect(res.json).toHaveBeenCalledWith({
                 message: 'Project deleted successfully',
             });

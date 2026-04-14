@@ -14,6 +14,7 @@ import TaskDescriptionSection from './TaskDescriptionSection';
 import TaskSubtaskSection from './TaskSubtaskSection';
 import TaskCommentSection from './TaskCommentSection';
 import TaskSidebar from './TaskSidebar';
+import ConfirmModal from '../../modals/ConfirmModal';
 
 const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate }) => {
     const { selectedWorkspace } = useWorkspaceStore();
@@ -26,6 +27,8 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
     const [commentSubmitting, setCommentSubmitting] = useState(false);
     const [subtaskSubmitting, setSubtaskSubmitting] = useState(false);
     const [savingTask, setSavingTask] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
     const [assigneeOpen, setAssigneeOpen] = useState(false);
     const [taskTitle, setTaskTitle] = useState('');
     const [savedTitle, setSavedTitle] = useState('');
@@ -296,15 +299,17 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
 
     const handleDeleteTask = async () => {
         if (!canDeleteTask) return;
-        const confirmed = window.confirm('Delete this task permanently?');
-        if (!confirmed) return;
+        setDeleting(true);
         try {
             await axios.delete(`/api/board/cards/${cardId}`);
             toast.success('Task deleted');
             syncTaskChanged('task-detail-delete');
+            setDeleteConfirmOpen(false);
             onClose();
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to delete task');
+        } finally {
+            setDeleting(false);
         }
     };
 
@@ -463,7 +468,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                         )}
                         {canDeleteTask && (
                             <button
-                                onClick={handleDeleteTask}
+                                onClick={() => setDeleteConfirmOpen(true)}
                                 title="Delete task"
                                 className="w-9 h-9 rounded-lg border border-red-200 text-red-500 hover:text-red-600 hover:bg-red-50 flex items-center justify-center"
                             >
@@ -546,6 +551,18 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                     />
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={deleteConfirmOpen}
+                title="Delete Task"
+                message={`Are you sure you want to permanently delete "${taskTitle}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+                loading={deleting}
+                onConfirm={handleDeleteTask}
+                onClose={() => setDeleteConfirmOpen(false)}
+            />
         </div>
     );
 };

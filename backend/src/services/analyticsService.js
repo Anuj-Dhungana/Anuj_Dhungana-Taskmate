@@ -273,7 +273,7 @@ async function calculateCommunication(allMessages, channels, allCards, listIsDon
     });
 
     // Simple word frequency from messages (top discussion topics)
-    const stopWords = new Set(['the','a','an','is','it','to','and','or','of','in','on','for','i','we','you','this','that','was','are','be','has','have','do','does','did','will','would','can','could','should','not','no','yes','just','so','but','with','from','at','by','us','me','my','its','they','them','our','your','if','then','what','when','how','all','been','more','some','any']);
+    const stopWords = new Set(['the', 'a', 'an', 'is', 'it', 'to', 'and', 'or', 'of', 'in', 'on', 'for', 'i', 'we', 'you', 'this', 'that', 'was', 'are', 'be', 'has', 'have', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'not', 'no', 'yes', 'just', 'so', 'but', 'with', 'from', 'at', 'by', 'us', 'me', 'my', 'its', 'they', 'them', 'our', 'your', 'if', 'then', 'what', 'when', 'how', 'all', 'been', 'more', 'some', 'any']);
     const wordCounts = {};
     const wordChannelMap = {};
     allMessages.forEach(m => {

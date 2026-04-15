@@ -1,316 +1,71 @@
-import Project from '../models/Project.js';
-import Workspace from '../models/Workspace.js';
-import List from '../models/List.js';
-import { canCreateProjectInWorkspace } from '../services/workspacePlanService.js';
+import {
+    createProject as createProjectService,
+    getProjectsByWorkspace as getProjectsByWorkspaceService,
+    getProjectById as getProjectByIdService,
+    updateProject as updateProjectService,
+    deleteProject as deleteProjectService,
+} from '../services/projectService.js';
 
-
+// POST /api/projects
 export const createProject = async (req, res) => {
     try {
-        const {
-            name,
-            description,
-            workspaceId,
-            status,
-            priority,
-            startDate,
-            dueDate,
-            tags = [],
-            members = [],
-            projectColor,
-            calendarEnabled
-        } = req.body;
-
-        // 1. Verify Workspace exists
-        const workspace = await Workspace.findById(workspaceId);
-        if (!workspace) {
-            return res.status(404).json({ message: "Workspace not found" });
-        }
-
-        // 2. Check if user is a member of this workspace
-        const isMember = workspace.members.some(m => m.user.toString() === req.user._id.toString());
-        if (!isMember) {
-            return res.status(403).json({ message: "You are not a member of this workspace" });
-        }
-
-        const projectAllowance = await canCreateProjectInWorkspace(workspace);
-        if (!projectAllowance.allowed) {
-            return res.status(403).json({
-                code: 'PROJECT_LIMIT_REACHED',
-                message: `Free plan allows up to ${projectAllowance.limit} projects in this workspace. Upgrade to Pro for unlimited projects.`,
-                limit: projectAllowance.limit,
-                currentCount: projectAllowance.projectCount,
-            });
-        }
-
-        // Sanitize members to include only existing workspace users
-        const workspaceMemberIds = workspace.members.map((m) => m.user.toString());
-        const sanitizedMembers = Array.isArray(members)
-            ? members
-                  .filter((m) => m?.user && workspaceMemberIds.includes(m.user.toString()))
-                  .map((m) => ({
-                      user: m.user,
-                      role: ['Manager', 'Contributor', 'Viewer'].includes(m.role) ? m.role : 'Contributor'
-                  }))
-            : [];
-
-        // Normalize tags
-        const normalizedTags = Array.isArray(tags)
-            ? tags
-                  .map((t) => (typeof t === 'string' ? t.trim() : ''))
-                  .filter(Boolean)
-            : [];
-
-        const safeProjectColor =
-            typeof projectColor === 'string' && /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(projectColor.trim())
-                ? projectColor.trim()
-                : undefined;
-        const safeCalendarEnabled =
-            typeof calendarEnabled === 'boolean' ? calendarEnabled : undefined;
-        const safePriority = ['Low', 'Medium', 'High'].includes(priority) ? priority : 'Medium';
-
-        // 3. Create Project
-        const project = await Project.create({
-            name,
-            description,
-            workspace: workspaceId,
-            createdBy: req.user._id,
-            status: status || 'Planning',
-            priority: safePriority,
-            startDate: startDate ? new Date(startDate) : undefined,
-            dueDate: dueDate ? new Date(dueDate) : undefined,
-            projectColor: safeProjectColor,
-            calendarEnabled: safeCalendarEnabled,
-            tags: normalizedTags,
-            members: sanitizedMembers
-        });
-
-        // Create default board lists
-        const defaultLists = [
-            { title: 'To Do', order: 0 },
-            { title: 'In Progress', order: 1 },
-            { title: 'Done', order: 2 }
-        ];
-
-        await List.insertMany(
-            defaultLists.map((l) => ({ ...l, projectId: project._id }))
-        );
-
-        const io = req.app.get('io');
-        const workspaceRoom = `workspace_${workspaceId}`;
-        io?.to(workspaceRoom).emit('project_created', {
-            workspaceId: workspaceId.toString(),
-            project,
-        });
-        io?.to(workspaceRoom).emit('project_updated', {
-            workspaceId: workspaceId.toString(),
-            project,
-            action: 'created',
-        });
-
+        const project = await createProjectService(req.body, req.user._id, req);
         res.status(201).json(project);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(error.status || 500).json({
+            message: error.message || 'Server Error',
+            ...(error.code && { code: error.code }),
+            ...(error.limit !== undefined && { limit: error.limit }),
+            ...(error.currentCount !== undefined && { currentCount: error.currentCount }),
+        });
     }
 };
 
+// GET /api/projects?workspaceId=...
 export const getProjectsByWorkspace = async (req, res) => {
     try {
         const { workspaceId } = req.query;
-
         if (!workspaceId) {
-            return res.status(400).json({ message: "workspaceId is required" });
+            return res.status(400).json({ message: 'workspaceId is required' });
         }
-
-        const workspace = await Workspace.findById(workspaceId);
-        if (!workspace) {
-            return res.status(404).json({ message: "Workspace not found" });
-        }
-
-        const isMember = workspace.members.some(m => m.user.toString() === req.user._id.toString());
-        if (!isMember) {
-            return res.status(403).json({ message: "Not authorized to view projects for this workspace" });
-        }
-
-        const projects = await Project.find({ workspace: workspaceId })
-            .sort({ createdAt: -1 })
-            .populate('members.user', 'fullname email avatar');
-
+        const projects = await getProjectsByWorkspaceService(workspaceId, req.user._id);
         res.json(projects);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(error.status || 500).json({ message: error.message || 'Server Error' });
     }
 };
 
+// GET /api/projects/:id
 export const getProjectById = async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id)
-            .populate('members.user', 'fullname email avatar');
-
-        if (!project) {
-            return res.status(404).json({ message: "Project not found" });
-        }
-
-        const workspace = await Workspace.findById(project.workspace);
-        if (!workspace) {
-            return res.status(404).json({ message: "Workspace not found" });
-        }
-
-        const isMember = workspace.members.some(
-            (m) => m.user.toString() === req.user._id.toString()
-        );
-        if (!isMember) {
-            return res.status(403).json({ message: "Not authorized to view this project" });
-        }
-
+        const project = await getProjectByIdService(req.params.id, req.user._id);
         res.json(project);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(error.status || 500).json({ message: error.message || 'Server Error' });
     }
 };
 
-
-
+// PUT /api/projects/:id
 export const updateProject = async (req, res) => {
     try {
-        const projectId = req.params.id;
-        const project = await Project.findById(projectId);
-        
-        if (!project) {
-            return res.status(404).json({ message: "Project not found" });
-        }
-
-        // Check: Are you a Workspace Owner or Admin?
-        const workspace = await Workspace.findById(project.workspace);
-        if (!workspace) {
-            return res.status(404).json({ message: "Workspace not found" });
-        }
-
-        const member = workspace.members.find(m => m.user.toString() === req.user._id.toString());
-        const isAdminOrOwner = member && (member.role === 'owner' || member.role === 'admin');
-
-        if (!isAdminOrOwner) {
-            return res.status(403).json({ message: "Only admins can edit project settings" });
-        }
-
-        // Extract and sanitize update data
-        const {
-            name,
-            description,
-            status,
-            startDate,
-            dueDate,
-            tags = [],
-            members = [],
-            projectColor,
-            calendarEnabled,
-            priority
-        } = req.body;
-
-        // Sanitize members to include only existing workspace users
-        const workspaceMemberIds = workspace.members.map((m) => m.user.toString());
-        const sanitizedMembers = Array.isArray(members)
-            ? members
-                  .filter((m) => m?.user && workspaceMemberIds.includes(m.user.toString()))
-                  .map((m) => ({
-                      user: m.user,
-                      role: ['Manager', 'Contributor', 'Viewer'].includes(m.role) ? m.role : 'Contributor'
-                  }))
-            : project.members;
-
-        // Normalize tags
-        const normalizedTags = Array.isArray(tags)
-            ? tags
-                  .map((t) => (typeof t === 'string' ? t.trim() : ''))
-                  .filter(Boolean)
-            : project.tags;
-
-        // Validate projectColor if provided
-        const safeProjectColor =
-            typeof projectColor === 'string' && /^#(?:[0-9a-fA-F]{3}){1,2}$/.test(projectColor.trim())
-                ? projectColor.trim()
-                : project.projectColor;
-
-        const safeCalendarEnabled =
-            typeof calendarEnabled === 'boolean' ? calendarEnabled : project.calendarEnabled;
-        const safePriority =
-            ['Low', 'Medium', 'High'].includes(priority) ? priority : project.priority || 'Medium';
-
-        // Update project fields
-        if (name !== undefined) project.name = name.trim();
-        if (description !== undefined) project.description = description.trim();
-        if (status !== undefined) project.status = status;
-        project.priority = safePriority;
-        if (startDate !== undefined) project.startDate = startDate ? new Date(startDate) : undefined;
-        if (dueDate !== undefined) project.dueDate = dueDate ? new Date(dueDate) : undefined;
-        project.tags = normalizedTags;
-        project.members = sanitizedMembers;
-        project.projectColor = safeProjectColor;
-        project.calendarEnabled = safeCalendarEnabled;
-
-        await project.save();
-
-        // Populate members for response
-        const updatedProject = await Project.findById(projectId).populate('members.user', 'fullname email avatar');
-
-        // Real-time sync via Socket.IO
-        const io = req.app.get('io');
-        const workspaceRoom = `workspace_${workspace._id.toString()}`;
-        io?.to(workspaceRoom).emit('project_updated', {
-            workspaceId: workspace._id.toString(),
-            project: updatedProject,
-            action: 'updated',
-        });
-
+        const updatedProject = await updateProjectService(
+            req.params.id,
+            req.body,
+            req.user._id,
+            req
+        );
         res.json(updatedProject);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(error.status || 500).json({ message: error.message || 'Server Error' });
     }
 };
 
+// DELETE /api/projects/:id
 export const deleteProject = async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id);
-        
-        if (!project) {
-            return res.status(404).json({ message: "Project not found" });
-        }
-
-        // Check: Are you a Workspace Owner or Admin?
-        const workspace = await Workspace.findById(project.workspace);
-        const member = workspace.members.find(m => m.user.toString() === req.user._id.toString());
-        const isAdminOrOwner = member && (member.role === 'owner' || member.role === 'admin');
-
-        // Allow delete if admin/owner
-        if (isAdminOrOwner) {
-            const workspaceId = project.workspace?.toString();
-            const deletedProjectId = project._id?.toString();
-            await project.deleteOne();
-            const io = req.app.get('io');
-            const workspaceRoom = workspaceId ? `workspace_${workspaceId}` : null;
-            if (workspaceRoom) {
-                io?.to(workspaceRoom).emit('project_deleted', {
-                    workspaceId,
-                    project: { _id: deletedProjectId },
-                });
-                io?.to(workspaceRoom).emit('project_updated', {
-                    workspaceId,
-                    project: { _id: deletedProjectId },
-                    action: 'deleted',
-                });
-            }
-        
-
-            return res.json({ message: "Project deleted successfully" });
-        } else {
-            return res.status(403).json({ message: "Not authorized to delete this project" });
-        }
-
+        await deleteProjectService(req.params.id, req.user._id, req);
+        res.json({ message: 'Project deleted successfully' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server Error" });
+        res.status(error.status || 500).json({ message: error.message || 'Server Error' });
     }
 };

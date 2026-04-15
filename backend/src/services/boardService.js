@@ -1,6 +1,8 @@
 import Project from '../models/Project.js';
 import Workspace from '../models/Workspace.js';
 import Notification from '../models/Notification.js';
+import List from '../models/List.js';
+import Card from '../models/Card.js';
 
 /**
  * Check if member is admin or owner
@@ -222,4 +224,103 @@ export const createAssigneeNotifications = async (card, newAssignees, actor, req
             }
         }
     }
+};
+
+// ---------------------------------------------------------------------------
+// Order helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Get the next card order value within a list (max existing order + 1).
+ */
+export const getNextCardOrder = async (listId) => {
+    const lastCard = await Card.findOne({ listId }).sort('-order').select('order');
+    return lastCard ? lastCard.order + 1 : 0;
+};
+
+/**
+ * Get the next list order value within a project.
+ */
+export const getNextListOrder = async (projectId) => {
+    const lastList = await List.findOne({ projectId }).sort('-order').select('order');
+    return lastList ? lastList.order + 1 : 0;
+};
+
+// ---------------------------------------------------------------------------
+// Workspace-level board queries
+// ---------------------------------------------------------------------------
+
+/**
+ * Shared membership check: returns workspace and the array of project IDs.
+ * Throws on not found / not authorized.
+ */
+const resolveWorkspaceMembership = async (workspaceId, userId) => {
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+        const err = new Error('Workspace not found');
+        err.status = 404;
+        throw err;
+    }
+    const isMember = workspace.members.some(
+        (m) => m.user.toString() === userId.toString()
+    );
+    if (!isMember) {
+        const err = new Error('Not authorized to view this workspace');
+        err.status = 403;
+        throw err;
+    }
+    const projects = await Project.find({ workspace: workspaceId }).select('_id');
+    const projectIds = projects.map((p) => p._id);
+    return { workspace, projectIds };
+};
+
+/**
+ * Get all non-archived cards for every project in a workspace.
+ */
+export const getWorkspaceCards = async (workspaceId, userId) => {
+    const { projectIds } = await resolveWorkspaceMembership(workspaceId, userId);
+    return Card.find({ projectId: { $in: projectIds }, archived: { $ne: true } })
+        .populate('projectId', 'name')
+        .populate('listId', 'title')
+        .populate('assignees', 'fullname avatar');
+};
+
+/**
+ * Get non-archived cards assigned to a specific user across a workspace.
+ */
+export const getMyTasks = async (workspaceId, userId) => {
+    const { projectIds } = await resolveWorkspaceMembership(workspaceId, userId);
+    return Card.find({
+        projectId: { $in: projectIds },
+        assignees: userId,
+        archived: { $ne: true },
+    })
+        .populate('projectId', 'name')
+        .populate('listId', 'title')
+        .populate('assignees', 'fullname avatar');
+};
+
+/**
+ * Calculate task completion stats for a workspace.
+ */
+export const getWorkspaceStats = async (workspaceId, userId) => {
+    const { projectIds } = await resolveWorkspaceMembership(workspaceId, userId);
+
+    const lists = await List.find({ projectId: { $in: projectIds } }).select('_id title');
+    const listTitleMap = new Map(
+        lists.map((l) => [l._id.toString(), (l.title || '').toLowerCase()])
+    );
+
+    const cards = await Card.find({
+        projectId: { $in: projectIds },
+        archived: { $ne: true },
+    }).select('listId');
+
+    const totalCards = cards.length;
+    const completedTasks = cards.filter(
+        (c) => listTitleMap.get(c.listId.toString()) === 'done'
+    ).length;
+    const activeTasks = totalCards - completedTasks;
+
+    return { totalCards, completedTasks, activeTasks };
 };

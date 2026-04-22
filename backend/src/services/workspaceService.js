@@ -42,9 +42,9 @@ export const canAdminRemoveTarget = (requester, targetMember) => {
     return false;
 };
 
-// ---------------------------------------------------------------------------
+
 // Mutation helpers — extracted from workspaceController
-// ---------------------------------------------------------------------------
+
 
 /**
  * Add a member to a workspace and save.

@@ -20,7 +20,7 @@ const postKhaltiJson = async (path, payload) => {
     const response = await fetch(`${getKhaltiBaseUrl()}${path}`, {
         method: 'POST',
         headers: {
-            Authorization: `Key ${getKhaltiSecretKey()}`,
+            Authorization: `key ${getKhaltiSecretKey()}`,
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(payload),

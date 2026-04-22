@@ -5,9 +5,9 @@ import Notification from '../models/Notification.js';
 import sendEmail from '../utils/sendEmail.js';
 import { canAddMembersToWorkspace } from './workspacePlanService.js';
 
-// ---------------------------------------------------------------------------
+
 // URL helpers
-// ---------------------------------------------------------------------------
+
 
 const getFrontendBaseUrl = () =>
     String(process.env.FRONTEND_URL || 'http://localhost:5173')
@@ -22,7 +22,7 @@ export const buildDashboardLink = () =>
 
 // ---------------------------------------------------------------------------
 // Email senders
-// ---------------------------------------------------------------------------
+
 
 export const sendExternalInviteEmail = ({ recipientEmail, inviterName, workspaceName, inviteLink }) =>
     sendEmail({
@@ -61,9 +61,9 @@ export const sendExistingUserInviteEmail = ({ recipientEmail, recipientName, inv
         `,
     });
 
-// ---------------------------------------------------------------------------
+
 // Validation helpers
-// ---------------------------------------------------------------------------
+
 
 /**
  * Resolve and validate the invite role from the request and workspace settings.
@@ -112,9 +112,9 @@ export const assertMemberLimit = (workspace) => {
     }
 };
 
-// ---------------------------------------------------------------------------
+
 // Invite lifecycle helpers
-// ---------------------------------------------------------------------------
+
 
 /**
  * If the invite is expired, mark it expired and save. Returns updated invite (or null).
@@ -255,9 +255,8 @@ export const createInternalInvite = async ({ workspaceId, normalizedEmail, invit
     return { invite, emailDelivered: true };
 };
 
-// ---------------------------------------------------------------------------
+
 // Public service functions (called by the controller)
-// ---------------------------------------------------------------------------
 
 /**
  * Send an invite to a workspace.

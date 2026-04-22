@@ -226,9 +226,8 @@ export const createAssigneeNotifications = async (card, newAssignees, actor, req
     }
 };
 
-// ---------------------------------------------------------------------------
+
 // Order helpers
-// ---------------------------------------------------------------------------
 
 /**
  * Get the next card order value within a list (max existing order + 1).
@@ -246,9 +245,9 @@ export const getNextListOrder = async (projectId) => {
     return lastList ? lastList.order + 1 : 0;
 };
 
-// ---------------------------------------------------------------------------
+
 // Workspace-level board queries
-// ---------------------------------------------------------------------------
+
 
 /**
  * Shared membership check: returns workspace and the array of project IDs.

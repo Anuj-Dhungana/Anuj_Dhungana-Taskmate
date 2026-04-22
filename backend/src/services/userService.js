@@ -76,9 +76,8 @@ export const buildUserResponse = (user) => ({
     twoFactorEnabled: user.twoFactorEnabled,
 });
 
-// ---------------------------------------------------------------------------
+
 // Registration flow
-// ---------------------------------------------------------------------------
 
 /**
  * Register a new user:
@@ -136,9 +135,9 @@ export const registerUser = async ({ fullname, email, password }) => {
     return { email: user.email };
 };
 
-// ---------------------------------------------------------------------------
+
 // Email verification flow
-// ---------------------------------------------------------------------------
+
 
 /**
  * Verify the OTP for an email address.
@@ -165,9 +164,9 @@ export const verifyUserEmail = async ({ email, code }) => {
     return user;
 };
 
-// ---------------------------------------------------------------------------
+
 // Login flow
-// ---------------------------------------------------------------------------
+
 
 /**
  * Authenticate a user by email + password.
@@ -216,9 +215,9 @@ export const loginUser = async ({ email, password }) => {
     return { type: 'ok', user };
 };
 
-// ---------------------------------------------------------------------------
+
 // 2FA verification
-// ---------------------------------------------------------------------------
+
 
 /**
  * Verify a 2FA OTP for login.
@@ -242,9 +241,9 @@ export const verify2FACode = async ({ email, code }) => {
     return user;
 };
 
-// ---------------------------------------------------------------------------
+
 // Password reset flow
-// ---------------------------------------------------------------------------
+
 
 /**
  * Initiate a password-reset request.
@@ -304,9 +303,9 @@ export const resetPassword = async ({ rawToken, newPassword }) => {
     await user.save();
 };
 
-// ---------------------------------------------------------------------------
+
 // Profile update
-// ---------------------------------------------------------------------------
+
 
 /**
  * Update a user's profile (name, avatar, password).
@@ -344,9 +343,9 @@ export const updateUserProfile = async ({ userId, fullname, password, currentPas
     return user.save();
 };
 
-// ---------------------------------------------------------------------------
+
 // 2FA toggle
-// ---------------------------------------------------------------------------
+
 
 /**
  * Toggle 2FA on/off for a user.
@@ -359,9 +358,9 @@ export const toggle2FA = async (userId) => {
     return { twoFactorEnabled: user.twoFactorEnabled };
 };
 
-// ---------------------------------------------------------------------------
+
 // Activity stats
-// ---------------------------------------------------------------------------
+
 
 /**
  * Get aggregate activity stats for a user over the last 30 days.

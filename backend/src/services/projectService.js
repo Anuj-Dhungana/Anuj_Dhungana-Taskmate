@@ -3,9 +3,8 @@ import Workspace from '../models/Workspace.js';
 import List from '../models/List.js';
 import { canCreateProjectInWorkspace } from './workspacePlanService.js';
 
-// ---------------------------------------------------------------------------
 // Helpers
-// ---------------------------------------------------------------------------
+
 
 /**
  * Assert that a user is a member of a workspace.
@@ -101,9 +100,9 @@ export const emitProjectEvent = (req, workspaceId, eventName, payload) => {
     });
 };
 
-// ---------------------------------------------------------------------------
+
 // CRUD operations
-// ---------------------------------------------------------------------------
+
 
 /**
  * Create a new project in a workspace.

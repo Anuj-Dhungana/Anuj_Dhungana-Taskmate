@@ -1,8 +1,9 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
+import { GoogleLogin } from '@react-oauth/google';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, CheckCircle2 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
@@ -84,6 +85,20 @@ const Register = () => {
             navigate('/verify-email', { state: { email, inviteToken: inviteToken || null } });
         } catch (err) {
             toast.error(err?.response?.data?.message || err.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setIsLoading(true);
+        try {
+            const res = await axios.post('/api/auth/google', { credential: credentialResponse.credential });
+            useAuthStore.getState().setCredentials(res.data);
+            toast.success('Google login successful!');
+            navigate('/dashboard');
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Google registration failed');
         } finally {
             setIsLoading(false);
         }
@@ -188,6 +203,15 @@ const Register = () => {
                             <div className="flex-1 h-px bg-gray-200" />
                             <span className="text-xs text-gray-400 font-medium">OR</span>
                             <div className="flex-1 h-px bg-gray-200" />
+                        </div>
+
+                        {/* Google Login */}
+                        <div className="flex justify-center mb-6">
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => toast.error('Google login failed')}
+                                useOneTap
+                            />
                         </div>
 
                         <p className="text-center text-sm text-gray-500">

@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
 import Workspace from '../models/Workspace.js';
 import Project from '../models/Project.js';
@@ -212,6 +213,60 @@ export const loginUser = async ({ email, password }) => {
         return { type: '2fa', email: user.email };
     }
 
+    return { type: 'ok', user };
+};
+
+
+// Google Auth flow
+
+/**
+ * Authenticate a user via Google OAuth token.
+ * Verifies the token, finds or creates the user (with a random password),
+ * and returns the user object.
+ */
+export const googleLogin = async ({ credential }) => {
+    const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+    
+    // Verify the Google token
+    const ticket = await client.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    
+    const payload = ticket.getPayload();
+    const { email, name, picture } = payload;
+    
+    if (!email) {
+        const err = new Error('Google token did not contain an email');
+        err.status = 400;
+        throw err;
+    }
+    
+    // Check if user exists
+    let user = await User.findOne({ email });
+    
+    if (user) {
+        // If they exist but haven't verified email, Google essentially verifies it
+        if (!user.isVerified) {
+            user.isVerified = true;
+            await user.save();
+        }
+        return { type: 'ok', user };
+    }
+    
+    // If user does not exist, create a new one
+    // Generate a random secure password for the newly created user
+    const randomPassword = crypto.randomBytes(16).toString('hex');
+    const hashedPassword = await hashPassword(randomPassword);
+    
+    user = await User.create({
+        fullname: name,
+        email: email,
+        password: hashedPassword,
+        avatar: picture || '',
+        isVerified: true // Google verified emails are considered verified
+    });
+    
     return { type: 'ok', user };
 };
 

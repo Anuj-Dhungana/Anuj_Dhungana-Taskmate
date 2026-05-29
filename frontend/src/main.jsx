@@ -4,6 +4,7 @@ import App from './App.jsx'
 import './index.css'
 import { BrowserRouter } from 'react-router-dom'
 import axios from 'axios'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 
 // Setup global axios defaults for deployment environments
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -24,7 +25,9 @@ initTheme();
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <React.StrictMode>
-      <App />
+      <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+        <App />
+      </GoogleOAuthProvider>
     </React.StrictMode>
   </BrowserRouter>
 )

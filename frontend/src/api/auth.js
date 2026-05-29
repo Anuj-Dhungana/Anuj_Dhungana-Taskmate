@@ -8,6 +8,9 @@ export const authAPI = {
     // Login
     login: (data) => api.post('/api/auth/login', data),
     
+    // Google Login
+    googleLogin: (credential) => api.post('/api/auth/google', { credential }),
+    
     // 2FA login
     login2FA: (data) => api.post('/api/auth/login-2fa', data),
     

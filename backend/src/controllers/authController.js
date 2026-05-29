@@ -11,6 +11,7 @@ import {
     toggle2FA as toggle2FAService,
     getActivityStats as getActivityStatsService,
     buildUserResponse,
+    googleLogin as googleLoginService,
 } from '../services/userService.js';
 
 // POST /api/auth/register
@@ -66,6 +67,25 @@ export const loginUser = async (req, res) => {
             message: 'Logged in successfully!',
         });
     } catch (error) {
+        res.status(error.status || 500).json({ message: error.message || 'Server Error' });
+    }
+};
+
+// POST /api/auth/google
+export const googleLogin = async (req, res) => {
+    try {
+        const { credential } = req.body;
+        const result = await googleLoginService({ credential });
+
+        generateToken(res, result.user._id);
+        res.json({
+            _id: result.user._id,
+            fullname: result.user.fullname,
+            email: result.user.email,
+            message: 'Google login successful!',
+        });
+    } catch (error) {
+        console.error('Google login error:', error);
         res.status(error.status || 500).json({ message: error.message || 'Server Error' });
     }
 };

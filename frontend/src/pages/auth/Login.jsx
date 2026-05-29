@@ -1,9 +1,10 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import useAuthStore from '../../store/useAuthStore';
 import { toast } from 'react-hot-toast';
 import { inviteAPI } from '../../api/invites';
+import { GoogleLogin } from '@react-oauth/google';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import logo from '../../assets/logo.png';
 
@@ -100,6 +101,21 @@ const Login = () => {
             else navigate('/dashboard');
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Login failed');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleGoogleSuccess = async (credentialResponse) => {
+        setIsLoading(true);
+        try {
+            const res = await axios.post('/api/auth/google', { credential: credentialResponse.credential });
+            setCredentials(res.data);
+            toast.success('Google login successful!');
+            if (inviteToken) await handleInviteAcceptance(inviteToken);
+            else navigate('/dashboard');
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Google login failed');
         } finally {
             setIsLoading(false);
         }
@@ -242,6 +258,16 @@ const Login = () => {
                             <div className="flex-1 h-px bg-gray-200" />
                             <span className="text-xs text-gray-400 font-medium">OR</span>
                             <div className="flex-1 h-px bg-gray-200" />
+                        </div>
+
+                        {/* Google Login */}
+                        <div className="flex justify-center mb-6">
+                            <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => toast.error('Google login failed')}
+                                useOneTap
+                                locale="en"
+                            />
                         </div>
 
                         {/* Register link */}

@@ -1,6 +1,7 @@
 import express from 'express';
 import { registerUser } from '../controllers/authController.js';
 import { loginUser } from '../controllers/authController.js';
+import { googleLogin } from '../controllers/authController.js';
 import { logoutUser } from '../controllers/authController.js';
 import protect  from '../middleware/authMiddleware.js';
 import { verifyEmail } from '../controllers/authController.js';
@@ -30,7 +31,8 @@ const router = express.Router();
 
 // Define the routes with validation and rate limiting
 router.post('/register', registerLimiter, registerValidation, validate, registerUser);
-router.post('/login', authLimiter, loginValidation, validate, loginUser); 
+router.post('/login', authLimiter, loginValidation, validate, loginUser);
+router.post('/google', googleLogin);
 router.post('/logout', logoutUser);
 router.post('/verify-email', verifyEmail);
 router.post('/forgot-password', passwordResetLimiter, forgotPasswordValidation, validate, forgotPassword);

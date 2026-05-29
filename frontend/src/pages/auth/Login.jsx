@@ -266,6 +266,7 @@ const Login = () => {
                                 onSuccess={handleGoogleSuccess}
                                 onError={() => toast.error('Google login failed')}
                                 useOneTap
+                                locale="en"
                             />
                         </div>
 

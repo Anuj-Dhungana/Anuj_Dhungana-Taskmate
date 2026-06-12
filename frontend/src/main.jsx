@@ -9,6 +9,10 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 // Setup global axios defaults for deployment environments
 axios.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 axios.defaults.withCredentials = true;
+// Apply CSRF protection globally for any file still using raw 'import axios from "axios"'
+axios.defaults.xsrfCookieName = 'XSRF-TOKEN';
+axios.defaults.xsrfHeaderName = 'X-XSRF-TOKEN';
+axios.defaults.withXSRFToken = true;
 
 // Initialize theme before React renders
 const initTheme = () => {

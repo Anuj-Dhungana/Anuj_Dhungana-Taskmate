@@ -27,6 +27,7 @@ import Message from './models/Message.js';
 import Workspace from './models/Workspace.js';
 import Channel from './models/Channel.js';
 import jwt from 'jsonwebtoken';
+import { generateCsrfToken, validateCsrfToken } from './middleware/csrfMiddleware.js';
 
 dotenv.config();
 connectDB();
@@ -37,6 +38,7 @@ const app = express();
 app.use(logger); // Request logging
 app.use(express.json());
 app.use(cookieParser());
+app.use(generateCsrfToken); // Provide CSRF token cookie to frontend
 
 // Trust the reverse proxy (like Render/Railway) for secure cookies
 app.set("trust proxy", 1);
@@ -107,7 +109,7 @@ app.use(cors({
     origin: corsOriginHandler,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-xsrf-token', 'X-XSRF-TOKEN'],
 }));
 
 console.log('CORS allowed origins:', allowedOrigins);
@@ -116,6 +118,9 @@ console.log('CORS allowed origins:', allowedOrigins);
 if (process.env.NODE_ENV === 'production') {
     app.use('/api', apiLimiter);
 }
+
+// Validate CSRF token for state-changing routes under /api
+app.use('/api', validateCsrfToken);
 
 // --- SOCKET.IO SETUP ---
 const httpServer = createServer(app); // Wrap Express

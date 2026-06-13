@@ -194,23 +194,34 @@ export const toggleReaction = async (req, res) => {
             return res.status(access.status).json({ message: access.message });
         }
 
-        let reactionObj = message.reactions?.find(r => r.emoji === emoji);
-        
-        if (reactionObj) {
-            const userIndex = reactionObj.users.indexOf(userId);
+        if (!message.reactions) message.reactions = [];
+
+        let wasAlreadyReactedWithRequestedEmoji = false;
+
+        // 1. Remove the user from ALL existing emojis
+        message.reactions.forEach(reactionObj => {
+            const userIndex = reactionObj.users.findIndex(
+                (u) => u.toString() === userId.toString()
+            );
             if (userIndex > -1) {
-                // Remove reaction if already reacted
                 reactionObj.users.splice(userIndex, 1);
-                // Clean up empty reaction array
-                if (reactionObj.users.length === 0) {
-                    message.reactions = message.reactions.filter(r => r.emoji !== emoji);
+                if (reactionObj.emoji === emoji) {
+                    wasAlreadyReactedWithRequestedEmoji = true; // It's a toggle off
                 }
-            } else {
-                reactionObj.users.push(userId);
             }
-        } else {
-            // First time this emoji is used
-            message.reactions.push({ emoji, users: [userId] });
+        });
+
+        // Clean up any emojis that now have 0 users
+        message.reactions = message.reactions.filter(r => r.users.length > 0);
+
+        // 2. If they hadn't already reacted with THIS emoji, add it
+        if (!wasAlreadyReactedWithRequestedEmoji) {
+            let reactionObj = message.reactions.find(r => r.emoji === emoji);
+            if (reactionObj) {
+                reactionObj.users.push(userId);
+            } else {
+                message.reactions.push({ emoji, users: [userId] });
+            }
         }
 
         await message.save();

@@ -292,6 +292,7 @@ io.on("connection", (socket) => {
             // 2. Populate fields for broadcast (prevent client forgery of sender details)
             const populatedMessage = await Message.findById(newMessage._id)
                 .populate('sender', 'fullname avatar email')
+                .populate('poll.options.votes', 'fullname avatar')
                 .populate({
                     path: 'replyTo',
                     populate: { path: 'sender', select: 'fullname avatar' }

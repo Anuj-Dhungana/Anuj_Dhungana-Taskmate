@@ -2,11 +2,19 @@ import express from 'express';
 import { getMessages, sendMessage, deleteMessage, votePoll, toggleReaction } from '../controllers/chatController.js';
 import protect from '../middleware/authMiddleware.js';
 import upload from '../config/cloudinary.js';
+import validate from '../middleware/validate.js';
+import {
+    getMessagesValidation,
+    sendMessageValidation,
+    deleteMessageValidation,
+    votePollValidation,
+    toggleReactionValidation
+} from '../validators/chatValidator.js';
 
 const router = express.Router();
 
-router.get('/:channelId', protect, getMessages);
-router.post('/', protect, sendMessage);
+router.get('/:channelId', protect, getMessagesValidation, validate, getMessages);
+router.post('/', protect, sendMessageValidation, validate, sendMessage);
 router.post('/upload', protect, upload.array('attachments', 10), (req, res) => {
     try {
         if (!req.files || req.files.length === 0) {
@@ -26,8 +34,8 @@ router.post('/upload', protect, upload.array('attachments', 10), (req, res) => {
         res.status(500).json({ message: "File upload failed" });
     }
 });
-router.post('/:id/vote', protect, votePoll);
-router.post('/:id/react', protect, toggleReaction);
-router.delete('/:id', protect, deleteMessage);
+router.post('/:id/vote', protect, votePollValidation, validate, votePoll);
+router.post('/:id/react', protect, toggleReactionValidation, validate, toggleReaction);
+router.delete('/:id', protect, deleteMessageValidation, validate, deleteMessage);
 
 export default router;

@@ -15,12 +15,22 @@ const protect = async (req, res, next) => {
             // Get user from DB (exclude password)
             req.user = await User.findById(decoded.userId).select('-password');
 
+            if (!req.user) {
+                const err = new Error('Not authorized, user not found');
+                err.statusCode = 401;
+                return next(err);
+            }
+
             next(); // Move to the controller
         } catch (error) {
-            res.status(401).json({ message: 'Not authorized, invalid token' });
+            const err = new Error('Not authorized, invalid token');
+            err.statusCode = 401;
+            next(err);
         }
     } else {
-        res.status(401).json({ message: 'Not authorized, no token' });
+        const err = new Error('Not authorized, no token');
+        err.statusCode = 401;
+        next(err);
     }
 };
 

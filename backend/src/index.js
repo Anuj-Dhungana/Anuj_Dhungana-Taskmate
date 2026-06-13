@@ -27,6 +27,7 @@ import Message from './models/Message.js';
 import Workspace from './models/Workspace.js';
 import Channel from './models/Channel.js';
 import jwt from 'jsonwebtoken';
+import cookie from 'cookie';
 import { generateCsrfToken, validateCsrfToken } from './middleware/csrfMiddleware.js';
 
 dotenv.config();
@@ -135,17 +136,17 @@ const io = new Server(httpServer, {
 // Socket.IO Authentication Middleware
 io.use((socket, next) => {
     try {
-        const cookies = socket.handshake.headers.cookie;
-        if (!cookies) {
+        const cookieHeader = socket.handshake.headers.cookie;
+        if (!cookieHeader) {
             return next(new Error("Authentication error"));
         }
 
-        const tokenStr = cookies.split(';').find(c => c.trim().startsWith('jwt='));
-        if (!tokenStr) {
+        const parsedCookies = cookie.parse(cookieHeader);
+        const token = parsedCookies.jwt;
+        if (!token) {
             return next(new Error("Authentication error"));
         }
 
-        const token = tokenStr.split('=')[1].trim();
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         socket.user = { userId: decoded.userId };
@@ -307,12 +308,26 @@ io.on("connection", (socket) => {
 
     // Handle Typing
     socket.on("typing", (data) => {
-        // Broadcast user_typing to specific channel
-        socket.to(data.channelId).emit("user_typing", data);
+        const { channelId } = data;
+        if (!channelId || !socket.rooms.has(channelId)) return;
+        // Construct payload server-side; the frontend uses `data.user` (fullname)
+        // to display typing indicators. We pass userId so the frontend can also
+        // resolve the name from its cached member list if needed.
+        socket.to(channelId).emit("user_typing", {
+            channelId,
+            userId: socket.user.userId,
+            user: data.user // fullname supplied by client — display-only, not trusted for auth
+        });
     });
 
     socket.on("stop_typing", (data) => {
-        socket.to(data.channelId).emit("user_stop_typing", data);
+        const { channelId } = data;
+        if (!channelId || !socket.rooms.has(channelId)) return;
+        socket.to(channelId).emit("user_stop_typing", {
+            channelId,
+            userId: socket.user.userId,
+            user: data.user
+        });
     });
 
     socket.on("disconnect", () => {

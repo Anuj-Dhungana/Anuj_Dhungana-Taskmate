@@ -23,6 +23,7 @@ import channelRoutes from './routes/channelRoutes.js';
 import inviteRoutes from './routes/inviteRoutes.js';
 import callRoutes from './routes/callRoutes.js';
 import meetingRoutes from './routes/meetingRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 import Message from './models/Message.js';
 import Workspace from './models/Workspace.js';
 import Channel from './models/Channel.js';
@@ -347,6 +348,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/meetings', meetingRoutes);
+app.use('/api/ai', aiRoutes);
 app.set('io', io); 
 
 app.get('/', (req, res) => {

@@ -157,9 +157,20 @@ io.use((socket, next) => {
     }
 });
 
+// Global presence tracking: Map<userId, Set<socketId>>
+const onlineUsersMap = new Map();
+
 // Socket Logic
 io.on("connection", (socket) => {
-    console.log("User Connected:", socket.id, "User ID:", socket.user?.userId);
+    const userId = socket.user?.userId;
+    if (userId) {
+        if (!onlineUsersMap.has(userId)) {
+            onlineUsersMap.set(userId, new Set());
+        }
+        onlineUsersMap.get(userId).add(socket.id);
+    }
+
+    console.log("User Connected:", socket.id, "User ID:", userId);
 
     // Join a Channel Room
     socket.on("join_channel", async (channelId) => {
@@ -216,6 +227,15 @@ io.on("connection", (socket) => {
 
             socket.join(workspaceRoom);
             console.log(`User joined workspace: ${workspaceRoom}`);
+
+            // Inform the user who just joined about all currently online members in this workspace
+            const workspaceOnlineUsers = workspace.members
+                .map((m) => m.user.toString())
+                .filter((id) => onlineUsersMap.has(id));
+            socket.emit("online_users", workspaceOnlineUsers);
+
+            // Inform other members in the workspace that this user is online
+            socket.to(workspaceRoom).emit("user_online", { userId: socket.user.userId });
         } catch (error) {
             console.error("join_workspace error:", error);
         }
@@ -332,8 +352,26 @@ io.on("connection", (socket) => {
         });
     });
 
+    socket.on("disconnecting", () => {
+        if (userId) {
+            const userSockets = onlineUsersMap.get(userId);
+            if (userSockets) {
+                userSockets.delete(socket.id);
+                if (userSockets.size === 0) {
+                    onlineUsersMap.delete(userId);
+                    // Broadcast offline to all workspace rooms this socket was in
+                    for (const room of socket.rooms) {
+                        if (room.startsWith('workspace_')) {
+                            socket.to(room).emit("user_offline", { userId });
+                        }
+                    }
+                }
+            }
+        }
+    });
+
     socket.on("disconnect", () => {
-        console.log("User Disconnected", socket.id);
+        console.log("User Disconnected", socket.id, "User ID:", userId);
     });
 });
 

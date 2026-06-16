@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import socket from '../lib/socket';
 import useWorkspaceStore from './useWorkspaceStore';
+import usePresenceStore from './usePresenceStore';
 import { emitProjectDataChanged } from '../utils/projectEvents';
 
 const toWorkspaceId = (payload = {}) =>
@@ -179,6 +180,17 @@ const useRealtimeSyncStore = create((set, get) => ({
             );
         };
         const onListCreated = (payload) => onTaskEvent(payload, 'socket:list_created');
+
+        const onOnlineUsers = (userIds) => {
+            usePresenceStore.getState().setOnlineUsers(userIds);
+        };
+        const onUserOnline = ({ userId }) => {
+            if (userId) usePresenceStore.getState().addOnlineUser(userId);
+        };
+        const onUserOffline = ({ userId }) => {
+            if (userId) usePresenceStore.getState().removeOnlineUser(userId);
+        };
+
         const bind = (eventName, handler) => {
             socket.off(eventName, handler);
             socket.on(eventName, handler);
@@ -198,6 +210,9 @@ const useRealtimeSyncStore = create((set, get) => ({
         bind('member_removed', onMemberRemoved);
         bind('member_added', onMemberAdded);
         bind('workspace_updated', onWorkspaceUpdated);
+        bind('online_users', onOnlineUsers);
+        bind('user_online', onUserOnline);
+        bind('user_offline', onUserOffline);
 
         set({ initialized: true, connected: socket.connected });
     },

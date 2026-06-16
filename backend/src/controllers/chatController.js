@@ -1,6 +1,7 @@
 import Message from '../models/Message.js';
 import Workspace from '../models/Workspace.js';
 import Channel from '../models/Channel.js';
+import { asyncHandler } from '../middleware/errorHandler.js';
 
 const ensureChannelAccess = async (channelId, userId) => {
     const channel = await Channel.findById(channelId);
@@ -33,212 +34,190 @@ const ensureChannelAccess = async (channelId, userId) => {
     return { channel, workspace, status: 200 };
 };
 
-export const getMessages = async (req, res) => {
-    try {
-        const { channelId } = req.params;
+export const getMessages = asyncHandler(async (req, res) => {
+    const { channelId } = req.params;
 
-        const access = await ensureChannelAccess(channelId, req.user._id);
-        if (access.status !== 200) {
-            return res.status(access.status).json({ message: access.message });
-        }
-
-        const messages = await Message.find({ channelId })
-            .populate('sender', 'fullname avatar email')
-            .populate('poll.options.votes', 'fullname avatar')
-            .populate({ path: 'replyTo', populate: { path: 'sender', select: 'fullname avatar' } })
-            .sort({ createdAt: 1 }); // Oldest first
-
-        res.json(messages);
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
+    const access = await ensureChannelAccess(channelId, req.user._id);
+    if (access.status !== 200) {
+        return res.status(access.status).json({ message: access.message });
     }
-};
+
+    const messages = await Message.find({ channelId })
+        .populate('sender', 'fullname avatar email')
+        .populate('poll.options.votes', 'fullname avatar')
+        .populate({ path: 'replyTo', populate: { path: 'sender', select: 'fullname avatar' } })
+        .sort({ createdAt: 1 }); // Oldest first
+
+    res.json(messages);
+});
 
 
-export const sendMessage = async (req, res) => {
-    try {
-        const { workspaceId, channelId, content } = req.body;
-        const access = await ensureChannelAccess(channelId, req.user._id);
-        if (access.status !== 200) {
-            return res.status(access.status).json({ message: access.message });
-        }
-
-        const safeWorkspaceId = access.channel.workspace?.toString() || workspaceId;
-
-        const newMessage = await Message.create({
-            workspaceId: safeWorkspaceId,
-            channelId,
-            sender: req.user._id,
-            content
-        });
-
-        const fullMessage = await newMessage.populate('sender', 'fullname avatar');
-        await fullMessage.populate('poll.options.votes', 'fullname avatar');
-        
-        res.status(201).json(fullMessage);
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
+export const sendMessage = asyncHandler(async (req, res) => {
+    const { workspaceId, channelId, content } = req.body;
+    const access = await ensureChannelAccess(channelId, req.user._id);
+    if (access.status !== 200) {
+        return res.status(access.status).json({ message: access.message });
     }
-};
 
-export const deleteMessage = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const message = await Message.findById(id);
-        if (!message) {
-            return res.status(404).json({ message: "Message not found" });
-        }
+    const safeWorkspaceId = access.channel.workspace?.toString() || workspaceId;
 
-        const channel = await Channel.findById(message.channelId).select('type');
-        if (!channel) {
-            return res.status(404).json({ message: "Channel not found" });
-        }
+    const newMessage = await Message.create({
+        workspaceId: safeWorkspaceId,
+        channelId,
+        sender: req.user._id,
+        content
+    });
 
-        const workspace = await Workspace.findById(message.workspaceId);
-        if (!workspace) {
-            return res.status(404).json({ message: "Workspace not found" });
-        }
+    const fullMessage = await newMessage.populate('sender', 'fullname avatar');
+    await fullMessage.populate('poll.options.votes', 'fullname avatar');
+    
+    res.status(201).json(fullMessage);
+});
 
-        const member = workspace.members.find(
-            (m) => m.user.toString() === req.user._id.toString()
-        );
-        if (!member) {
-            return res.status(403).json({ message: "Not authorized" });
-        }
+export const deleteMessage = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const message = await Message.findById(id);
+    if (!message) {
+        return res.status(404).json({ message: "Message not found" });
+    }
 
-        const isModerator = member.role === 'owner' || member.role === 'admin';
-        const isSender = message.sender.toString() === req.user._id.toString();
-        if (channel.type === 'dm') {
-            if (!isSender) {
-                return res.status(403).json({ message: "Not authorized to delete this message" });
-            }
-        } else if (!isModerator && !isSender) {
+    const channel = await Channel.findById(message.channelId).select('type');
+    if (!channel) {
+        return res.status(404).json({ message: "Channel not found" });
+    }
+
+    const workspace = await Workspace.findById(message.workspaceId);
+    if (!workspace) {
+        return res.status(404).json({ message: "Workspace not found" });
+    }
+
+    const member = workspace.members.find(
+        (m) => m.user.toString() === req.user._id.toString()
+    );
+    if (!member) {
+        return res.status(403).json({ message: "Not authorized" });
+    }
+
+    const isModerator = member.role === 'owner' || member.role === 'admin';
+    const isSender = message.sender.toString() === req.user._id.toString();
+    if (channel.type === 'dm') {
+        if (!isSender) {
             return res.status(403).json({ message: "Not authorized to delete this message" });
         }
-
-        await message.deleteOne();
-        res.json({ message: "Message deleted" });
-    } catch (error) {
-        res.status(500).json({ message: "Server Error" });
+    } else if (!isModerator && !isSender) {
+        return res.status(403).json({ message: "Not authorized to delete this message" });
     }
-};
 
-export const votePoll = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { optionIndex } = req.body;
-        const userId = req.user._id;
+    await message.deleteOne();
+    res.json({ message: "Message deleted" });
+});
 
-        const message = await Message.findById(id);
-        if (!message || !message.poll || !message.poll.options) {
-            return res.status(404).json({ message: "Poll not found" });
-        }
+export const votePoll = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { optionIndex } = req.body;
+    const userId = req.user._id;
 
-        const access = await ensureChannelAccess(message.channelId, userId);
-        if (access.status !== 200) {
-            return res.status(access.status).json({ message: access.message });
-        }
-
-        if (optionIndex < 0 || optionIndex >= message.poll.options.length) {
-            return res.status(400).json({ message: "Invalid option" });
-        }
-
-        const hasVotedThisOption = message.poll.options[optionIndex].votes.includes(userId);
-
-        if (!message.poll.multipleAnswers) {
-            // Remove user from all other options
-            message.poll.options.forEach((opt) => {
-                const index = opt.votes.indexOf(userId);
-                if (index > -1) opt.votes.splice(index, 1);
-            });
-        }
-
-        if (hasVotedThisOption) {
-            const idx = message.poll.options[optionIndex].votes.indexOf(userId);
-            if (idx > -1) {
-                message.poll.options[optionIndex].votes.splice(idx, 1);
-            }
-        } else {
-            message.poll.options[optionIndex].votes.push(userId);
-        }
-
-        await message.save();
-
-        const fullMessage = await Message.findById(id).populate('sender', 'fullname avatar').populate('poll.options.votes', 'fullname avatar');
-
-        const io = req.app.get('io');
-        if (io) {
-            io.to(message.channelId.toString()).emit("poll_updated", fullMessage);
-        }
-
-        res.json(fullMessage);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server Error" });
+    const message = await Message.findById(id);
+    if (!message || !message.poll || !message.poll.options) {
+        return res.status(404).json({ message: "Poll not found" });
     }
-};
 
-export const toggleReaction = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { emoji } = req.body;
-        const userId = req.user._id;
+    const access = await ensureChannelAccess(message.channelId, userId);
+    if (access.status !== 200) {
+        return res.status(access.status).json({ message: access.message });
+    }
 
-        if (!emoji) return res.status(400).json({ message: "Emoji is required" });
+    if (optionIndex < 0 || optionIndex >= message.poll.options.length) {
+        return res.status(400).json({ message: "Invalid option" });
+    }
 
-        const message = await Message.findById(id);
-        if (!message) return res.status(404).json({ message: "Message not found" });
+    const hasVotedThisOption = message.poll.options[optionIndex].votes.includes(userId);
 
-        const access = await ensureChannelAccess(message.channelId, userId);
-        if (access.status !== 200) {
-            return res.status(access.status).json({ message: access.message });
-        }
-
-        if (!message.reactions) message.reactions = [];
-
-        let wasAlreadyReactedWithRequestedEmoji = false;
-
-        // 1. Remove the user from ALL existing emojis
-        message.reactions.forEach(reactionObj => {
-            const userIndex = reactionObj.users.findIndex(
-                (u) => u.toString() === userId.toString()
-            );
-            if (userIndex > -1) {
-                reactionObj.users.splice(userIndex, 1);
-                if (reactionObj.emoji === emoji) {
-                    wasAlreadyReactedWithRequestedEmoji = true; // It's a toggle off
-                }
-            }
+    if (!message.poll.multipleAnswers) {
+        // Remove user from all other options
+        message.poll.options.forEach((opt) => {
+            const index = opt.votes.indexOf(userId);
+            if (index > -1) opt.votes.splice(index, 1);
         });
+    }
 
-        // Clean up any emojis that now have 0 users
-        message.reactions = message.reactions.filter(r => r.users.length > 0);
+    if (hasVotedThisOption) {
+        const idx = message.poll.options[optionIndex].votes.indexOf(userId);
+        if (idx > -1) {
+            message.poll.options[optionIndex].votes.splice(idx, 1);
+        }
+    } else {
+        message.poll.options[optionIndex].votes.push(userId);
+    }
 
-        // 2. If they hadn't already reacted with THIS emoji, add it
-        if (!wasAlreadyReactedWithRequestedEmoji) {
-            let reactionObj = message.reactions.find(r => r.emoji === emoji);
-            if (reactionObj) {
-                reactionObj.users.push(userId);
-            } else {
-                message.reactions.push({ emoji, users: [userId] });
+    await message.save();
+
+    const fullMessage = await Message.findById(id).populate('sender', 'fullname avatar').populate('poll.options.votes', 'fullname avatar');
+
+    const io = req.app.get('io');
+    if (io) {
+        io.to(message.channelId.toString()).emit("poll_updated", fullMessage);
+    }
+
+    res.json(fullMessage);
+});
+
+export const toggleReaction = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user._id;
+
+    if (!emoji) return res.status(400).json({ message: "Emoji is required" });
+
+    const message = await Message.findById(id);
+    if (!message) return res.status(404).json({ message: "Message not found" });
+
+    const access = await ensureChannelAccess(message.channelId, userId);
+    if (access.status !== 200) {
+        return res.status(access.status).json({ message: access.message });
+    }
+
+    if (!message.reactions) message.reactions = [];
+
+    let wasAlreadyReactedWithRequestedEmoji = false;
+
+    // 1. Remove the user from ALL existing emojis
+    message.reactions.forEach(reactionObj => {
+        const userIndex = reactionObj.users.findIndex(
+            (u) => u.toString() === userId.toString()
+        );
+        if (userIndex > -1) {
+            reactionObj.users.splice(userIndex, 1);
+            if (reactionObj.emoji === emoji) {
+                wasAlreadyReactedWithRequestedEmoji = true; // It's a toggle off
             }
         }
+    });
 
-        await message.save();
+    // Clean up any emojis that now have 0 users
+    message.reactions = message.reactions.filter(r => r.users.length > 0);
 
-        const fullMessage = await Message.findById(id)
-            .populate('sender', 'fullname avatar')
-            .populate('poll.options.votes', 'fullname avatar')
-            .populate({ path: 'replyTo', populate: { path: 'sender', select: 'fullname avatar' } });
-
-        const io = req.app.get('io');
-        if (io) {
-            io.to(message.channelId.toString()).emit("message_updated", fullMessage);
+    // 2. If they hadn't already reacted with THIS emoji, add it
+    if (!wasAlreadyReactedWithRequestedEmoji) {
+        let reactionObj = message.reactions.find(r => r.emoji === emoji);
+        if (reactionObj) {
+            reactionObj.users.push(userId);
+        } else {
+            message.reactions.push({ emoji, users: [userId] });
         }
-
-        res.json(fullMessage);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server Error" });
     }
-};
+
+    await message.save();
+
+    const fullMessage = await Message.findById(id)
+        .populate('sender', 'fullname avatar')
+        .populate('poll.options.votes', 'fullname avatar')
+        .populate({ path: 'replyTo', populate: { path: 'sender', select: 'fullname avatar' } });
+
+    const io = req.app.get('io');
+    if (io) {
+        io.to(message.channelId.toString()).emit("message_updated", fullMessage);
+    }
+
+    res.json(fullMessage);
+});

@@ -1,5 +1,5 @@
 import { asyncHandler } from '../middleware/errorHandler.js';
-import { generateProjectWithTasks } from '../services/aiService.js';
+import { generateProjectWithTasks, generateTasks } from '../services/aiService.js';
 
 // POST /api/ai/generate
 export const generateAiContent = asyncHandler(async (req, res, next) => {
@@ -14,11 +14,13 @@ export const generateAiContent = asyncHandler(async (req, res, next) => {
     let result;
 
     switch (actionType) {
+        case 'generate_tasks':
+            result = await generateTasks(prompt);
+            break;
         case 'generate_project':
         default:
             result = await generateProjectWithTasks(prompt);
             break;
-        // In Phase 2, we can add cases for 'break_down_task', 'generate_description', etc.
     }
 
     res.status(200).json(result);

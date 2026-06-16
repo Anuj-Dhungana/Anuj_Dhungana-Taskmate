@@ -105,8 +105,47 @@ Generate between 3 to 7 high-quality tasks for the following feature/idea:
     }
 };
 
-// Placeholder for future actions like breakDownTask, generateTaskDescription, etc.
-export const breakDownTask = async (taskContext) => {
-    // Implementation for Phase 2
-    throw new Error("Not implemented yet");
+export const breakDownTask = async ({ taskTitle, taskDescription }) => {
+    const descriptionContext = taskDescription
+        ? `\nTask Description: "${taskDescription}"`
+        : '';
+
+    const systemPrompt = `You are an expert AI Project Manager. Your goal is to break down a specific task into smaller, actionable subtasks.
+
+CRITICAL INSTRUCTION:
+Return ONLY valid JSON.
+No markdown block formatting.
+No explanations.
+No code block ticks.
+
+The JSON MUST match this exact schema:
+{
+  "subtasks": [
+    "Concise, actionable subtask title"
+  ]
+}
+
+Generate between 4 to 8 clear, specific subtasks for the following task:
+Task Title: "${taskTitle}"${descriptionContext}
+`;
+
+    try {
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        const text = response.text();
+
+        const cleanJsonText = stripMarkdown(text);
+
+        try {
+            const parsedData = JSON.parse(cleanJsonText);
+            return parsedData;
+        } catch (parseError) {
+            console.error("AI Service: Failed to parse Gemini response as JSON", text);
+            throw new Error("AI generated invalid data format");
+        }
+    } catch (error) {
+        console.error("AI Service Error:", error);
+        throw error;
+    }
 };
+

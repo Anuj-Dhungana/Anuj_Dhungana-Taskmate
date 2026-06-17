@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import useAuthStore from '../../store/useAuthStore';
@@ -80,7 +80,7 @@ const Register = () => {
         }
         setIsLoading(true);
         try {
-            const res = await axios.post('/api/auth/register', { fullname, email, password });
+            const res = await api.post('/api/auth/register', { fullname, email, password });
             toast.success(res.data.message);
             navigate('/verify-email', { state: { email, inviteToken: inviteToken || null } });
         } catch (err) {
@@ -93,7 +93,7 @@ const Register = () => {
     const handleGoogleSuccess = async (credentialResponse) => {
         setIsLoading(true);
         try {
-            const res = await axios.post('/api/auth/google', { credential: credentialResponse.credential });
+            const res = await api.post('/api/auth/google', { credential: credentialResponse.credential });
             useAuthStore.getState().setCredentials(res.data);
             toast.success('Google login successful!');
             navigate('/dashboard');

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { useNavigate } from 'react-router-dom';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
@@ -26,7 +26,7 @@ export const useDashboard = () => {
     const { initialize: initRealtime, joinWorkspace } = useRealtimeSyncStore();
 
     const handleLogout = async () => {
-        await axios.post('/api/auth/logout');
+        await api.post('/api/auth/logout');
         logout();
         resetWorkspaceState();
         navigate('/login');
@@ -34,7 +34,7 @@ export const useDashboard = () => {
 
     const fetchWorkspaces = useCallback(async () => {
         try {
-            const res = await axios.get('/api/workspaces');
+            const res = await api.get('/api/workspaces');
             setWorkspaces(res.data);
 
             if (!currentWorkspaceId && res.data.length > 0) {
@@ -52,7 +52,7 @@ export const useDashboard = () => {
     const fetchWorkspaceDetails = useCallback(async (workspaceId) => {
         if (!workspaceId) return;
         try {
-            const res = await axios.get(`/api/workspaces/${workspaceId}`);
+            const res = await api.get(`/api/workspaces/${workspaceId}`);
             setSelectedWorkspace(res.data);
         } catch (err) {
             console.error('Failed to load workspace details', err);

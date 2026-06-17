@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { CheckCircle2, Circle } from 'lucide-react';
 import { getInitials } from '../../utils/helpers';
 import useRightPanelStore from '../../store/useRightPanelStore';
@@ -15,7 +15,7 @@ const PollCard = ({ messageId, poll, currentUserId, isMe }) => {
 
     const handleVote = async (optionIndex) => {
         try {
-            await axios.post(`/api/messages/${messageId}/vote`, { optionIndex });
+            await api.post(`/api/messages/${messageId}/vote`, { optionIndex });
             // Socket handles the state update
         } catch (error) {
             console.error("Failed to cast vote", error);

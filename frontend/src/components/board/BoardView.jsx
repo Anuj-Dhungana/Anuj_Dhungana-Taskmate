@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { 
   DndContext, 
   closestCorners, 
@@ -61,7 +61,7 @@ const BoardView = ({ projectId, project, onStatsChange }) => {
     // Fetch Board Data
     const fetchBoard = useCallback(async () => {
         try {
-            const res = await axios.get(`/api/board/${projectId}`);
+            const res = await api.get(`/api/board/${projectId}`);
             setLists(res.data.lists);
             setCards(res.data.cards);
         } catch (err) { console.error(err); }
@@ -130,7 +130,7 @@ const BoardView = ({ projectId, project, onStatsChange }) => {
             });
 
             try {
-                await axios.put('/api/board/cards/reorder', {
+                await api.put('/api/board/cards/reorder', {
                     cardId: activeCardId,
                     newListId: newListId,
                     newOrder: 0

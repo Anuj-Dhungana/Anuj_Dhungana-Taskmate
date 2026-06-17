@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api';
 import WorkspaceSelector from './WorkspaceSelector';
 import NavigationGroup from './NavigationGroup';
 import { NAV_GROUPS, SYSTEM_ITEMS, filterNavByRole, filterSystemByRole } from '../../utils/navigationConfig';
@@ -68,8 +68,8 @@ const DashboardSidebar = ({
         const loadDmChannels = async () => {
             try {
                 const [chRes, dmRes] = await Promise.all([
-                    axios.get(`/api/channels/workspace/${currentWorkspaceId}`),
-                    axios.get(`/api/channels/workspace/${currentWorkspaceId}/dms`),
+                    api.get(`/api/channels/workspace/${currentWorkspaceId}`),
+                    api.get(`/api/channels/workspace/${currentWorkspaceId}/dms`),
                 ]);
                 const channels = chRes.data || [];
                 const dms = dmRes.data || [];

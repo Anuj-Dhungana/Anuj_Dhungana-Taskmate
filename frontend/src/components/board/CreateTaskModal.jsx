@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { X, Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../../store/useAuthStore';
@@ -121,7 +121,7 @@ const CreateTaskModal = ({
             } else if (selfId && isSelfProjectMember) {
                 payload.assignees = [selfId];
             }
-            const res = await axios.post('/api/board/cards', payload);
+            const res = await api.post('/api/board/cards', payload);
             toast.success('Task created');
             emitProjectDataChanged({
                 projectId,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
 import ChatArea from '../components/chat/ChatArea';
@@ -129,7 +129,7 @@ const WorkspaceChat = () => {
         if (!channelToDelete) return;
         setDeletingChannel(true);
         try {
-            await axios.delete(`/api/channels/${channelToDelete._id}`);
+            await api.delete(`/api/channels/${channelToDelete._id}`);
             setChannelToDelete(null);
             refreshChannels();
         } catch (err) {

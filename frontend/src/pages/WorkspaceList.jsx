@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { Grid, Plus, Users } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import PageSkeleton from '../components/common/PageSkeleton';
@@ -17,7 +17,7 @@ const WorkspaceList = () => {
 
     const fetchWorkspaces = useCallback(async () => {
         try {
-            const res = await axios.get('/api/workspaces');
+            const res = await api.get('/api/workspaces');
             setWorkspaces(res.data);
         } catch (err) {
             console.error('Failed to fetch workspaces', err);

@@ -3,7 +3,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import TaskCard from './TaskCard';
 import { Plus, Circle, Clock3, CheckCircle2 } from 'lucide-react';
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { emitProjectDataChanged } from '../../utils/projectEvents';
 
 /* Column icon + accent colour by list title */
@@ -27,7 +27,7 @@ const BoardList = ({ list, cards, onCardAdded, onCardDelete, onCardClick, canDra
     if (!newCardTitle.trim()) return setIsAdding(false);
 
     try {
-      const res = await axios.post('/api/board/cards', {
+      const res = await api.post('/api/board/cards', {
         title: newCardTitle,
         listId: list._id,
         projectId: list.projectId,

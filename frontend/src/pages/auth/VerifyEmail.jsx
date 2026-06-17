@@ -1,6 +1,6 @@
 ﻿import { useState, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../../store/useAuthStore';
 import { inviteAPI } from '../../api/invites';
@@ -66,7 +66,7 @@ const VerifyEmail = () => {
         if (code.length !== 6) { toast.error('Please enter all 6 digits'); return; }
         setIsLoading(true);
         try {
-            const res = await axios.post('/api/auth/verify-email', { email, code });
+            const res = await api.post('/api/auth/verify-email', { email, code });
             setCredentials({ ...res.data });
             toast.success('Email verified!');
             if (inviteToken) await handleInviteAcceptance(inviteToken);
@@ -81,7 +81,7 @@ const VerifyEmail = () => {
     const handleResendCode = async () => {
         setIsResending(true);
         try {
-            await axios.post('/api/auth/resend-code', { email });
+            await api.post('/api/auth/resend-code', { email });
             toast.success('Verification code resent!');
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to resend code');

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api';
 import useAuthStore from '../../store/useAuthStore';
 import { toast } from 'react-hot-toast';
 import { inviteAPI } from '../../api/invites';
@@ -90,7 +90,7 @@ const Login = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const res = await axios.post('/api/auth/login', { email, password });
+            const res = await api.post('/api/auth/login', { email, password });
             if (res.data.status === '2fa_required') {
                 setShow2FA(true);
                 toast.success('2FA Code sent to your email!');
@@ -109,7 +109,7 @@ const Login = () => {
     const handleGoogleSuccess = async (credentialResponse) => {
         setIsLoading(true);
         try {
-            const res = await axios.post('/api/auth/google', { credential: credentialResponse.credential });
+            const res = await api.post('/api/auth/google', { credential: credentialResponse.credential });
             setCredentials(res.data);
             toast.success('Google login successful!');
             if (inviteToken) await handleInviteAcceptance(inviteToken);
@@ -125,7 +125,7 @@ const Login = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            const res = await axios.post('/api/auth/login-2fa', { email, code: otp });
+            const res = await api.post('/api/auth/login-2fa', { email, code: otp });
             setCredentials(res.data);
             toast.success('Login Successful!');
             if (inviteToken) await handleInviteAcceptance(inviteToken);

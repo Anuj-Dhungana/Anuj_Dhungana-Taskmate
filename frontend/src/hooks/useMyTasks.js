@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { toast } from 'react-hot-toast';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
@@ -38,7 +38,7 @@ const useMyTasks = () => {
         if (!currentWorkspaceId) return;
         setLoading(true);
         try {
-            const res = await axios.get(`/api/board/my-tasks?workspaceId=${currentWorkspaceId}`);
+            const res = await api.get(`/api/board/my-tasks?workspaceId=${currentWorkspaceId}`);
             setTasks(res.data || []);
         } catch (err) {
             console.error('Failed to load tasks', err);
@@ -57,7 +57,7 @@ const useMyTasks = () => {
             if (!projectId) return [];
             if (projectMembersById[projectId]) return projectMembersById[projectId];
             try {
-                const res = await axios.get(`/api/projects/${projectId}`);
+                const res = await api.get(`/api/projects/${projectId}`);
                 const members = Array.isArray(res.data?.members) ? res.data.members : [];
                 setProjectMembersById((prev) => ({ ...prev, [projectId]: members }));
                 return members;

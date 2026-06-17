@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import { X, Sparkles, Loader2, CheckCircle2, Trash2, RotateCcw, Zap } from 'lucide-react';
 
@@ -26,7 +26,7 @@ const AiSubtaskGeneratorModal = ({ isOpen, onClose, cardId, taskTitle, taskDescr
         setSubtasks([]);
 
         try {
-            const res = await axios.post('/api/ai/generate', {
+            const res = await api.post('/api/ai/generate', {
                 actionType: 'breakdown_task',
                 taskTitle: taskTitle,
                 taskDescription: taskDescription || '',
@@ -53,7 +53,7 @@ const AiSubtaskGeneratorModal = ({ isOpen, onClose, cardId, taskTitle, taskDescr
 
         try {
             const promises = subtasks.map((text) =>
-                axios.post(`/api/board/cards/${cardId}/subtasks`, { text })
+                api.post(`/api/board/cards/${cardId}/subtasks`, { text })
             );
             await Promise.all(promises);
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { toast } from 'react-hot-toast';
 import { CheckCircle2, XCircle } from 'lucide-react';
 import useWorkspaceStore from '../store/useWorkspaceStore';
@@ -31,7 +31,7 @@ const BillingResult = () => {
 
     const refreshWorkspaceContext = useCallback(async () => {
         if (!workspaceId) return;
-        const res = await axios.get(`/api/workspaces/${workspaceId}`);
+        const res = await api.get(`/api/workspaces/${workspaceId}`);
         const payload = res?.data;
         if (!payload?.workspace) return;
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { X, Sparkles, Loader2, CheckCircle2, ListTodo, Trash2, RotateCcw } from 'lucide-react';
@@ -25,7 +25,7 @@ const AiProjectGeneratorModal = ({ isOpen, onClose, workspaceId, onCreated }) =>
         setResult(null);
 
         try {
-            const res = await axios.post('/api/ai/generate', {
+            const res = await api.post('/api/ai/generate', {
                 prompt: prompt.trim(),
                 actionType: 'generate_project',
             });
@@ -52,7 +52,7 @@ const AiProjectGeneratorModal = ({ isOpen, onClose, workspaceId, onCreated }) =>
 
         try {
             // Step 1: Create the project
-            const projectRes = await axios.post('/api/projects', {
+            const projectRes = await api.post('/api/projects', {
                 name: result.projectName,
                 description: `AI-generated project from: "${prompt.trim()}"`,
                 workspaceId: workspaceId,
@@ -62,7 +62,7 @@ const AiProjectGeneratorModal = ({ isOpen, onClose, workspaceId, onCreated }) =>
             const project = projectRes.data;
 
             // Step 2: Fetch the default lists created by the backend
-            const boardRes = await axios.get(`/api/board/${project._id}`);
+            const boardRes = await api.get(`/api/board/${project._id}`);
             const defaultLists = boardRes.data.lists || [];
             
             // Find the "To Do" list, or fallback to the first list if somehow missing
@@ -74,7 +74,7 @@ const AiProjectGeneratorModal = ({ isOpen, onClose, workspaceId, onCreated }) =>
             // Step 3: Create all tasks (cards) in the target list
             if (targetList) {
                 const cardPromises = result.tasks.map((task) =>
-                    axios.post('/api/board/cards', {
+                    api.post('/api/board/cards', {
                         title: task.title,
                         description: task.description || '',
                         listId: targetList._id,

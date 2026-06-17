@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import {
@@ -57,14 +57,14 @@ export const useDashboardData = () => {
         setLoading(true);
         try {
             const analyticsRequest = canAccessAnalytics
-                ? axios.get(`/api/board/workspace-analytics?workspaceId=${currentWorkspaceId}`)
+                ? api.get(`/api/board/workspace-analytics?workspaceId=${currentWorkspaceId}`)
                 : Promise.resolve({ data: { activity: [] } });
 
             const [projectsRes, cardsRes, myTasksRes, notifRes, analyticsRes] = await Promise.allSettled([
-                axios.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
-                axios.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`),
-                axios.get(`/api/board/my-tasks?workspaceId=${currentWorkspaceId}`),
-                axios.get('/api/notifications'),
+                api.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
+                api.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`),
+                api.get(`/api/board/my-tasks?workspaceId=${currentWorkspaceId}`),
+                api.get('/api/notifications'),
                 analyticsRequest,
             ]);
 

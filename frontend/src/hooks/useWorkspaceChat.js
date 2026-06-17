@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api';
 import useChatUnreadStore from '../store/useChatUnreadStore';
 
 // Stable fallback — a {} literal inside a selector creates a new reference every render,
@@ -37,9 +37,9 @@ export const useWorkspaceChat = (workspaceId, userId) => {
         setLoading(true);
         try {
             const [wsRes, chRes, dmRes] = await Promise.all([
-                axios.get(`/api/workspaces/${workspaceId}`),
-                axios.get(`/api/channels/workspace/${workspaceId}`),
-                axios.get(`/api/channels/workspace/${workspaceId}/dms`),
+                api.get(`/api/workspaces/${workspaceId}`),
+                api.get(`/api/channels/workspace/${workspaceId}`),
+                api.get(`/api/channels/workspace/${workspaceId}/dms`),
             ]);
             setWorkspace(wsRes.data);
             const nextChannels = chRes.data || [];
@@ -60,8 +60,8 @@ export const useWorkspaceChat = (workspaceId, userId) => {
         if (!workspaceId) return;
         try {
             const [chRes, dmRes] = await Promise.all([
-                axios.get(`/api/channels/workspace/${workspaceId}`),
-                axios.get(`/api/channels/workspace/${workspaceId}/dms`),
+                api.get(`/api/channels/workspace/${workspaceId}`),
+                api.get(`/api/channels/workspace/${workspaceId}/dms`),
             ]);
             const nextChannels = chRes.data || [];
             const nextDms = dmRes.data || [];
@@ -139,7 +139,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
             throw new Error('Channel name is required');
         }
         try {
-            await axios.post('/api/channels', { workspaceId, name: trimmedName, members: memberIds });
+            await api.post('/api/channels', { workspaceId, name: trimmedName, members: memberIds });
             await refreshChannels();
         } catch (err) {
             console.error('Failed to create channel', err);
@@ -155,7 +155,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
         }
         if (trimmedName === selectedChannel.name) return;
         try {
-            await axios.put(`/api/channels/${selectedChannel._id}`, { name: trimmedName });
+            await api.put(`/api/channels/${selectedChannel._id}`, { name: trimmedName });
             setShowChannelMenu(false);
             await refreshChannels();
         } catch (err) {
@@ -167,7 +167,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
     const handleAddMembersToChannel = async (channelId, memberIds) => {
         if (!channelId || !memberIds || memberIds.length === 0) return;
         try {
-            await axios.post(`/api/channels/${channelId}/members`, { memberIds });
+            await api.post(`/api/channels/${channelId}/members`, { memberIds });
             await refreshChannels();
         } catch (err) {
             console.error('Failed to add members to channel', err);
@@ -177,7 +177,7 @@ export const useWorkspaceChat = (workspaceId, userId) => {
 
     const handleCreateDM = async (memberId) => {
         try {
-            const res = await axios.post('/api/channels/dm', { workspaceId, memberId });
+            const res = await api.post('/api/channels/dm', { workspaceId, memberId });
             setShowDmPicker(false);
             setDmSearch('');
             await loadConversations(res.data);

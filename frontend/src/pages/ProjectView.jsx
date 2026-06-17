@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { ArrowLeft, Layout, Calendar as CalendarIcon, Users, CalendarDays, ClipboardList, Sparkles } from 'lucide-react';
 import BoardView from '../components/board/BoardView';
 import ProjectCalendar from '../components/calendar/ProjectCalendar';
@@ -36,7 +36,7 @@ const ProjectView = () => {
 
     const fetchProject = useCallback(async () => {
         try {
-            const res = await axios.get(`/api/projects/${projectId}`);
+            const res = await api.get(`/api/projects/${projectId}`);
             setProject(res.data);
         } catch (err) {
             console.error('Failed to load project', err);

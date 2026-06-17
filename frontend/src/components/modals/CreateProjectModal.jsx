@@ -1,6 +1,6 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import { X } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
@@ -86,7 +86,7 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
             
             if (isEditMode) {
                 // Update existing project
-                const res = await axios.put(`/api/projects/${project._id}`, payload);
+                const res = await api.put(`/api/projects/${project._id}`, payload);
                 const updatedProject = res.data;
                 
                 onCreated?.(updatedProject);
@@ -96,7 +96,7 @@ const CreateProjectModal = ({ isOpen, onClose, workspaceId, onCreated, members =
                 onClose?.();
             } else {
                 // Create new project
-                const res = await axios.post('/api/projects', payload);
+                const res = await api.post('/api/projects', payload);
                 const createdProject = res.data;
 
                 onCreated?.(createdProject);

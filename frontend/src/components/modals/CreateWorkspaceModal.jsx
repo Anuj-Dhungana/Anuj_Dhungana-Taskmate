@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import { X } from 'lucide-react';
 
@@ -20,7 +20,7 @@ const CreateWorkspaceModal = ({ onClose, onCreated }) => {
 
         setIsLoading(true);
         try {
-            const res = await axios.post('/api/workspaces', { name, description, color });
+            const res = await api.post('/api/workspaces', { name, description, color });
             toast.success('Workspace created successfully!');
             onCreated?.(res.data);
             onClose();

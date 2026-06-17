@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { Plus, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useWorkspaceStore from '../store/useWorkspaceStore';
@@ -128,7 +128,7 @@ const WorkspaceDetail = () => {
             setDeletingProject(true);
 
             try {
-                await axios.delete(`/api/projects/${projectToDelete._id}`);
+                await api.delete(`/api/projects/${projectToDelete._id}`);
                 toast.success('Project deleted');
                 emitProjectDataChanged({
                     workspaceId: effectiveWorkspaceId,

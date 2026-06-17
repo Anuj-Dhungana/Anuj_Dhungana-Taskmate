@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import axios from 'axios';
+import api from '../../../api';
 import { toast } from 'react-hot-toast';
 import { Trash2, X } from 'lucide-react';
 import useWorkspaceStore from '../../../store/useWorkspaceStore';
@@ -134,7 +134,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
     };
 
     const updateTask = async (payload, source = 'task-detail-update') => {
-        const res = await axios.put(`/api/board/cards/${cardId}`, payload);
+        const res = await api.put(`/api/board/cards/${cardId}`, payload);
         hydrateFromCard(res.data);
         syncTaskChanged(source);
         return res.data;
@@ -217,7 +217,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
         try {
             const formData = new FormData();
             formData.append('file', file);
-            const res = await axios.put(`/api/board/cards/${cardId}`, formData, {
+            const res = await api.put(`/api/board/cards/${cardId}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             hydrateFromCard(res.data);
@@ -237,7 +237,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
         if (!text) return;
         setSubtaskSubmitting(true);
         try {
-            const res = await axios.post(`/api/board/cards/${cardId}/subtasks`, { text });
+            const res = await api.post(`/api/board/cards/${cardId}/subtasks`, { text });
             setSubtasks((prev) => [...prev, res.data.subtask]);
             setNewSubtask('');
             syncTaskChanged('task-detail-subtask-add');
@@ -254,7 +254,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
             prev.map((item) => (String(item._id) === String(subtaskId) ? { ...item, done } : item))
         );
         try {
-            await axios.put(`/api/board/cards/${cardId}/subtasks/${subtaskId}`, { done });
+            await api.put(`/api/board/cards/${cardId}/subtasks/${subtaskId}`, { done });
             syncTaskChanged('task-detail-subtask-toggle');
         } catch (err) {
             toast.error(err?.response?.data?.message || 'Failed to update subtask');
@@ -264,7 +264,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
     const handleDeleteSubtask = async (subtaskId) => {
         if (!canEditTask) return;
         try {
-            await axios.delete(`/api/board/cards/${cardId}/subtasks/${subtaskId}`);
+            await api.delete(`/api/board/cards/${cardId}/subtasks/${subtaskId}`);
             setSubtasks((prev) => prev.filter((item) => String(item._id) !== String(subtaskId)));
             syncTaskChanged('task-detail-subtask-delete');
         } catch (err) {
@@ -278,7 +278,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
         if (!content) return;
         setCommentSubmitting(true);
         try {
-            const res = await axios.post(`/api/board/cards/${cardId}/comments`, { content });
+            const res = await api.post(`/api/board/cards/${cardId}/comments`, { content });
             setComments((prev) => [...prev, res.data.comment]);
             setCommentDraft('');
             syncTaskChanged('task-detail-comment-add');
@@ -291,7 +291,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
 
     const handleDeleteComment = async (commentId) => {
         try {
-            await axios.delete(`/api/board/cards/${cardId}/comments/${commentId}`);
+            await api.delete(`/api/board/cards/${cardId}/comments/${commentId}`);
             setComments((prev) => prev.filter((item) => String(item._id) !== String(commentId)));
             syncTaskChanged('task-detail-comment-delete');
         } catch (err) {
@@ -303,7 +303,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
         if (!canDeleteTask) return;
         setDeleting(true);
         try {
-            await axios.delete(`/api/board/cards/${cardId}`);
+            await api.delete(`/api/board/cards/${cardId}`);
             toast.success('Task deleted');
             syncTaskChanged('task-detail-delete');
             setDeleteConfirmOpen(false);
@@ -575,7 +575,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                 taskDescription={description}
                 onCreated={async () => {
                     try {
-                        const boardRes = await axios.get(`/api/board/${cardProjectId}`);
+                        const boardRes = await api.get(`/api/board/${cardProjectId}`);
                         const cards = boardRes.data.cards || [];
                         const updatedCard = cards.find((c) => String(c._id) === String(cardId));
                         if (updatedCard) {

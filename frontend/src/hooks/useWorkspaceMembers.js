@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import socket from '../lib/socket';
-import axios from 'axios';
+import api from '../api';
 import { toast } from 'react-hot-toast';
 import useAuthStore from '../store/useAuthStore';
 import useWorkspaceStore from '../store/useWorkspaceStore';
@@ -28,9 +28,9 @@ export const useWorkspaceMembers = () => {
         setLoading(true);
         try {
             const [workspaceRes, projectsRes, cardsRes] = await Promise.allSettled([
-                axios.get(`/api/workspaces/${currentWorkspaceId}`),
-                axios.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
-                axios.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`),
+                api.get(`/api/workspaces/${currentWorkspaceId}`),
+                api.get(`/api/projects?workspaceId=${currentWorkspaceId}`),
+                api.get(`/api/board/workspace-cards?workspaceId=${currentWorkspaceId}`),
             ]);
 
             if (workspaceRes.status === 'fulfilled') {
@@ -73,7 +73,7 @@ export const useWorkspaceMembers = () => {
 
     const handleRoleChange = async (userId, newRole) => {
         try {
-            await axios.put(`/api/workspaces/${workspace._id}/role`, { memberId: userId, newRole });
+            await api.put(`/api/workspaces/${workspace._id}/role`, { memberId: userId, newRole });
             toast.success('Role updated');
             setOpenMenuId(null);
             refreshWorkspace();
@@ -91,7 +91,7 @@ export const useWorkspaceMembers = () => {
         if (!memberToRemove?.userId) return;
         setRemovingMember(true);
         try {
-            await axios.delete(`/api/workspaces/${workspace._id}/members/${memberToRemove.userId}`);
+            await api.delete(`/api/workspaces/${workspace._id}/members/${memberToRemove.userId}`);
             toast.success('Member removed');
             setMemberToRemove(null);
             refreshWorkspace();

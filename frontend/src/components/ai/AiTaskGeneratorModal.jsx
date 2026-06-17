@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import { X, Sparkles, Loader2, CheckCircle2, ListTodo, Trash2, RotateCcw } from 'lucide-react';
 
@@ -22,7 +22,7 @@ const AiTaskGeneratorModal = ({ isOpen, onClose, projectId, onCreated }) => {
         setResult(null);
 
         try {
-            const res = await axios.post('/api/ai/generate', {
+            const res = await api.post('/api/ai/generate', {
                 prompt: prompt.trim(),
                 actionType: 'generate_tasks',
             });
@@ -49,7 +49,7 @@ const AiTaskGeneratorModal = ({ isOpen, onClose, projectId, onCreated }) => {
 
         try {
             // Step 1: Fetch the board to find the "To Do" list
-            const boardRes = await axios.get(`/api/board/${projectId}`);
+            const boardRes = await api.get(`/api/board/${projectId}`);
             const lists = boardRes.data.lists || [];
             
             // Find the "To Do" list
@@ -57,7 +57,7 @@ const AiTaskGeneratorModal = ({ isOpen, onClose, projectId, onCreated }) => {
             
             // If it doesn't exist, create it
             if (!targetList) {
-                const listRes = await axios.post('/api/board/lists', {
+                const listRes = await api.post('/api/board/lists', {
                     title: 'To Do',
                     projectId: projectId,
                 });
@@ -66,7 +66,7 @@ const AiTaskGeneratorModal = ({ isOpen, onClose, projectId, onCreated }) => {
 
             // Step 2: Create all tasks (cards) in the target list
             const cardPromises = result.tasks.map((task) =>
-                axios.post('/api/board/cards', {
+                api.post('/api/board/cards', {
                     title: task.title,
                     description: task.description || '',
                     listId: targetList._id,

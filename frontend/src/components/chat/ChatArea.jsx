@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import useAuthStore from '../../store/useAuthStore';
 import { Send, Hash, Trash2, Paperclip, Reply, Smile, MoreHorizontal, X, FileText, Image, File, Music, ChartBar } from 'lucide-react';
 import socket from '../../lib/socket';
@@ -82,7 +82,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
         // Fetch History
         const fetchMessages = async () => {
             try {
-                const res = await axios.get(`/api/messages/${channel._id}`);
+                const res = await api.get(`/api/messages/${channel._id}`);
                 setMessages(res.data);
                 scrollToBottom();
             } catch (err) {
@@ -183,7 +183,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
 
         setIsUploading(true);
         try {
-            const res = await axios.post('/api/messages/upload', formData, {
+            const res = await api.post('/api/messages/upload', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setAttachments(prev => [...prev, ...res.data.files]);
@@ -198,7 +198,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
     const handleToggleReaction = async (messageId, emoji) => {
         setReactionPopupId(null);
         try {
-            await axios.post(`/api/messages/${messageId}/react`, { emoji });
+            await api.post(`/api/messages/${messageId}/react`, { emoji });
         } catch (error) {
             console.error("Failed to react:", error);
         }
@@ -206,7 +206,7 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
 
     const handleDeleteMessage = async (messageId) => {
         try {
-            await axios.delete(`/api/messages/${messageId}`);
+            await api.delete(`/api/messages/${messageId}`);
             setMessages((prev) => prev.filter((m) => m._id !== messageId));
             setSelectedMessageId((currentId) => (currentId === messageId ? null : currentId));
         } catch (err) {

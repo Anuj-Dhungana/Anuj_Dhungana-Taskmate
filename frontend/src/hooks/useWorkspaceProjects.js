@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
+import api from '../api';
 import { addProjectDataChangedListener } from '../utils/projectEvents';
 import { normalizeStatus, getStatusUi, getProjectAccentColor, getPriority, getProjectLabel } from '../utils/projectHelpers';
 
@@ -16,8 +16,8 @@ export const useWorkspaceProjects = (effectiveWorkspaceId, setSelectedWorkspace)
             setLoading(true);
 
             const [workspaceRes, cardsRes] = await Promise.allSettled([
-                axios.get(`/api/workspaces/${effectiveWorkspaceId}`),
-                axios.get(`/api/board/workspace-cards?workspaceId=${effectiveWorkspaceId}`),
+                api.get(`/api/workspaces/${effectiveWorkspaceId}`),
+                api.get(`/api/board/workspace-cards?workspaceId=${effectiveWorkspaceId}`),
             ]);
 
             if (workspaceRes.status === 'fulfilled') {

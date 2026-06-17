@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api';
 import { toast } from 'react-hot-toast';
 import {
     ArrowLeftRight,
@@ -122,7 +122,7 @@ const Settings = () => {
 
         setLoading(true);
         try {
-            const res = await axios.put(`/api/workspaces/${currentWorkspaceId}`, {
+            const res = await api.put(`/api/workspaces/${currentWorkspaceId}`, {
                 name: trimmedName,
                 description: description.trim(),
                 color,
@@ -146,7 +146,7 @@ const Settings = () => {
         if (!currentWorkspaceId || !isOwner) return;
         setDeletingWorkspace(true);
         try {
-            await axios.delete(`/api/workspaces/${currentWorkspaceId}`);
+            await api.delete(`/api/workspaces/${currentWorkspaceId}`);
             toast.success('Workspace deleted');
             setShowDeleteWorkspaceConfirm(false);
             setCurrentWorkspaceId(null);
@@ -172,7 +172,7 @@ const Settings = () => {
 
         setTransferringOwnership(true);
         try {
-            const res = await axios.post(`/api/workspaces/${currentWorkspaceId}/transfer-ownership`, {
+            const res = await api.post(`/api/workspaces/${currentWorkspaceId}/transfer-ownership`, {
                 newOwnerId: transferTargetId,
             });
             patchWorkspaceState(res.data?.workspace);
@@ -196,7 +196,7 @@ const Settings = () => {
 
         setUpgradingPlan(true);
         try {
-            const res = await axios.post(`/api/workspaces/${currentWorkspaceId}/billing/khalti/initiate`);
+            const res = await api.post(`/api/workspaces/${currentWorkspaceId}/billing/khalti/initiate`);
             const paymentUrl = res?.data?.paymentUrl;
             if (!paymentUrl) {
                 throw new Error('Khalti payment URL was not returned');

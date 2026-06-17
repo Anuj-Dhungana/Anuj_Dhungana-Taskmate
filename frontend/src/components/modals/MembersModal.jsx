@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import { X, Shield, Trash2, User } from 'lucide-react';
 import useAuthStore from '../../store/useAuthStore';
@@ -21,7 +21,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
 
     const handleRoleChange = async (userId, newRole) => {
         try {
-            await axios.put(`/api/workspaces/${workspace._id}/role`, { 
+            await api.put(`/api/workspaces/${workspace._id}/role`, { 
                 memberId: userId, 
                 newRole 
             });
@@ -40,7 +40,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
         if (!memberToRemove?.userId) return;
         setRemovingMember(true);
         try {
-            await axios.delete(`/api/workspaces/${workspace._id}/members/${memberToRemove.userId}`);
+            await api.delete(`/api/workspaces/${workspace._id}/members/${memberToRemove.userId}`);
             toast.success('Member removed');
             setMemberToRemove(null);
             onUpdate();
@@ -58,7 +58,7 @@ const MembersModal = ({ isOpen, onClose, workspace, onUpdate }) => {
     const confirmDeleteWorkspace = async () => {
         setDeletingWorkspace(true);
         try {
-            await axios.delete(`/api/workspaces/${workspace._id}`);
+            await api.delete(`/api/workspaces/${workspace._id}`);
             toast.success("Workspace deleted");
             setShowDeleteWorkspaceConfirm(false);
             onClose();

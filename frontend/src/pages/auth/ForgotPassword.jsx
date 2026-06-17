@@ -1,5 +1,5 @@
 ﻿import { useState } from 'react';
-import axios from 'axios';
+import api from '../../api';
 import { toast } from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle2, Send, MailCheck } from 'lucide-react';
@@ -63,7 +63,7 @@ const ForgotPassword = () => {
         if (!email) { toast.error('Please enter your email address'); return; }
         setLoading(true);
         try {
-            const res = await axios.post('/api/auth/forgot-password', { email });
+            const res = await api.post('/api/auth/forgot-password', { email });
             toast.success(res.data.message);
             setEmailSent(true);
         } catch (err) {

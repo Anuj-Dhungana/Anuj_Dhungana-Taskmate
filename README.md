@@ -23,6 +23,9 @@ The system provides the following features:
 - Project creation with status, priority, tags, color coding, and calendar integration
 - Interactive Kanban board with drag-and-drop task management (To Do, In Progress, Done)
 - Task cards with assignees, priorities, due dates, subtasks, comments, attachments, and activity logs
+- ✨ **AI-Powered Project Generation**: Instantly create a fully structured project board with tasks from a simple text prompt
+- ✨ **AI Task Breakdown**: Automatically break down complex tasks into smaller, manageable subtasks
+- 🟢 **Real-time Member Presence**: Live online/offline status tracking for all workspace members
 - @mention notifications in task comments
 - My Tasks view — see all tasks assigned to you across projects
 - Workspace calendar with event scheduling
@@ -71,6 +74,7 @@ The system provides the following features:
 - JSON Web Token (JWT) for authentication
 - bcrypt.js (password hashing)
 - Resend API (transactional email delivery)
+- @google/generative-ai (Gemini API for AI task & project generation)
 - Cloudinary with Multer (file upload and media storage)
 - express-rate-limit (DDoS and brute-force protection)
 - express-validator (input validation and sanitization)
@@ -143,6 +147,8 @@ FRONTEND_URL=http://localhost:5173
 RESEND_API_KEY=your_resend_api_key
 EMAIL_FROM=noreply@yourdomain.com
 
+GEMINI_API_KEY=your_google_gemini_api_key
+
 CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
@@ -212,6 +218,7 @@ TaskMate/
 │       ├── api/                  # Axios API configuration
 │       ├── assets/               # Static assets (images, icons)
 │       ├── components/
+│       │   ├── ai/               # AI prompt generators and modals
 │       │   ├── analytics/        # Analytics charts and widgets
 │       │   ├── board/            # Kanban board, lists, and cards
 │       │   ├── calendar/         # Calendar components

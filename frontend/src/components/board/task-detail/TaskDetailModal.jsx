@@ -15,6 +15,7 @@ import TaskSubtaskSection from './TaskSubtaskSection';
 import TaskCommentSection from './TaskCommentSection';
 import TaskSidebar from './TaskSidebar';
 import ConfirmModal from '../../modals/ConfirmModal';
+import AiSubtaskGeneratorModal from '../../ai/AiSubtaskGeneratorModal';
 
 const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate }) => {
     const { selectedWorkspace } = useWorkspaceStore();
@@ -28,6 +29,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
     const [subtaskSubmitting, setSubtaskSubmitting] = useState(false);
     const [savingTask, setSavingTask] = useState(false);
     const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [showAiBreakdown, setShowAiBreakdown] = useState(false);
     const [deleting, setDeleting] = useState(false);
     const [assigneeOpen, setAssigneeOpen] = useState(false);
     const [taskTitle, setTaskTitle] = useState('');
@@ -509,6 +511,7 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                             onDelete={handleDeleteSubtask}
                             submitting={subtaskSubmitting}
                             completedCount={completedSubtasks}
+                            onBreakDown={() => setShowAiBreakdown(true)}
                         />
 
                         <TaskCommentSection
@@ -562,6 +565,27 @@ const TaskDetailModal = ({ isOpen, onClose, card, projectMembers = [], onUpdate 
                 loading={deleting}
                 onConfirm={handleDeleteTask}
                 onClose={() => setDeleteConfirmOpen(false)}
+            />
+
+            <AiSubtaskGeneratorModal
+                isOpen={showAiBreakdown}
+                onClose={() => setShowAiBreakdown(false)}
+                cardId={cardId}
+                taskTitle={taskTitle}
+                taskDescription={description}
+                onCreated={async () => {
+                    try {
+                        const boardRes = await axios.get(`/api/board/${cardProjectId}`);
+                        const cards = boardRes.data.cards || [];
+                        const updatedCard = cards.find((c) => String(c._id) === String(cardId));
+                        if (updatedCard) {
+                            hydrateFromCard(updatedCard);
+                        }
+                        syncTaskChanged('ai-subtask-breakdown');
+                    } catch (e) {
+                        syncTaskChanged('ai-subtask-breakdown');
+                    }
+                }}
             />
         </div>
     );

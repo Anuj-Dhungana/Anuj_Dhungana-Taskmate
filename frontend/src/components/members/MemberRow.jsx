@@ -11,6 +11,7 @@ import {
     getRoleActionLabel,
     getRoleActionValue,
 } from '../../utils/memberHelpers';
+import usePresenceStore from '../../store/usePresenceStore';
 
 const MemberRow = ({
     member,
@@ -26,8 +27,25 @@ const MemberRow = ({
     const user = member.user || {};
     const initials = getMemberInitials(user.fullname);
     const roleStyle = ROLE_STYLES[member.role] || ROLE_STYLES.member;
-    const status = getMemberStatus(user);
-    const statusLabel = status === 'active' ? 'Active' : 'Inactive';
+    
+    // Presence / Status
+    const isOnline = usePresenceStore((state) => state.isOnline(user._id));
+    const baseStatus = getMemberStatus(user); // 'active' or 'inactive'
+    
+    let statusLabel = baseStatus === 'active' ? 'Offline' : 'Inactive';
+    let statusStyle = STATUS_STYLES.inactive;
+    
+    if (baseStatus === 'inactive') {
+        statusLabel = 'Inactive';
+        statusStyle = STATUS_STYLES.inactive;
+    } else if (isOnline) {
+        statusLabel = 'Online';
+        statusStyle = STATUS_STYLES.online;
+    } else {
+        statusLabel = 'Offline';
+        statusStyle = STATUS_STYLES.inactive; // reuse inactive styling for offline
+    }
+
     const isMe = user._id === currentUserId;
     const isOwner = myRole === 'owner';
     const isAdmin = myRole === 'admin';
@@ -105,9 +123,18 @@ const MemberRow = ({
             </td>
             <td className="px-6 py-4">
                 <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${STATUS_STYLES[status]}`}
-                    title={status === 'inactive' ? 'User account disabled or not verified' : 'Active member'}
+                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${statusStyle}`}
+                    title={baseStatus === 'inactive' ? 'User account disabled or not verified' : (isOnline ? 'User is currently online' : 'User is currently offline')}
                 >
+                    {isOnline && baseStatus !== 'inactive' && (
+                        <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        </span>
+                    )}
+                    {(!isOnline || baseStatus === 'inactive') && (
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-gray-400"></span>
+                    )}
                     {statusLabel}
                 </span>
             </td>

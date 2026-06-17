@@ -7,6 +7,11 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    // Automatically read XSRF-TOKEN cookie and attach as X-XSRF-TOKEN header for state-changing requests
+    xsrfCookieName: 'XSRF-TOKEN',
+    xsrfHeaderName: 'X-XSRF-TOKEN',
+    // Required in Axios 1.6+ to send XSRF header in cross-origin requests
+    withXSRFToken: true,
 });
 
 // Request interceptor

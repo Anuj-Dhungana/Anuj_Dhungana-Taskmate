@@ -146,15 +146,9 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
         const messageData = {
             channelId: channel._id,
             workspaceId: workspaceId,
-            senderId: userInfo._id,
             content: '',
             attachments: [],
             poll: pollData,
-            senderDetails: {
-                _id: userInfo._id,
-                fullname: userInfo.fullname,
-                avatar: userInfo.avatar,
-            },
         };
         socket.emit('send_message', messageData);
         scrollToBottom();
@@ -167,15 +161,9 @@ const ChatArea = ({ channel, workspaceId, canModerate = false, showHeader = true
         const messageData = {
             channelId: channel._id,
             workspaceId: workspaceId,
-            senderId: userInfo._id,
             content: newMessage,
             attachments: attachments,
             replyTo: replyingToMessage?._id || null,
-            senderDetails: {
-                _id: userInfo._id,
-                fullname: userInfo.fullname,
-                avatar: userInfo.avatar,
-            },
         };
 
         socket.emit('send_message', messageData);

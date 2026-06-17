@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import useAuthStore from '../store/useAuthStore';
@@ -17,6 +17,7 @@ import { emitProjectDataChanged } from '../utils/projectEvents';
 import { WORKSPACE_PLAN, WORKSPACE_PLAN_FEATURES, normalizeWorkspacePlan } from '../constants/workspacePlans';
 import { showUpgradeToProPrompt } from '../utils/upgradePrompts';
 import PageSkeleton from '../components/common/PageSkeleton';
+import AiProjectGeneratorModal from '../components/ai/AiProjectGeneratorModal';
 
 const WorkspaceDetail = () => {
     const { workspaceId } = useParams();
@@ -31,6 +32,7 @@ const WorkspaceDetail = () => {
     const [openMenuProjectId, setOpenMenuProjectId] = useState(null);
     const [projectToDelete, setProjectToDelete] = useState(null);
     const [deletingProject, setDeletingProject] = useState(false);
+    const [showAiModal, setShowAiModal] = useState(false);
 
     const effectiveWorkspaceId = workspaceId || currentWorkspaceId;
 
@@ -163,13 +165,22 @@ const WorkspaceDetail = () => {
                     <p className="text-sm text-gray-500 mt-1">Manage and track all your projects</p>
                 </div>
 
-                <button
-                    onClick={handleCreateProjectClick}
-                    className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
-                >
-                    <Plus size={16} />
-                    New Project
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => setShowAiModal(true)}
+                        className="inline-flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:from-indigo-600 hover:to-violet-700 transition shadow-sm shadow-indigo-200"
+                    >
+                        <Sparkles size={16} />
+                        Create with AI
+                    </button>
+                    <button
+                        onClick={handleCreateProjectClick}
+                        className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-700 transition"
+                    >
+                        <Plus size={16} />
+                        New Project
+                    </button>
+                </div>
             </div>
 
             {projectLimitReached && (
@@ -237,6 +248,13 @@ const WorkspaceDetail = () => {
                 loading={deletingProject}
                 onClose={() => !deletingProject && setProjectToDelete(null)}
                 onConfirm={handlers.confirmDelete}
+            />
+
+            <AiProjectGeneratorModal
+                isOpen={showAiModal}
+                onClose={() => setShowAiModal(false)}
+                workspaceId={effectiveWorkspaceId}
+                onCreated={fetchWorkspaceDetails}
             />
         </div>
     );

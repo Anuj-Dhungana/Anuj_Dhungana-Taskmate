@@ -1,5 +1,5 @@
-﻿import { useEffect, useRef, useState, useCallback } from 'react';
-import axios from 'axios';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import api from '../api';
 import { toast } from 'react-hot-toast';
 import {
     Camera, Trash2, ShieldCheck, ShieldOff,
@@ -113,7 +113,7 @@ const Profile = () => {
         const load = async () => {
             setProfileLoading(true);
             try {
-                const res = await axios.get('/api/auth/profile');
+                const res = await api.get('/api/auth/profile');
                 const p = res.data || {};
                 setFullname(p.fullname || '');
                 setOriginalFullname(p.fullname || '');
@@ -142,7 +142,7 @@ const Profile = () => {
         const loadActivity = async () => {
             setLoadingActivity(true);
             try {
-                const res = await axios.get('/api/auth/activity-stats');
+                const res = await api.get('/api/auth/activity-stats');
                 setActivity(res.data);
             } catch {
                 /* silent */
@@ -168,7 +168,7 @@ const Profile = () => {
         try {
             const fd = new FormData();
             fd.append('avatar', file);
-            const res = await axios.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            const res = await api.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
             setAvatar(res.data.avatar || '');
             setAvatarPreview('');
             setUserInfo(res.data);
@@ -188,7 +188,7 @@ const Profile = () => {
         try {
             const fd = new FormData();
             fd.append('removeAvatar', 'true');
-            const res = await axios.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            const res = await api.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
             setAvatar('');
             setAvatarPreview('');
             setUserInfo(res.data);
@@ -207,7 +207,7 @@ const Profile = () => {
         try {
             const fd = new FormData();
             fd.append('fullname', fullname.trim());
-            const res = await axios.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            const res = await api.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
             setOriginalFullname(res.data.fullname || '');
             setUserInfo(res.data);
             toast.success('Profile updated');
@@ -230,7 +230,7 @@ const Profile = () => {
             const fd = new FormData();
             fd.append('currentPassword', currentPassword);
             fd.append('password', newPassword);
-            await axios.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            await api.put('/api/auth/profile', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
             setCurrentPassword('');
             setNewPassword('');
             setConfirmPassword('');
@@ -246,7 +246,7 @@ const Profile = () => {
     const handleToggle2FA = useCallback(async () => {
         setToggling2FA(true);
         try {
-            const res = await axios.put('/api/auth/2fa/toggle');
+            const res = await api.put('/api/auth/2fa/toggle');
             const enabled = !!res.data?.twoFactorEnabled;
             setTwoFactorEnabled(enabled);
             setUserInfo({ twoFactorEnabled: enabled });
@@ -260,7 +260,7 @@ const Profile = () => {
 
     /* logout */
     const handleLogout = async () => {
-        try { await axios.post('/api/auth/logout'); } catch { /* ignore */ }
+        try { await api.post('/api/auth/logout'); } catch { /* ignore */ }
         logout();
         resetWorkspaceState();
         navigate('/login');

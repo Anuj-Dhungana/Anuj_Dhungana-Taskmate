@@ -21,6 +21,7 @@ export const ROLE_STYLES = {
 export const STATUS_STYLES = {
     active: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
     inactive: 'bg-gray-100 text-gray-600 border border-gray-200',
+    online: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
 };
 
 export const formatDate = (value) => {

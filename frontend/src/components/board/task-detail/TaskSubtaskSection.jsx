@@ -1,4 +1,4 @@
-import { CheckSquare, Plus, Trash2 } from 'lucide-react';
+import { CheckSquare, Plus, Trash2, Sparkles } from 'lucide-react';
 
 const TaskSubtaskSection = ({
     subtasks,
@@ -10,6 +10,7 @@ const TaskSubtaskSection = ({
     onDelete,
     submitting,
     completedCount,
+    onBreakDown,
 }) => {
     return (
         <section className="rounded-xl border border-gray-100 bg-white">
@@ -21,6 +22,17 @@ const TaskSubtaskSection = ({
                         {completedCount}/{subtasks.length}
                     </span>
                 </div>
+                {canEditTask && onBreakDown && (
+                    <button
+                        type="button"
+                        onClick={onBreakDown}
+                        className="flex items-center gap-1.5 text-xs font-semibold text-violet-600 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 px-2.5 py-1.5 rounded-lg transition"
+                        title="Use AI to break down this task into subtasks"
+                    >
+                        <Sparkles size={12} />
+                        Break Down Task
+                    </button>
+                )}
             </div>
             <div className="p-4 space-y-2">
                 {subtasks.map((subtask) => (

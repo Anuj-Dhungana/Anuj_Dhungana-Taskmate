@@ -22,6 +22,31 @@ const storage = new CloudinaryStorage({
     };
   },
 });
-const upload = multer({ storage });
+const fileFilter = (req, file, cb) => {
+  const allowedMimeTypes = [
+    'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+    'application/pdf',
+    'application/msword', // doc
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // docx
+    'application/vnd.ms-excel', // xls
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // xlsx
+    'text/plain',
+    'text/csv',
+    'video/mp4', 'video/webm', 'video/ogg',
+    'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/webm'
+  ];
+
+  if (allowedMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error(`Invalid file type: ${file.mimetype}. Unsupported format.`), false);
+  }
+};
+
+const upload = multer({ 
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit per file
+  fileFilter 
+});
 
 export default upload;

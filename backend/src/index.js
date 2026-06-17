@@ -23,7 +23,13 @@ import channelRoutes from './routes/channelRoutes.js';
 import inviteRoutes from './routes/inviteRoutes.js';
 import callRoutes from './routes/callRoutes.js';
 import meetingRoutes from './routes/meetingRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 import Message from './models/Message.js';
+import Workspace from './models/Workspace.js';
+import Channel from './models/Channel.js';
+import jwt from 'jsonwebtoken';
+import cookie from 'cookie';
+import { generateCsrfToken, validateCsrfToken } from './middleware/csrfMiddleware.js';
 
 dotenv.config();
 connectDB();
@@ -34,6 +40,7 @@ const app = express();
 app.use(logger); // Request logging
 app.use(express.json());
 app.use(cookieParser());
+app.use(generateCsrfToken); // Provide CSRF token cookie to frontend
 
 // Trust the reverse proxy (like Render/Railway) for secure cookies
 app.set("trust proxy", 1);
@@ -104,7 +111,7 @@ app.use(cors({
     origin: corsOriginHandler,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-xsrf-token', 'X-XSRF-TOKEN'],
 }));
 
 console.log('CORS allowed origins:', allowedOrigins);
@@ -113,6 +120,9 @@ console.log('CORS allowed origins:', allowedOrigins);
 if (process.env.NODE_ENV === 'production') {
     app.use('/api', apiLimiter);
 }
+
+// Validate CSRF token for state-changing routes under /api
+app.use('/api', validateCsrfToken);
 
 // --- SOCKET.IO SETUP ---
 const httpServer = createServer(app); // Wrap Express
@@ -124,73 +134,244 @@ const io = new Server(httpServer, {
     }
 });
 
+// Socket.IO Authentication Middleware
+io.use((socket, next) => {
+    try {
+        const cookieHeader = socket.handshake.headers.cookie;
+        if (!cookieHeader) {
+            return next(new Error("Authentication error"));
+        }
+
+        const parsedCookies = cookie.parse(cookieHeader);
+        const token = parsedCookies.jwt;
+        if (!token) {
+            return next(new Error("Authentication error"));
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        
+        socket.user = { userId: decoded.userId };
+        next();
+    } catch (err) {
+        next(new Error("Authentication error"));
+    }
+});
+
+// Global presence tracking: Map<userId, Set<socketId>>
+const onlineUsersMap = new Map();
+
 // Socket Logic
 io.on("connection", (socket) => {
-    console.log("User Connected:", socket.id);
+    const userId = socket.user?.userId;
+    if (userId) {
+        if (!onlineUsersMap.has(userId)) {
+            onlineUsersMap.set(userId, new Set());
+        }
+        onlineUsersMap.get(userId).add(socket.id);
+    }
+
+    console.log("User Connected:", socket.id, "User ID:", userId);
 
     // Join a Channel Room
-    socket.on("join_channel", (channelId) => {
-        socket.join(channelId);
-        console.log(`User joined channel: ${channelId}`);
+    socket.on("join_channel", async (channelId) => {
+        try {
+            const channel = await Channel.findById(channelId);
+            if (!channel) return;
+            
+            const workspace = await Workspace.findById(channel.workspace);
+            if (!workspace) return;
+            
+            const isWorkspaceMember = workspace.members.some(
+                (m) => m.user.toString() === socket.user.userId.toString()
+            );
+            
+            if (!isWorkspaceMember) {
+                console.log(`User ${socket.user.userId} denied access to channel ${channelId} (not in workspace)`);
+                return;
+            }
+            
+            if (channel.members && channel.members.length > 0) {
+                const isChannelMember = channel.members.some(
+                    (id) => id.toString() === socket.user.userId.toString()
+                );
+                if (!isChannelMember) {
+                    console.log(`User ${socket.user.userId} denied access to private channel/DM ${channelId}`);
+                    return;
+                }
+            }
+
+            socket.join(channelId);
+            console.log(`User joined channel: ${channelId}`);
+        } catch (error) {
+            console.error("join_channel error:", error);
+        }
     });
 
     // Join Workspace Room
-    socket.on("join_workspace", (workspaceRoom) => {
+    socket.on("join_workspace", async (workspaceRoom) => {
         if (!workspaceRoom) return;
-        socket.join(workspaceRoom);
-        console.log(`User joined workspace: ${workspaceRoom}`);
+        
+        try {
+            const workspaceId = workspaceRoom.replace('workspace_', '');
+            const workspace = await Workspace.findById(workspaceId);
+            if (!workspace) return;
+
+            const isWorkspaceMember = workspace.members.some(
+                (m) => m.user.toString() === socket.user.userId.toString()
+            );
+
+            if (!isWorkspaceMember) {
+                console.log(`User ${socket.user.userId} denied access to workspace ${workspaceId}`);
+                return;
+            }
+
+            socket.join(workspaceRoom);
+            console.log(`User joined workspace: ${workspaceRoom}`);
+
+            // Inform the user who just joined about all currently online members in this workspace
+            const workspaceOnlineUsers = workspace.members
+                .map((m) => m.user.toString())
+                .filter((id) => onlineUsersMap.has(id));
+            socket.emit("online_users", workspaceOnlineUsers);
+
+            // Inform other members in the workspace that this user is online
+            socket.to(workspaceRoom).emit("user_online", { userId: socket.user.userId });
+        } catch (error) {
+            console.error("join_workspace error:", error);
+        }
     });
 
     // Handle New Message
     socket.on("send_message", async (data) => {
-        // data = { channelId, workspaceId, senderId, content, senderDetails }
-        
-        // 1. Save to DB
         try {
+            const { channelId, workspaceId, content, attachments, poll, replyTo } = data;
+            const senderId = socket.user?.userId;
+
+            if (!senderId) {
+                console.log("send_message error: Unauthenticated");
+                socket.emit("message_error", { reason: "Unauthenticated request" });
+                return;
+            }
+
+            if (!channelId || !workspaceId) {
+                console.log("send_message error: Missing channelId or workspaceId");
+                socket.emit("message_error", { reason: "Missing channelId or workspaceId" });
+                return;
+            }
+
+            // Validate channel and membership
+            const channel = await Channel.findById(channelId);
+            if (!channel) {
+                console.log("send_message error: Channel not found");
+                socket.emit("message_error", { reason: "Channel not found" });
+                return;
+            }
+
+            // If it's a private channel/DM, check channel members
+            if (channel.members && channel.members.length > 0) {
+                const isChannelMember = channel.members.some(
+                    (member) => {
+                        // Handle both raw ObjectId and { user: ObjectId } structure gracefully
+                        const memberId = member.user ? member.user.toString() : member.toString();
+                        return memberId === senderId.toString();
+                    }
+                );
+                if (!isChannelMember) {
+                    console.log(`User ${senderId} denied sending message to private channel/DM ${channelId}`);
+                    socket.emit("message_error", { reason: "You are not a member of this private channel or DM" });
+                    return;
+                }
+            } else {
+                // If it's a public channel, check workspace members
+                const workspace = await Workspace.findById(workspaceId);
+                if (!workspace) {
+                    console.log("send_message error: Workspace not found");
+                    socket.emit("message_error", { reason: "Workspace not found" });
+                    return;
+                }
+                const isWorkspaceMember = workspace.members.some(
+                    (m) => m.user.toString() === senderId.toString()
+                );
+                if (!isWorkspaceMember) {
+                    console.log(`User ${senderId} denied sending message to workspace ${workspaceId}`);
+                    socket.emit("message_error", { reason: "You are not a member of this workspace" });
+                    return;
+                }
+            }
+
+            // 1. Save to DB securely
             const newMessage = await Message.create({
-                workspaceId: data.workspaceId,
-                channelId: data.channelId,
-                sender: data.senderId,
-                content: data.content || '',
-                attachments: data.attachments || [],
-                poll: data.poll || null,
-                replyTo: data.replyTo || null
+                workspaceId,
+                channelId,
+                sender: senderId,
+                content: content || '',
+                attachments: attachments || [],
+                poll: poll || null,
+                replyTo: replyTo || null
             });
             
-            let populatedReplyTo = null;
-            if (data.replyTo) {
-                const replyMsg = await Message.findById(data.replyTo).populate('sender', 'fullname avatar');
-                populatedReplyTo = replyMsg;
-            }
-            
-            // 2. Add sender info to send back to clients
-            // (In a real app, we populate. Here we trust frontend or populate manually)
-            const messageToSend = {
-                ...newMessage._doc,
-                sender: data.senderDetails,
-                replyTo: populatedReplyTo
-            };
+            // 2. Populate fields for broadcast (prevent client forgery of sender details)
+            const populatedMessage = await Message.findById(newMessage._id)
+                .populate('sender', 'fullname avatar email')
+                .populate('poll.options.votes', 'fullname avatar')
+                .populate({
+                    path: 'replyTo',
+                    populate: { path: 'sender', select: 'fullname avatar' }
+                });
 
             // 3. Broadcast to everyone in that channel
-            io.to(data.channelId).emit("receive_message", messageToSend);
+            io.to(channelId).emit("receive_message", populatedMessage);
 
         } catch (err) {
-            console.error("Socket Error:", err);
+            console.error("Socket Error during send_message:", err);
+            socket.emit("message_error", { reason: "Internal server error while sending message" });
         }
     });
 
     // Handle Typing
     socket.on("typing", (data) => {
-        // Broadcast user_typing to specific channel
-        socket.to(data.channelId).emit("user_typing", data);
+        const { channelId } = data;
+        if (!channelId || !socket.rooms.has(channelId)) return;
+        // Construct payload server-side; the frontend uses `data.user` (fullname)
+        // to display typing indicators. We pass userId so the frontend can also
+        // resolve the name from its cached member list if needed.
+        socket.to(channelId).emit("user_typing", {
+            channelId,
+            userId: socket.user.userId,
+            user: data.user // fullname supplied by client — display-only, not trusted for auth
+        });
     });
 
     socket.on("stop_typing", (data) => {
-        socket.to(data.channelId).emit("user_stop_typing", data);
+        const { channelId } = data;
+        if (!channelId || !socket.rooms.has(channelId)) return;
+        socket.to(channelId).emit("user_stop_typing", {
+            channelId,
+            userId: socket.user.userId,
+            user: data.user
+        });
+    });
+
+    socket.on("disconnecting", () => {
+        if (userId) {
+            const userSockets = onlineUsersMap.get(userId);
+            if (userSockets) {
+                userSockets.delete(socket.id);
+                if (userSockets.size === 0) {
+                    onlineUsersMap.delete(userId);
+                    // Broadcast offline to all workspace rooms this socket was in
+                    for (const room of socket.rooms) {
+                        if (room.startsWith('workspace_')) {
+                            socket.to(room).emit("user_offline", { userId });
+                        }
+                    }
+                }
+            }
+        }
     });
 
     socket.on("disconnect", () => {
-        console.log("User Disconnected", socket.id);
+        console.log("User Disconnected", socket.id, "User ID:", userId);
     });
 });
 
@@ -205,6 +386,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/invites', inviteRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/meetings', meetingRoutes);
+app.use('/api/ai', aiRoutes);
 app.set('io', io); 
 
 app.get('/', (req, res) => {

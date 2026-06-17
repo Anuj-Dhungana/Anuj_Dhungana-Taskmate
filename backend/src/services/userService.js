@@ -95,7 +95,7 @@ export const registerUser = async ({ fullname, email, password }) => {
     const userExists = await User.findOne({ email });
     if (userExists) {
         const err = new Error('User already exists');
-        err.status = 400;
+        err.statusCode = 400;
         throw err;
     }
 
@@ -111,7 +111,7 @@ export const registerUser = async ({ fullname, email, password }) => {
         await User.deleteOne({ _id: user._id });
         console.error('Redis (verify OTP):', redisErr);
         const err = new Error('Could not store verification code. Try again.');
-        err.status = 500;
+        err.statusCode = 500;
         throw err;
     }
 
@@ -129,7 +129,7 @@ export const registerUser = async ({ fullname, email, password }) => {
         await deleteVerifyOtp(email);
         await User.deleteOne({ _id: user._id });
         const err = new Error('Email could not be sent. Please try again.');
-        err.status = 500;
+        err.statusCode = 500;
         throw err;
     }
 
@@ -149,14 +149,14 @@ export const verifyUserEmail = async ({ email, code }) => {
     const user = await User.findOne({ email });
     if (!user) {
         const err = new Error('User not found');
-        err.status = 400;
+        err.statusCode = 400;
         throw err;
     }
 
     const ok = await verifyAndConsumeVerifyOtp(email, code);
     if (!ok) {
         const err = new Error('Invalid or expired code');
-        err.status = 400;
+        err.statusCode = 400;
         throw err;
     }
 
@@ -182,13 +182,13 @@ export const loginUser = async ({ email, password }) => {
 
     if (!user || !(await comparePassword(password, user.password))) {
         const err = new Error('Invalid email or password');
-        err.status = 401;
+        err.statusCode = 401;
         throw err;
     }
 
     if (!user.isVerified) {
         const err = new Error('Please verify your email first.');
-        err.status = 401;
+        err.statusCode = 401;
         throw err;
     }
 
@@ -200,7 +200,7 @@ export const loginUser = async ({ email, password }) => {
         } catch (redisErr) {
             console.error('Redis (2FA OTP):', redisErr);
             const err = new Error('Could not send login code. Try again.');
-            err.status = 500;
+            err.statusCode = 500;
             throw err;
         }
 
@@ -228,17 +228,24 @@ export const googleLogin = async ({ credential }) => {
     const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
     
     // Verify the Google token
-    const ticket = await client.verifyIdToken({
-        idToken: credential,
-        audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    let ticket;
+    try {
+        ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+    } catch (error) {
+        const err = new Error('Invalid Google credential');
+        err.statusCode = 401;
+        throw err;
+    }
     
     const payload = ticket.getPayload();
     const { email, name, picture } = payload;
     
     if (!email) {
         const err = new Error('Google token did not contain an email');
-        err.status = 400;
+        err.statusCode = 400;
         throw err;
     }
     
@@ -246,26 +253,30 @@ export const googleLogin = async ({ credential }) => {
     let user = await User.findOne({ email });
     
     if (user) {
-        // If they exist but haven't verified email, Google essentially verifies it
+        // If they exist but haven't verified email, someone might have pre-registered with this email.
+        // It's unsafe to log the Google user into this unverified account. Delete it first.
         if (!user.isVerified) {
-            user.isVerified = true;
-            await user.save();
+            await User.deleteOne({ _id: user._id });
+            user = null; // Proceed to create a new user below
+        } else {
+            return { type: 'ok', user };
         }
-        return { type: 'ok', user };
     }
     
-    // If user does not exist, create a new one
-    // Generate a random secure password for the newly created user
-    const randomPassword = crypto.randomBytes(16).toString('hex');
-    const hashedPassword = await hashPassword(randomPassword);
-    
-    user = await User.create({
-        fullname: name,
-        email: email,
-        password: hashedPassword,
-        avatar: picture || '',
-        isVerified: true // Google verified emails are considered verified
-    });
+    // If user does not exist (or was just deleted), create a new one
+    if (!user) {
+        // Generate a random secure password for the newly created user
+        const randomPassword = crypto.randomBytes(16).toString('hex');
+        const hashedPassword = await hashPassword(randomPassword);
+        
+        user = await User.create({
+            fullname: name,
+            email: email,
+            password: hashedPassword,
+            avatar: picture || '',
+            isVerified: true // Google verified emails are considered verified
+        });
+    }
     
     return { type: 'ok', user };
 };
@@ -282,14 +293,14 @@ export const verify2FACode = async ({ email, code }) => {
     const user = await User.findOne({ email });
     if (!user || !user.twoFactorEnabled) {
         const err = new Error('Invalid or expired 2FA code');
-        err.status = 401;
+        err.statusCode = 401;
         throw err;
     }
 
     const ok = await verifyAndConsume2faOtp(email, code);
     if (!ok) {
         const err = new Error('Invalid or expired 2FA code');
-        err.status = 401;
+        err.statusCode = 401;
         throw err;
     }
 
@@ -309,7 +320,7 @@ export const initiatePasswordReset = async ({ email }) => {
     const user = await User.findOne({ email });
     if (!user) {
         const err = new Error('User not found');
-        err.status = 404;
+        err.statusCode = 404;
         throw err;
     }
 
@@ -330,7 +341,7 @@ export const initiatePasswordReset = async ({ email }) => {
         clearResetToken(user);
         await user.save();
         const err = new Error('Email could not be sent');
-        err.status = 500;
+        err.statusCode = 500;
         throw err;
     }
 };
@@ -349,7 +360,7 @@ export const resetPassword = async ({ rawToken, newPassword }) => {
 
     if (!user) {
         const err = new Error('Invalid or expired token');
-        err.status = 400;
+        err.statusCode = 400;
         throw err;
     }
 
@@ -370,7 +381,7 @@ export const updateUserProfile = async ({ userId, fullname, password, currentPas
     const user = await User.findById(userId).select('+password');
     if (!user) {
         const err = new Error('User not found');
-        err.status = 404;
+        err.statusCode = 404;
         throw err;
     }
 
@@ -383,13 +394,13 @@ export const updateUserProfile = async ({ userId, fullname, password, currentPas
     if (password) {
         if (!currentPassword) {
             const err = new Error('Current password is required');
-            err.status = 400;
+            err.statusCode = 400;
             throw err;
         }
         const isMatch = await comparePassword(currentPassword, user.password);
         if (!isMatch) {
             const err = new Error('Current password is incorrect');
-            err.status = 400;
+            err.statusCode = 400;
             throw err;
         }
         user.password = await hashPassword(password);

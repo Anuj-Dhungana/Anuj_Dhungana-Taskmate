@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Layout, Calendar as CalendarIcon, Users, CalendarDays, ClipboardList } from 'lucide-react';
+import { ArrowLeft, Layout, Calendar as CalendarIcon, Users, CalendarDays, ClipboardList, Sparkles } from 'lucide-react';
 import BoardView from '../components/board/BoardView';
 import ProjectCalendar from '../components/calendar/ProjectCalendar';
 import CreateProjectModal from '../components/modals/CreateProjectModal';
+import AiTaskGeneratorModal from '../components/ai/AiTaskGeneratorModal';
 import { addProjectDataChangedListener } from '../utils/projectEvents';
 import useWorkspaceStore from '../store/useWorkspaceStore';
 import PageSkeleton from '../components/common/PageSkeleton';
@@ -30,6 +31,7 @@ const ProjectView = () => {
     const [viewMode, setViewMode] = useState('board');
     const [loading, setLoading] = useState(true);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showAiModal, setShowAiModal] = useState(false);
     const [boardStats, setBoardStats] = useState({ total: 0, done: 0 });
 
     const fetchProject = useCallback(async () => {
@@ -125,6 +127,15 @@ const ProjectView = () => {
 
                 {/* Right: View Toggle */}
                 <div className="flex items-center gap-3">
+                    {/* AI Tasks Generator */}
+                    <button
+                        onClick={() => setShowAiModal(true)}
+                        className="flex items-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold hover:from-blue-700 hover:to-indigo-700 transition shadow-sm shadow-indigo-200"
+                    >
+                        <Sparkles size={14} /> Generate Tasks
+                    </button>
+
+                    {/* View Toggle */}
                     <div className="flex items-center bg-gray-100 p-1 rounded-lg">
                         <button
                             onClick={() => setViewMode('board')}
@@ -208,16 +219,21 @@ const ProjectView = () => {
                 </div>
             )}
 
-            {/* Edit Modal */}
-            {showEditModal && workspace && project && (
+            {/* Modals */}
+            <AiTaskGeneratorModal
+                isOpen={showAiModal}
+                onClose={() => setShowAiModal(false)}
+                projectId={projectId}
+                onCreated={fetchProject}
+            />
+
+            {showEditModal && workspace && (
                 <CreateProjectModal
                     isOpen={showEditModal}
                     onClose={handleCloseEditModal}
                     workspaceId={workspace._id}
-                    onCreated={handleProjectUpdated}
-                    members={workspace.members || []}
-                    mode="edit"
-                    project={project}
+                    projectToEdit={project}
+                    onProjectCreated={handleProjectUpdated}
                 />
             )}
         </div>

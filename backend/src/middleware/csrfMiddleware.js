@@ -19,6 +19,8 @@ export const generateCsrfToken = (req, res, next) => {
         token = crypto.randomBytes(32).toString('hex');
         res.cookie('XSRF-TOKEN', token, cookieOptions);
     }
+    // Set token in header so cross-domain SPAs can read it manually
+    res.setHeader('X-CSRF-TOKEN', token);
     req.csrfToken = token;
     next();
 };

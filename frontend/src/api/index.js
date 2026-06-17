@@ -24,7 +24,15 @@ api.interceptors.request.use(
 
 // Response interceptor
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        // Automatically grab CSRF token from custom header if present 
+        // (works cross-domain where reading document.cookie is blocked)
+        const csrfToken = response.headers['x-csrf-token'];
+        if (csrfToken) {
+            api.defaults.headers.common['X-XSRF-TOKEN'] = csrfToken;
+        }
+        return response;
+    },
     (error) => {
         if (error.response?.status === 401) {
             // Prevent infinite redirect loop by clearing auth config
